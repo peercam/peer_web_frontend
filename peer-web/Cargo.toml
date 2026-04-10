@@ -19,6 +19,7 @@ tower = { version = "0.5", optional = true }
 tower-http = { version = "0.6", features = ["fs", "cors"], optional = true }
 http = { version = "1", optional = true }
 reqwest = { version = "0.13", features = ["json"], optional = true }
+regex = { version = "1", optional = true }
 
 # Shared
 serde = { version = "1", features = ["derive"] }
@@ -41,6 +42,7 @@ ssr = [
     "dep:tower-http",
     "dep:http",
     "dep:reqwest",
+    "dep:regex",
     "dep:leptos_axum",
     "leptos/ssr",
     "leptos_meta/ssr",
