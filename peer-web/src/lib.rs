@@ -3,6 +3,7 @@
 pub mod app;
 pub mod api;
 pub mod components;
+pub mod hooks;
 pub mod models;
 pub mod pages;
 pub mod state;

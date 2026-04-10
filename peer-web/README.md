@@ -3,89 +3,102 @@
     <img src="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_RGB.svg" alt="Leptos Logo">
 </picture>
 
-# Leptos Axum Starter Template
+# Peer Network — Leptos Frontend
 
-This is a template for use with the [Leptos](https://github.com/leptos-rs/leptos) web framework and the [cargo-leptos](https://github.com/akesson/cargo-leptos) tool using [Axum](https://github.com/tokio-rs/axum).
+Modern Leptos (Rust/WASM) rewrite of the Peer Network web frontend, replacing the legacy PHP/JavaScript stack.
 
-## Creating your template repo
+## Features Implemented
 
-If you don't have `cargo-leptos` installed you can install it with
+- ✅ **Registration** — Multi-step flow: referral → email → password → confirmation
+- ✅ **Login / Authentication** — Email/password, remember-me, JWT tokens, auto-login
+- ✅ **Auth Infrastructure** — HttpOnly cookies, proactive token refresh, 401 interceptor
+- ✅ **Protected Routes** — AuthGuard component with redirect preservation
+- ✅ **Toast Notifications** — User feedback system
+- ✅ **Accessibility** — Screen reader support, keyboard navigation
 
-```bash
-cargo install cargo-leptos --locked
+## Project Structure
+
+```
+src/
+├── api/           # GraphQL client, server functions, auth
+├── components/    # Reusable UI components
+├── hooks/         # Custom hooks (proactive refresh, etc.)
+├── models/        # Data types (user, auth, etc.)
+├── pages/         # Page components (login, register, etc.)
+├── state/         # Global state (AuthContext)
+└── utils/         # Helpers (cookies, tokens, validation)
 ```
 
-Then run
-```bash
-cargo leptos new --git https://github.com/leptos-rs/start-axum
-```
-
-to generate a new project template.
-
-```bash
-cd peer-web
-```
-
-to go to your newly created project.
-Feel free to explore the project structure, but the best place to start with your application code is in `src/app.rs`.
-Additionally, Cargo.toml may need updating as new versions of the dependencies are released, especially if things are not working after a `cargo update`.
-
-## Running your project
+## Development
 
 ```bash
 cargo leptos watch
 ```
 
-## Installing Additional Tools
+### Environment Variables
 
-By default, `cargo-leptos` uses `nightly` Rust, `cargo-generate`, and `sass`. If you run into any trouble, you may need to install one or more of these tools.
+```sh
+# Required: GraphQL backend endpoint
+export GRAPHQL_ENDPOINT="https://api.peer.network/graphql"
 
-1. `rustup toolchain install nightly --allow-downgrade` - make sure you have Rust nightly
-2. `rustup target add wasm32-unknown-unknown` - add the ability to compile Rust to WebAssembly
-3. `cargo install cargo-generate` - install `cargo-generate` binary (should be installed automatically in future)
-4. `npm install -g sass` - install `dart-sass` (should be optional in future
-5. Run `npm install` in end2end subdirectory before test
+# Production mode (enables Secure cookie flag)
+export LEPTOS_ENV="production"
+```
 
-## Compiling for Release
+## Prerequisites
+
+1. `rustup toolchain install nightly --allow-downgrade` — Rust nightly
+2. `rustup target add wasm32-unknown-unknown` — WASM compilation target
+3. `cargo install cargo-leptos --locked` — Leptos build tool
+4. `npm install -g sass` — Dart Sass for stylesheets
+5. `npm install` in `end2end/` — Playwright for E2E tests
+
+## Building for Release
+
 ```bash
 cargo leptos build --release
 ```
 
-Will generate your server binary in target/release and your site package in target/site
+Outputs:
+- Server binary: `target/server/release/peer-web`
+- Static assets: `target/site/`
 
-## Testing Your Project
+## Testing
+
 ```bash
+# Unit tests
+cargo test
+
+# E2E tests
 cargo leptos end-to-end
 ```
 
-```bash
-cargo leptos end-to-end --release
-```
+## Deployment
 
-Cargo-leptos uses Playwright as the end-to-end test tool.
-Tests are located in end2end/tests directory.
+Copy the server binary and `site/` directory to your server:
 
-## Executing a Server on a Remote Machine Without the Toolchain
-After running a `cargo leptos build --release` the minimum files needed are:
-
-1. The server binary located in `target/server/release`
-2. The `site` directory and all files within located in `target/site`
-
-Copy these files to your remote server. The directory structure should be:
 ```text
-peer-web
-site/
+peer-web          # Server binary
+site/             # Static assets
 ```
-Set the following environment variables (updating for your project as needed):
+
+Required environment variables:
+
 ```sh
 export LEPTOS_OUTPUT_NAME="peer-web"
 export LEPTOS_SITE_ROOT="site"
 export LEPTOS_SITE_PKG_DIR="pkg"
-export LEPTOS_SITE_ADDR="127.0.0.1:3000"
-export LEPTOS_RELOAD_PORT="3001"
+export LEPTOS_SITE_ADDR="0.0.0.0:3000"
+export GRAPHQL_ENDPOINT="https://api.peer.network/graphql"
+export LEPTOS_ENV="production"
 ```
-Finally, run the server binary.
 
-## Licensing
+## Documentation
 
-This template itself is released under the Unlicense. You should replace the LICENSE for your own application with an appropriate license if you plan to release it publicly.
+- [Feature Convergence Tracker](../docs/feature-convergence.md) — Migration progress
+- [Login Implementation](../docs/plans/login/login-auth-implementation.md) — Auth details
+- [Leptos Rewrite Study](../docs/leptos-rewrite-study.md) — Architecture decisions
+
+## License
+
+See [LICENSE](LICENSE) for details.

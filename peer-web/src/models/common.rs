@@ -66,6 +66,9 @@ pub enum ApiError {
     #[error("API error ({code}): {message}")]
     Api { code: String, message: String },
 
+    #[error("Unauthorized: {0}")]
+    Unauthorized(String),
+
     #[error("Unexpected error: {0}")]
     Unexpected(String),
 }

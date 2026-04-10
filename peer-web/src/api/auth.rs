@@ -158,13 +158,21 @@ fn get_cookie_ssr(name: &str) -> Option<String> {
 fn set_auth_cookies_ssr(access_token: &str, refresh_token: &str) {
     let response = expect_context::<leptos_axum::ResponseOptions>();
 
+    // Use Secure flag in production (when not localhost)
+    let secure_flag = if std::env::var("LEPTOS_ENV").as_deref() == Ok("production") {
+        "; Secure"
+    } else {
+        ""
+    };
+
     // Access token: short-lived (15 minutes)
     response.append_header(
         http::header::SET_COOKIE,
         http::HeaderValue::from_str(&format!(
-            "access_token={}; HttpOnly; SameSite=Strict; Path=/; Max-Age={}",
+            "access_token={}; HttpOnly; SameSite=Strict; Path=/; Max-Age={}{}",
             access_token,
-            15 * 60
+            15 * 60,
+            secure_flag
         ))
         .expect("valid header value"),
     );
@@ -173,9 +181,10 @@ fn set_auth_cookies_ssr(access_token: &str, refresh_token: &str) {
     response.append_header(
         http::header::SET_COOKIE,
         http::HeaderValue::from_str(&format!(
-            "refresh_token={}; HttpOnly; SameSite=Strict; Path=/; Max-Age={}",
+            "refresh_token={}; HttpOnly; SameSite=Strict; Path=/; Max-Age={}{}",
             refresh_token,
-            30 * 24 * 60 * 60
+            30 * 24 * 60 * 60,
+            secure_flag
         ))
         .expect("valid header value"),
     );
@@ -186,12 +195,20 @@ fn set_auth_cookies_ssr(access_token: &str, refresh_token: &str) {
 fn clear_auth_cookies_ssr() {
     let response = expect_context::<leptos_axum::ResponseOptions>();
 
+    // Use Secure flag in production (when not localhost)
+    let secure_flag = if std::env::var("LEPTOS_ENV").as_deref() == Ok("production") {
+        "; Secure"
+    } else {
+        ""
+    };
+
     for name in &["access_token", "refresh_token"] {
         response.append_header(
             http::header::SET_COOKIE,
             http::HeaderValue::from_str(&format!(
-                "{}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0",
-                name
+                "{}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0{}",
+                name,
+                secure_flag
             ))
             .expect("valid header value"),
         );

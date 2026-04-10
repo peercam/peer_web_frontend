@@ -2,8 +2,9 @@
 
 **Feature:** Login & Authentication  
 **Priority:** #2 (after Registration)  
-**Status:** 📋 Planning  
-**Created:** 2026-04-10
+**Status:** ✅ Complete  
+**Created:** 2026-04-10  
+**Completed:** 2026-04-10
 
 ---
 
@@ -711,6 +712,16 @@ May need:
 ---
 
 ## Changelog
+
+### 2026-04-10 (Implementation Complete)
+- Implemented all 5 phases
+- Added `Secure` cookie flag (conditional on `LEPTOS_ENV=production`)
+- Implemented redirect query param handling in login form
+- Created proactive token refresh hook (`use_proactive_refresh`)
+- Created 401 response interceptor (`auth_fetch` / `auth_fetch_api`)
+- Added `Unauthorized` variant to `ApiError`
+- Added JWT token utilities (`src/utils/token.rs`)
+- All code compiles and is ready for testing
 
 ### 2026-04-10 (Review Update)
 - Added logout mutation to API reference

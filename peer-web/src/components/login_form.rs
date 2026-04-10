@@ -2,6 +2,7 @@
 //! remember-me checkbox, and validation.
 
 use leptos::prelude::*;
+use leptos_router::hooks::use_query_map;
 
 use crate::components::validation::is_valid_email;
 use crate::models::auth::LoginResponseCode;
@@ -12,6 +13,16 @@ use crate::utils::cookies::set_remember_me;
 #[component]
 pub fn LoginForm() -> impl IntoView {
     let auth = use_auth();
+    let query = use_query_map();
+
+    // Get redirect destination from query params (validated to start with /)
+    let redirect_to = Memo::new(move |_| {
+        query
+            .get()
+            .get("redirect")
+            .filter(|p| p.starts_with('/'))
+            .unwrap_or("/dashboard".to_string())
+    });
 
     // Form signals
     let email = RwSignal::new(String::new());
@@ -74,8 +85,8 @@ pub fn LoginForm() -> impl IntoView {
                         LoginResponseCode::Success => {
                             // Persist remember-me preference
                             set_remember_me(remember_me.get_untracked());
-                            // Redirect to dashboard
-                            redirect_to_dashboard();
+                            // Redirect to original destination or dashboard
+                            redirect_to_path(&redirect_to.get_untracked());
                         }
                         _ => {
                             server_error.set(Some(code.user_message().to_string()));
@@ -263,12 +274,16 @@ fn event_target_checked(ev: &leptos::ev::Event) -> bool {
         .unwrap_or(false)
 }
 
-/// Redirect to the dashboard page.
-fn redirect_to_dashboard() {
+/// Redirect to the specified path.
+fn redirect_to_path(path: &str) {
     #[cfg(feature = "hydrate")]
     {
         if let Some(window) = web_sys::window() {
-            let _ = window.location().set_href("/dashboard");
+            let _ = window.location().set_href(path);
         }
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = path;
     }
 }

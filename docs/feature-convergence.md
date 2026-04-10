@@ -10,12 +10,12 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 | Status | Count |
 |--------|-------|
-| ✅ Implemented | 1 |
+| ✅ Implemented | 2 |
 | 🚧 In Progress | 0 |
-| ❌ Not Started | 19 |
+| ❌ Not Started | 18 |
 | **Total** | **20** |
 
-**Convergence:** ~5%
+**Convergence:** ~10%
 
 ---
 
@@ -24,7 +24,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Feature | Legacy File | peer-web Status | Notes |
 |---------|-------------|-----------------|-------|
 | **Authentication** ||||
-| Login | `login.php` | ❌ Not Started | Email/password, remember-me |
+| Login | `login.php` | ✅ Implemented | Email/password, remember-me, auto-login, redirect handling |
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation |
 | Forgot Password | `forgotpassword.php` | ❌ Not Started | Password reset flow |
 | **Core Features** ||||
@@ -69,9 +69,14 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Chat List | `js/chat/` | ❌ Not Started | Chat list UI |
 | Chat Window | `js/chat/` | ❌ Not Started | Message bubbles, input |
 | **Forms** ||||
+| Login Form | `js/login/login.js` | ✅ Implemented | Email/password, remember-me, validation |
 | Registration Form | `js/register/` | ✅ Implemented | Multi-step form |
 | Password Strength | — | ✅ Implemented | New component |
 | Form Validation | — | ✅ Implemented | Client + server validation |
+| **Auth** ||||
+| Auth Guard | — | ✅ Implemented | Protected routes, redirect preservation |
+| Auth Context | — | ✅ Implemented | Global auth state, actions |
+| Left Panel | — | ✅ Implemented | Shared login/register layout |
 | **Media** ||||
 | Image Cropper | `js/crop.js` | ❌ Not Started | Image cropping |
 | Audio Player | `js/audio.js` | ❌ Not Started | Audio playback |
@@ -89,7 +94,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | API Module | Legacy Location | peer-web Status | Notes |
 |------------|----------------|-----------------|-------|
 | GraphQL Client | `js/lib/const.js` | ✅ Implemented | `src/api/graphql.rs` |
-| Auth (JWT) | `auth.php` | ❌ Not Started | Token handling |
+| Auth (JWT) | `auth.php` | ✅ Implemented | Server fns, HttpOnly cookies, proactive refresh, 401 interceptor |
 | Registration | `js/register/` | ✅ Implemented | Verify referral, register user |
 | Posts | `js/posts.js` | ❌ Not Started | CRUD operations |
 | Comments | `js/comments.js` | ❌ Not Started | Create, list comments |
@@ -105,7 +110,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 |---------|--------|-----------------|-------|
 | SSR | PHP | ✅ Implemented | Leptos SSR + hydration |
 | Routing | PHP files | ✅ Implemented | leptos_router |
-| State Management | Global JS vars | 🚧 Basic | Leptos signals |
+| State Management | Global JS vars | ✅ Implemented | Leptos signals, AuthContext |
 | Build System | None | ✅ Implemented | cargo-leptos |
 | CSS | Plain CSS | ✅ Implemented | SCSS |
 | PWA / Manifest | `json/webmanifest.json` | ❌ Not Started | Service worker |
@@ -116,8 +121,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 ## Migration Priority (Recommended Order)
 
 1. ✅ ~~Registration~~ — Complete
-2. 📋 Login / Auth — [Planning doc](plans/login-auth-implementation.md)
-3. ⬜ Dashboard — Core experience
+2. ✅ ~~Login / Auth~~ — Complete ([docs](plans/login/login-auth-implementation.md))
+3. 📋 Dashboard — [Planning doc](plans/dashboard/dashboard-implementation.md)
 4. ⬜ View Post — Guest-accessible, SEO important
 5. ⬜ Profile — User identity
 6. ⬜ New Post — Content creation
@@ -132,6 +137,13 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 ## Changelog
 
 ### 2026-04-10
+- Login / Auth marked as complete
+- Auth API layer implemented (JWT, refresh, 401 handling)
+- State management upgraded from Basic to Implemented (AuthContext)
+- Updated convergence to ~10%
+
+### 2026-04-10 (earlier)
+- Added Dashboard implementation planning document
 - Initial tracking document created
 - Registration flow marked as complete
 - Basic infrastructure (SSR, routing, build) confirmed working

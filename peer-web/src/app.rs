@@ -6,6 +6,7 @@ use leptos_router::{
 };
 
 use crate::components::toast::ToastProvider;
+use crate::hooks::use_proactive_refresh;
 use crate::pages::{LoginPage, RegisterPage};
 use crate::state::auth::provide_auth_context;
 
@@ -31,6 +32,9 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 pub fn App() -> impl IntoView {
     provide_meta_context();
     provide_auth_context();
+
+    // Set up proactive token refresh
+    use_proactive_refresh();
 
     view! {
         <Stylesheet id="leptos" href="/pkg/peer-web.css"/>
