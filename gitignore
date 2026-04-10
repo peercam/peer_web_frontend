@@ -6,6 +6,7 @@ README.md
 
 # Node stuff
 /vite/node_modules/
+/tests/mock_backend/node_modules/
 /vite/dist/
 /vite/.vite/
 
@@ -13,3 +14,8 @@ README.md
 /public/assets/*.js
 /public/assets/*.css
 /public/assets/*.map
+
+# Rust / Leptos build artifacts
+/peer-web/target/
+/peer-web/.env
+/peer-web/pkg/
