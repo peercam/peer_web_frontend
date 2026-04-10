@@ -18,6 +18,7 @@ use leptos_meta::*;
 use leptos_router::hooks::use_query_map;
 
 use crate::api::registration::{register_user, verify_account, verify_referral};
+use crate::components::back_button::BackButton;
 use crate::components::referral::{DefaultReferralView, ReferralStep};
 use crate::components::registration_form::{focus_field, RegistrationStep};
 use crate::components::success_step::SuccessStep;
@@ -52,6 +53,25 @@ impl RegStep {
         }
     }
 
+    /// Internal step number for history hash fragments and ordering.
+    pub fn number(&self) -> u8 {
+        match self {
+            Self::Referral | Self::DefaultReferral => 1,
+            Self::Register => 2,
+            Self::Success => 3,
+        }
+    }
+
+    /// Screen reader announcement text for this step.
+    pub fn announcement(&self) -> &'static str {
+        match self {
+            Self::Referral => "Step 1: Referral Code Entry",
+            Self::DefaultReferral => "Step 1: Claim Your Invitation",
+            Self::Register => "Step 2: Registration Form",
+            Self::Success => "Registration successful! Welcome to peer!",
+        }
+    }
+
     /// Returns true if the back button should be visible for this step.
     pub fn show_back_button(&self) -> bool {
         match self {
@@ -69,6 +89,112 @@ impl RegStep {
             Self::Register => Some(Self::Referral),
             Self::Success => None,
         }
+    }
+
+    /// The DOM element ID for the step container.
+    fn element_id(&self) -> &'static str {
+        match self {
+            Self::Referral => "referralStep",
+            Self::DefaultReferral => "defaultReferralStep",
+            Self::Register => "registrationStep",
+            Self::Success => "successStep",
+        }
+    }
+}
+
+/// Focus the first interactive element within the active step container.
+fn focus_first_interactive_in_step(step: RegStep) {
+    #[cfg(feature = "hydrate")]
+    {
+        use wasm_bindgen::JsCast;
+
+        if let Some(document) = web_sys::window().and_then(|w| w.document()) {
+            if let Some(container) = document.get_element_by_id(step.element_id()) {
+                let selector = "input, button, select, textarea, a[href]";
+                if let Ok(Some(el)) = container.query_selector(selector) {
+                    if let Some(html_el) = el.dyn_ref::<web_sys::HtmlElement>() {
+                        let _ = html_el.focus();
+                    }
+                }
+            }
+        }
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = step;
+    }
+}
+
+/// Wrapper for requestAnimationFrame to delay focus until after DOM update.
+fn request_animation_frame(f: impl FnOnce() + 'static) {
+    #[cfg(feature = "hydrate")]
+    {
+        use wasm_bindgen::prelude::*;
+        use wasm_bindgen::JsCast;
+        let closure = Closure::once_into_js(f);
+        if let Some(window) = web_sys::window() {
+            let _ = window.request_animation_frame(closure.as_ref().unchecked_ref());
+        }
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = f;
+    }
+}
+
+/// Push the current step into the browser history via hash fragment.
+fn push_step_to_history(step: RegStep) {
+    #[cfg(feature = "hydrate")]
+    {
+        if let Some(window) = web_sys::window() {
+            if let Ok(history) = window.history() {
+                let hash = format!("#step-{}", step.number());
+                let _ = history.push_state_with_url(
+                    &wasm_bindgen::JsValue::NULL,
+                    "",
+                    Some(&hash),
+                );
+            }
+        }
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = step;
+    }
+}
+
+/// Listen for browser popstate events (back/forward buttons)
+/// and update `current_step` accordingly.
+fn listen_for_popstate(current_step: RwSignal<RegStep>) {
+    #[cfg(feature = "hydrate")]
+    {
+        use wasm_bindgen::prelude::*;
+        use wasm_bindgen::JsCast;
+
+        if let Some(window) = web_sys::window() {
+            let closure = Closure::wrap(Box::new(move |_: web_sys::Event| {
+                if let Some(w) = web_sys::window() {
+                    if let Ok(hash) = w.location().hash() {
+                        let step = match hash.as_str() {
+                            "#step-2" => RegStep::Register,
+                            "#step-3" => RegStep::Success,
+                            _ => RegStep::Referral,
+                        };
+                        current_step.set(step);
+                    }
+                }
+            }) as Box<dyn FnMut(_)>);
+
+            let _ = window.add_event_listener_with_callback(
+                "popstate",
+                closure.as_ref().unchecked_ref(),
+            );
+            closure.forget(); // leak intentionally — lives for page lifetime
+        }
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = current_step;
     }
 }
 
@@ -269,30 +395,62 @@ pub fn RegisterPage() -> impl IntoView {
         }
     });
 
-    // ── Back-button handler ─────────────────────────────────────────────
-    let on_back = move |ev: leptos::ev::MouseEvent| {
-        ev.prevent_default();
-        let step = current_step.get();
-        if let Some(prev) = step.previous() {
-            current_step.set(prev);
-        } else {
-            #[cfg(feature = "hydrate")]
-            {
-                if let Some(window) = web_sys::window() {
-                    let _ = window.location().set_href("/login");
-                }
-            }
+    // ── Back-button derived signals ────────────────────────────────────
+    let show_back = Memo::new(move |_| current_step.get().show_back_button());
+
+    let back_href = Memo::new(move |_| -> Option<String> {
+        match current_step.get() {
+            RegStep::Referral => Some("/login".to_string()),
+            _ => None,
         }
-    };
+    });
+
+    let go_back = Callback::new(move |_: ()| {
+        if let Some(prev) = current_step.get().previous() {
+            current_step.set(prev);
+        }
+    });
 
     // ── Screen reader step announcement ──────────────────────────────
     let step_announcement = Memo::new(move |_| {
-        match current_step.get() {
-            RegStep::Referral => "Step 1: Referral Code Entry".to_string(),
-            RegStep::DefaultReferral => "Step 1: Claim Your Invitation".to_string(),
-            RegStep::Register => "Step 2: Registration Form".to_string(),
-            RegStep::Success => "Registration successful! Welcome to peer!".to_string(),
+        current_step.get().announcement().to_string()
+    });
+
+    // ── Focus management: focus first interactive element on step change ──
+    Effect::new(move |_| {
+        let step = current_step.get();
+        request_animation_frame(move || {
+            focus_first_interactive_in_step(step);
+        });
+    });
+
+    // ── Browser history integration ─────────────────────────────────────
+    // On mount: read initial hash and set step accordingly
+    Effect::new(move |_| {
+        #[cfg(feature = "hydrate")]
+        {
+            if let Some(window) = web_sys::window() {
+                if let Ok(hash) = window.location().hash() {
+                    let step = match hash.as_str() {
+                        "#step-2" => RegStep::Register,
+                        "#step-3" => RegStep::Success,
+                        _ => RegStep::Referral,
+                    };
+                    if step != RegStep::Referral {
+                        current_step.set(step);
+                    }
+                }
+            }
         }
+    });
+
+    // Listen for browser back/forward
+    listen_for_popstate(current_step);
+
+    // Push step changes to history
+    Effect::new(move |_| {
+        let step = current_step.get();
+        push_step_to_history(step);
     });
 
     // ── View ────────────────────────────────────────────────────────────
@@ -335,18 +493,11 @@ pub fn RegisterPage() -> impl IntoView {
                 <div class="container_inner">
                     // ── Top area: back button ───────────────────────────
                     <div class="top_head_area">
-                        <Show when=move || current_step.get().show_back_button()>
-                            <a
-                                class="btn btn-secondary back-btn"
-                                href="#"
-                                on:click=on_back
-                            >
-                                <span aria-hidden="true">
-                                    <i class="peer-icon medium_font peer-icon-arrow-left"></i>
-                                </span>
-                                "Back"
-                            </a>
-                        </Show>
+                        <BackButton
+                            visible=show_back.into()
+                            href=back_href.into()
+                            on_back=go_back
+                        />
                     </div>
 
                     // ── Center area: form steps ─────────────────────────
@@ -502,5 +653,29 @@ mod tests {
     #[test]
     fn test_previous_from_success_is_none() {
         assert_eq!(RegStep::Success.previous(), None);
+    }
+
+    #[test]
+    fn test_step_numbers() {
+        assert_eq!(RegStep::Referral.number(), 1);
+        assert_eq!(RegStep::DefaultReferral.number(), 1);
+        assert_eq!(RegStep::Register.number(), 2);
+        assert_eq!(RegStep::Success.number(), 3);
+    }
+
+    #[test]
+    fn test_announcements() {
+        assert!(RegStep::Referral.announcement().contains("Referral"));
+        assert!(RegStep::DefaultReferral.announcement().contains("Invitation"));
+        assert!(RegStep::Register.announcement().contains("Registration"));
+        assert!(RegStep::Success.announcement().contains("successful"));
+    }
+
+    #[test]
+    fn test_element_ids() {
+        assert_eq!(RegStep::Referral.element_id(), "referralStep");
+        assert_eq!(RegStep::DefaultReferral.element_id(), "defaultReferralStep");
+        assert_eq!(RegStep::Register.element_id(), "registrationStep");
+        assert_eq!(RegStep::Success.element_id(), "successStep");
     }
 }
