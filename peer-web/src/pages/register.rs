@@ -92,6 +92,7 @@ impl RegStep {
     }
 
     /// The DOM element ID for the step container.
+    #[cfg_attr(not(feature = "hydrate"), allow(dead_code))]
     fn element_id(&self) -> &'static str {
         match self {
             Self::Referral => "referralStep",

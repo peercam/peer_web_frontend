@@ -1,84 +1,133 @@
-//! Toast notification component for displaying feedback messages.
+//! Reusable toast notification component.
+//!
+//! Provides a `ToastProvider` context and `ToastContainer` renderer.
+//! Any child component can trigger toasts via `use_context::<ToastContext>()`.
 
 use leptos::prelude::*;
 use std::time::Duration;
 
-/// Toast notification types with corresponding styling.
+use crate::utils::response_codes::user_friendly_msg;
+
+/// The visual style of a toast notification.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ToastType {
+    Info,
     Success,
     Error,
-    Info,
 }
 
 impl ToastType {
-    pub fn class(&self) -> &'static str {
+    /// Returns the CSS class suffix for this toast type.
+    fn css_class(&self) -> &'static str {
         match self {
-            ToastType::Success => "toast--success",
-            ToastType::Error => "toast--error",
-            ToastType::Info => "toast--info",
+            ToastType::Info => "",
+            ToastType::Success => "success",
+            ToastType::Error => "error",
         }
     }
 }
 
-/// A single toast message.
-#[derive(Clone, Debug)]
-pub struct ToastMessage {
-    pub id: u32,
-    pub message: String,
-    pub toast_type: ToastType,
+/// A single toast entry in the notification queue.
+#[derive(Clone)]
+struct ToastEntry {
+    id: u64,
+    message: String,
+    toast_type: ToastType,
+    visible: RwSignal<bool>,
 }
 
-/// Toast context for showing notifications.
+/// Handle for showing toasts, obtained via `use_toast()`.
 #[derive(Clone, Copy)]
 pub struct ToastContext {
-    toasts: RwSignal<Vec<ToastMessage>>,
-    next_id: RwSignal<u32>,
+    toasts: RwSignal<Vec<ToastEntry>>,
+    next_id: RwSignal<u64>,
 }
 
 impl ToastContext {
-    /// Show a toast notification that auto-dismisses after 3 seconds.
+    /// Show a toast with a custom message and type.
+    ///
+    /// Removes any existing toast first (only one toast visible at a time),
+    /// then creates a new one that auto-dismisses after 3 seconds.
     pub fn show(&self, message: impl Into<String>, toast_type: ToastType) {
-        let id = self.next_id.get();
-        self.next_id.update(|n| *n += 1);
+        let message = message.into();
+        let id = self.next_id.get_untracked();
+        self.next_id.set(id + 1);
 
-        let toast = ToastMessage {
+        let visible = RwSignal::new(false);
+
+        let entry = ToastEntry {
             id,
-            message: message.into(),
+            message,
             toast_type,
+            visible,
         };
 
-        self.toasts.update(|t| t.push(toast));
+        // Replace any existing toasts (only one at a time)
+        self.toasts.set(vec![entry]);
+
+        // Trigger slide-in after a short delay (matches JS: setTimeout 100ms)
+        set_timeout(
+            move || {
+                visible.set(true);
+            },
+            Duration::from_millis(100),
+        );
 
         // Auto-dismiss after 3 seconds
         let toasts = self.toasts;
         set_timeout(
             move || {
-                toasts.update(|t| t.retain(|toast| toast.id != id));
+                // Start slide-out
+                visible.set(false);
+
+                // Remove from DOM after slide-out animation (300ms)
+                set_timeout(
+                    move || {
+                        toasts.update(|t| t.retain(|e| e.id != id));
+                    },
+                    Duration::from_millis(300),
+                );
             },
-            Duration::from_secs(3),
+            Duration::from_millis(3000),
         );
     }
 
-    /// Manually dismiss a toast by ID.
-    pub fn dismiss(&self, id: u32) {
-        self.toasts.update(|t| t.retain(|toast| toast.id != id));
+    /// Show a toast by response code.
+    ///
+    /// Looks up the code in the compiled response-code map and infers
+    /// the toast type from the code prefix.
+    pub fn show_code(&self, code: &str) {
+        let message = user_friendly_msg(code).to_string();
+        let toast_type = toast_type_from_code(code);
+        self.show(message, toast_type);
     }
 }
 
-/// Provide toast context to the component tree.
+/// Infer the toast type from a response code prefix.
+///
+/// Codes starting with `1` are successes, `2` are informational,
+/// and `3`/`4` are errors (validation failures, server errors).
+pub fn toast_type_from_code(code: &str) -> ToastType {
+    match code.chars().next() {
+        Some('1') => ToastType::Success,
+        Some('2') => ToastType::Info,
+        _ => ToastType::Error,
+    }
+}
+
+/// Wraps children with toast context. Place this near the top of your
+/// component tree (e.g. inside `App` or `RegisterPage`).
 #[component]
 pub fn ToastProvider(children: Children) -> impl IntoView {
-    let context = ToastContext {
-        toasts: RwSignal::new(Vec::new()),
-        next_id: RwSignal::new(0),
-    };
+    let toasts = RwSignal::new(Vec::<ToastEntry>::new());
+    let next_id = RwSignal::new(0u64);
 
-    provide_context(context);
+    let ctx = ToastContext { toasts, next_id };
+    provide_context(ctx);
 
     view! {
         {children()}
-        <ToastContainer toasts=context.toasts dismiss=move |id| context.dismiss(id) />
+        <ToastContainer toasts=toasts />
     }
 }
 
@@ -87,41 +136,72 @@ pub fn use_toast() -> ToastContext {
     expect_context::<ToastContext>()
 }
 
-/// Container that renders all active toasts.
+/// Renders the active toast notifications.
 #[component]
-fn ToastContainer(
-    toasts: RwSignal<Vec<ToastMessage>>,
-    dismiss: impl Fn(u32) + Copy + Send + 'static,
-) -> impl IntoView {
+fn ToastContainer(toasts: RwSignal<Vec<ToastEntry>>) -> impl IntoView {
     view! {
-        <div
-            class="toast-container"
-            aria-live="assertive"
-            aria-atomic="true"
-        >
-            <For
-                each=move || toasts.get()
-                key=|toast| toast.id
-                children=move |toast| {
-                    let id = toast.id;
-                    view! {
-                        <div
-                            class=format!("toast {}", toast.toast_type.class())
-                            role="alert"
-                        >
-                            <span class="toast__message">{toast.message.clone()}</span>
-                            <button
-                                type="button"
-                                class="toast__dismiss"
-                                aria-label="Dismiss notification"
-                                on:click=move |_| dismiss(id)
-                            >
-                                "\u{00d7}"
-                            </button>
-                        </div>
-                    }
+        <For
+            each=move || toasts.get()
+            key=|entry| entry.id
+            children=move |entry| {
+                let type_class = entry.toast_type.css_class().to_string();
+                let visible = entry.visible;
+
+                view! {
+                    <div
+                        class=move || {
+                            let mut classes = String::from("toast");
+                            if !type_class.is_empty() {
+                                classes.push(' ');
+                                classes.push_str(&type_class);
+                            }
+                            if visible.get() {
+                                classes.push_str(" show");
+                            }
+                            classes
+                        }
+                        role="alert"
+                        aria-live="assertive"
+                    >
+                        {entry.message.clone()}
+                    </div>
                 }
-            />
-        </div>
+            }
+        />
+    }
+}
+
+#[cfg(test)]
+mod toast_type_tests {
+    use super::*;
+
+    #[test]
+    fn success_codes_start_with_1() {
+        assert_eq!(toast_type_from_code("10601"), ToastType::Success);
+        assert_eq!(toast_type_from_code("10701"), ToastType::Success);
+        assert_eq!(toast_type_from_code("11011"), ToastType::Success);
+    }
+
+    #[test]
+    fn info_codes_start_with_2() {
+        assert_eq!(toast_type_from_code("21002"), ToastType::Info);
+        assert_eq!(toast_type_from_code("21003"), ToastType::Info);
+    }
+
+    #[test]
+    fn validation_errors_start_with_3() {
+        assert_eq!(toast_type_from_code("30601"), ToastType::Error);
+        assert_eq!(toast_type_from_code("31010"), ToastType::Error);
+    }
+
+    #[test]
+    fn server_errors_start_with_4() {
+        assert_eq!(toast_type_from_code("40601"), ToastType::Error);
+        assert_eq!(toast_type_from_code("40701"), ToastType::Error);
+    }
+
+    #[test]
+    fn empty_code_defaults_to_error() {
+        assert_eq!(toast_type_from_code(""), ToastType::Error);
     }
 }
