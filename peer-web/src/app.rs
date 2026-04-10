@@ -5,6 +5,7 @@ use leptos_router::{
     StaticSegment,
 };
 
+use crate::components::toast::ToastProvider;
 use crate::pages::RegisterPage;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -32,14 +33,16 @@ pub fn App() -> impl IntoView {
     view! {
         <Stylesheet id="leptos" href="/pkg/peer-web.css"/>
 
-        <Router>
-            <main>
-                <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=HomePage/>
-                    <Route path=StaticSegment("register") view=RegisterPage/>
-                </Routes>
-            </main>
-        </Router>
+        <ToastProvider>
+            <Router>
+                <main>
+                    <Routes fallback=|| "Page not found.".into_view()>
+                        <Route path=StaticSegment("") view=HomePage/>
+                        <Route path=StaticSegment("register") view=RegisterPage/>
+                    </Routes>
+                </main>
+            </Router>
+        </ToastProvider>
     }
 }
 

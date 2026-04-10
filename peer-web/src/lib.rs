@@ -4,6 +4,7 @@ pub mod components;
 pub mod models;
 pub mod pages;
 pub mod state;
+pub mod utils;
 
 // Re-export commonly used types
 pub use models::common::ApiError;

@@ -17,7 +17,11 @@ use leptos::prelude::*;
 use leptos_meta::*;
 use leptos_router::hooks::use_query_map;
 
+use crate::api::registration::verify_referral;
 use crate::components::referral::{DefaultReferralView, ReferralStep};
+use crate::components::toast::{use_toast, ToastType};
+use crate::models::user::ReferralUser;
+use crate::utils::response_codes::user_friendly_msg;
 
 /// Registration step identifier.
 ///
@@ -81,15 +85,19 @@ pub fn RegisterPage() -> impl IntoView {
     // ── Reactive state ──────────────────────────────────────────────────
     let current_step = RwSignal::new(RegStep::Referral);
     let referral_code = RwSignal::new(String::new());
+    let verified_referrer = RwSignal::new(None::<ReferralUser>);
+
+    // ── Toast context ───────────────────────────────────────────────────
+    let toast = use_toast();
 
     // ── Read ?ref= or ?referralUuid= query parameter on mount ──────────
     let query = use_query_map();
     Effect::new(move |_| {
         let params = query.get();
-        if let Some(ref_code) = params.get("ref").or_else(|| params.get("referralUuid")) {
-            if !ref_code.is_empty() {
-                referral_code.set(ref_code);
-            }
+        if let Some(ref_code) = params.get("ref").or_else(|| params.get("referralUuid"))
+            && !ref_code.is_empty()
+        {
+            referral_code.set(ref_code);
         }
     });
 
@@ -104,11 +112,53 @@ pub fn RegisterPage() -> impl IntoView {
         }
     };
 
-    // ── Verify action: advances to step 2 (Step 7 adds server call) ────
-    let on_verify = Action::new(move |_code: &String| {
-        let step = current_step;
-        async move {
-            step.set(RegStep::Register);
+    // ── Verify action: calls verify_referral server function ──────────
+    let verify_action = Action::new(move |code: &String| {
+        let code = code.clone();
+        async move { verify_referral(code).await }
+    });
+
+    // Wrap the server action in a simple Action<String, ()> for the child component
+    let on_verify = Action::new(move |code: &String| {
+        let code = code.clone();
+        verify_action.dispatch(code);
+        async move {}
+    });
+
+    // Pending signal for loading state
+    let verify_pending = Signal::derive(move || verify_action.pending().get());
+
+    // ── Handle verify_action results ────────────────────────────────────
+    Effect::new(move |_| {
+        if let Some(result) = verify_action.value().get() {
+            match result {
+                Ok(response) => {
+                    if response.is_success() {
+                        // Store referrer info
+                        if let Some(referrer) = response.referrer() {
+                            verified_referrer.set(Some(referrer.clone()));
+                        }
+
+                        toast.show(
+                            user_friendly_msg(&response.response_code),
+                            ToastType::Success,
+                        );
+
+                        current_step.set(RegStep::Register);
+                    } else {
+                        toast.show(
+                            user_friendly_msg(&response.response_code),
+                            ToastType::Error,
+                        );
+                    }
+                }
+                Err(e) => {
+                    toast.show(
+                        format!("Error verifying referral code: {e}"),
+                        ToastType::Error,
+                    );
+                }
+            }
         }
     });
 
@@ -116,14 +166,13 @@ pub fn RegisterPage() -> impl IntoView {
     let on_back = move |ev: leptos::ev::MouseEvent| {
         ev.prevent_default();
         let step = current_step.get();
-        match step.previous() {
-            Some(prev) => current_step.set(prev),
-            None => {
-                #[cfg(feature = "hydrate")]
-                {
-                    if let Some(window) = web_sys::window() {
-                        let _ = window.location().set_href("/login");
-                    }
+        if let Some(prev) = step.previous() {
+            current_step.set(prev);
+        } else {
+            #[cfg(feature = "hydrate")]
+            {
+                if let Some(window) = web_sys::window() {
+                    let _ = window.location().set_href("/login");
                 }
             }
         }
@@ -203,6 +252,7 @@ pub fn RegisterPage() -> impl IntoView {
                             <ReferralStep
                                 referral_code=referral_code
                                 on_verify=on_verify
+                                pending=verify_pending
                                 on_show_default=Callback::new(move |()| {
                                     current_step.set(RegStep::DefaultReferral);
                                 })

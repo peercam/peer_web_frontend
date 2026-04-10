@@ -35,19 +35,14 @@ pub struct DefaultResponse {
 }
 
 /// Status values returned by the Peer API.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ApiStatus {
     Success,
     Error,
     #[serde(other)]
+    #[default]
     Unknown,
-}
-
-impl Default for ApiStatus {
-    fn default() -> Self {
-        Self::Unknown
-    }
 }
 
 impl ApiStatus {

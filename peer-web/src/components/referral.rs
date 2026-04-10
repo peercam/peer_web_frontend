@@ -18,6 +18,9 @@ pub fn ReferralStep(
     referral_code: RwSignal<String>,
     /// Callback when the user clicks "Verify Code" with a valid UUID.
     on_verify: Action<String, ()>,
+    /// Whether a verification request is currently in-flight.
+    #[prop(into)]
+    pending: Signal<bool>,
     /// Callback when the user clicks "Don't have a code?"
     on_show_default: Callback<()>,
 ) -> impl IntoView {
@@ -27,14 +30,12 @@ pub fn ReferralStep(
     // Derived: validation message text
     let validation_message = Memo::new(move |_| {
         let code = referral_code.get();
-        if code.is_empty() {
-            String::new()
-        } else if is_valid.get() {
-            String::new()
-        } else {
+        if !code.is_empty() && !is_valid.get() {
             "Hmm\u{2026} that referral code doesn't seem to work. \
              Ask your friend to send you a new link, or use a Peer code."
                 .to_string()
+        } else {
+            String::new()
         }
     });
 
@@ -114,9 +115,17 @@ pub fn ReferralStep(
                 type="submit"
                 class="btn btn-primary"
                 id="verifyReferralBtn"
-                disabled=move || !is_valid.get()
+                disabled=move || pending.get() || !is_valid.get()
+                aria-busy=move || pending.get()
+                aria-disabled=move || pending.get() || !is_valid.get()
             >
-                "Verify Code"
+                <Show
+                    when=move || pending.get()
+                    fallback=|| view! { "Verify Code" }
+                >
+                    <span class="spinner" aria-hidden="true"></span>
+                    <span class="visually-hidden">"Verifying..."</span>
+                </Show>
             </button>
         </form>
 
