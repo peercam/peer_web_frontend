@@ -17,6 +17,8 @@ use leptos::prelude::*;
 use leptos_meta::*;
 use leptos_router::hooks::use_query_map;
 
+use crate::components::referral::{DefaultReferralView, ReferralStep};
+
 /// Registration step identifier.
 ///
 /// Tracks which step of the multi-step form is currently visible.
@@ -80,10 +82,11 @@ pub fn RegisterPage() -> impl IntoView {
     let current_step = RwSignal::new(RegStep::Referral);
     let referral_code = RwSignal::new(String::new());
 
-    // ── Read ?ref= query parameter on mount ─────────────────────────────
+    // ── Read ?ref= or ?referralUuid= query parameter on mount ──────────
     let query = use_query_map();
     Effect::new(move |_| {
-        if let Some(ref_code) = query.get().get("ref") {
+        let params = query.get();
+        if let Some(ref_code) = params.get("ref").or_else(|| params.get("referralUuid")) {
             if !ref_code.is_empty() {
                 referral_code.set(ref_code);
             }
@@ -100,6 +103,14 @@ pub fn RegisterPage() -> impl IntoView {
             }
         }
     };
+
+    // ── Verify action: advances to step 2 (Step 7 adds server call) ────
+    let on_verify = Action::new(move |_code: &String| {
+        let step = current_step;
+        async move {
+            step.set(RegStep::Register);
+        }
+    });
 
     // ── Back-button handler ─────────────────────────────────────────────
     let on_back = move |ev: leptos::ev::MouseEvent| {
@@ -189,8 +200,13 @@ pub fn RegisterPage() -> impl IntoView {
                                     "One quick step left! Enter your referral code to complete registration."
                                 </p>
                             </div>
-                            // Referral form placeholder — Step 6 will replace this
-                            <p class="medium_font">"[Referral code form — Step 6]"</p>
+                            <ReferralStep
+                                referral_code=referral_code
+                                on_verify=on_verify
+                                on_show_default=Callback::new(move |()| {
+                                    current_step.set(RegStep::DefaultReferral);
+                                })
+                            />
                         </div>
 
                         // Step 1b: Default Referral Code
@@ -205,8 +221,12 @@ pub fn RegisterPage() -> impl IntoView {
                                     "Earning starts the moment you enter this magic code"
                                 </p>
                             </div>
-                            // Default referral display placeholder — Step 6 will replace this
-                            <p class="medium_font">"[Default referral code — Step 6]"</p>
+                            <DefaultReferralView
+                                on_use_code=Callback::new(move |code: String| {
+                                    referral_code.set(code);
+                                    current_step.set(RegStep::Referral);
+                                })
+                            />
                         </div>
 
                         // Step 2: Registration Form
