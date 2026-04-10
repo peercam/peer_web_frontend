@@ -13,7 +13,11 @@ static RESPONSE_MESSAGES: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(
 
     // Registration codes
     m.insert("10601", "Registration successful! Please check your email to verify your account.");
+    m.insert("30301", "Missing required fields. Please fill in all fields.");
     m.insert("30601", "This email is already registered. Please log in or use a different email.");
+    m.insert("30202", "Invalid username format. Use 3-23 characters: letters, numbers, underscores, or hyphens.");
+    m.insert("31007", "Invalid referral code. Please check and try again.");
+    m.insert("30103", "Invalid input format. Please check your entries and try again.");
     m.insert("40601", "Registration failed due to a server error. Please try again.");
     m.insert("40602", "Registration failed: unable to generate user ID. Please try again.");
 

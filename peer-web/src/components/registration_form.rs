@@ -1,8 +1,7 @@
 //! Registration form component (Step 2 of the registration flow).
 //!
 //! Renders email, username, password, confirm-password, and checkbox
-//! fields with real-time client-side validation. The actual server
-//! round-trip is wired in Step 9.
+//! fields with real-time client-side validation and backend error display.
 
 use leptos::prelude::*;
 use leptos::web_sys;
@@ -30,6 +29,12 @@ pub fn RegistrationStep(
     privacy_accepted: RwSignal<bool>,
     /// EULA checkbox state.
     eula_accepted: RwSignal<bool>,
+    /// Backend error for the email field (e.g. "email already registered").
+    email_backend_error: RwSignal<Option<String>>,
+    /// Backend error for the username field.
+    username_backend_error: RwSignal<Option<String>>,
+    /// Whether a registration request is currently in flight.
+    pending: Signal<bool>,
     /// Callback invoked when the form is submitted with valid data.
     on_submit: Action<(), ()>,
 ) -> impl IntoView {
@@ -42,6 +47,10 @@ pub fn RegistrationStep(
     // Email validation
     let is_email_valid = Memo::new(move |_| is_valid_email(&email.get()));
     let email_message = Memo::new(move |_| {
+        // Backend error takes precedence
+        if let Some(err) = email_backend_error.get() {
+            return err;
+        }
         let e = email.get();
         if e.is_empty() {
             String::new()
@@ -51,9 +60,13 @@ pub fn RegistrationStep(
             "Please enter a valid email address".to_string()
         }
     });
+    let has_email_error = Memo::new(move |_| {
+        email_backend_error.get().is_some() || (!email.get().is_empty() && !is_email_valid.get())
+    });
     let email_field_class = Memo::new(move |_| {
-        let e = email.get();
-        if e.is_empty() {
+        if has_email_error.get() {
+            "input-field invalid"
+        } else if email.get().is_empty() {
             "input-field"
         } else if is_email_valid.get() {
             "input-field valid"
@@ -65,6 +78,10 @@ pub fn RegistrationStep(
     // Username validation
     let is_username_valid = Memo::new(move |_| is_valid_username(&username.get()));
     let username_message = Memo::new(move |_| {
+        // Backend error takes precedence
+        if let Some(err) = username_backend_error.get() {
+            return err;
+        }
         let u = username.get();
         if u.is_empty() {
             String::new()
@@ -74,9 +91,14 @@ pub fn RegistrationStep(
             "Username must be 3-23 characters".to_string()
         }
     });
+    let has_username_error = Memo::new(move |_| {
+        username_backend_error.get().is_some()
+            || (!username.get().is_empty() && !is_username_valid.get())
+    });
     let username_field_class = Memo::new(move |_| {
-        let u = username.get();
-        if u.is_empty() {
+        if has_username_error.get() {
+            "input-field invalid"
+        } else if username.get().is_empty() {
             "input-field"
         } else if is_username_valid.get() {
             "input-field valid"
@@ -168,6 +190,7 @@ pub fn RegistrationStep(
 
         // Validate all fields
         if !is_form_valid.get() {
+            focus_first_invalid_field();
             return;
         }
 
@@ -194,11 +217,12 @@ pub fn RegistrationStep(
                         prop:value=move || email.get()
                         on:input=move |ev| {
                             email.set(event_target_value(&ev));
+                            email_backend_error.set(None);
                         }
                     />
                     <span
                         class=move || {
-                            if is_email_valid.get() && !email.get().is_empty() {
+                            if is_email_valid.get() && !email.get().is_empty() && email_backend_error.get().is_none() {
                                 "validation-icon show"
                             } else {
                                 "validation-icon"
@@ -240,11 +264,12 @@ pub fn RegistrationStep(
                         prop:value=move || username.get()
                         on:input=move |ev| {
                             username.set(event_target_value(&ev));
+                            username_backend_error.set(None);
                         }
                     />
                     <span
                         class=move || {
-                            if is_username_valid.get() && !username.get().is_empty() {
+                            if is_username_valid.get() && !username.get().is_empty() && username_backend_error.get().is_none() {
                                 "validation-icon show"
                             } else {
                                 "validation-icon"
@@ -470,8 +495,23 @@ pub fn RegistrationStep(
             </div>
 
             // --- Submit Button ---
-            <button type="submit" class="btn btn-primary" id="registerBtn">
-                "Create Account"
+            <button
+                type="submit"
+                class="btn btn-primary"
+                id="registerBtn"
+                disabled=move || pending.get() || !is_form_valid.get()
+                aria-busy=move || pending.get()
+            >
+                {move || {
+                    if pending.get() {
+                        view! {
+                            <span class="spinner" aria-hidden="true"></span>
+                            " Creating account..."
+                        }.into_any()
+                    } else {
+                        view! { "Create Account" }.into_any()
+                    }
+                }}
             </button>
 
             // --- Already Registered Link ---
@@ -482,5 +522,44 @@ pub fn RegistrationStep(
                 </p>
             </div>
         </form>
+    }
+}
+
+/// Focus a specific field by its element ID.
+pub fn focus_field(field_id: &str) {
+    #[cfg(feature = "hydrate")]
+    {
+        use wasm_bindgen::JsCast;
+        if let Some(window) = web_sys::window() {
+            if let Some(document) = window.document() {
+                if let Some(element) = document.get_element_by_id(field_id) {
+                    if let Some(html_el) = element.dyn_ref::<web_sys::HtmlElement>() {
+                        let _ = html_el.focus();
+                    }
+                }
+            }
+        }
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = field_id;
+    }
+}
+
+/// Focus the first invalid field in the registration form.
+fn focus_first_invalid_field() {
+    #[cfg(feature = "hydrate")]
+    {
+        use wasm_bindgen::JsCast;
+        if let Some(window) = web_sys::window() {
+            if let Some(document) = window.document() {
+                // Query for the first input inside an .invalid container
+                if let Ok(Some(element)) = document.query_selector(".input-field.invalid input") {
+                    if let Some(html_el) = element.dyn_ref::<web_sys::HtmlElement>() {
+                        let _ = html_el.focus();
+                    }
+                }
+            }
+        }
     }
 }

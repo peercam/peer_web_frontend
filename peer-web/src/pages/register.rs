@@ -17,9 +17,9 @@ use leptos::prelude::*;
 use leptos_meta::*;
 use leptos_router::hooks::use_query_map;
 
-use crate::api::registration::verify_referral;
+use crate::api::registration::{register_user, verify_account, verify_referral};
 use crate::components::referral::{DefaultReferralView, ReferralStep};
-use crate::components::registration_form::RegistrationStep;
+use crate::components::registration_form::{focus_field, RegistrationStep};
 use crate::components::toast::{use_toast, ToastType};
 use crate::models::user::ReferralUser;
 use crate::utils::response_codes::user_friendly_msg;
@@ -99,6 +99,10 @@ pub fn RegisterPage() -> impl IntoView {
     // ── Toast context ───────────────────────────────────────────────────
     let toast = use_toast();
 
+    // ── Backend error signals (distinct from client-side validation) ─────
+    let email_backend_error = RwSignal::new(None::<String>);
+    let username_backend_error = RwSignal::new(None::<String>);
+
     // ── Read ?ref= or ?referralUuid= query parameter on mount ──────────
     let query = use_query_map();
     Effect::new(move |_| {
@@ -137,12 +141,105 @@ pub fn RegisterPage() -> impl IntoView {
     // Pending signal for loading state
     let verify_pending = Signal::derive(move || verify_action.pending().get());
 
-    // Action for Step 8 → Step 9 (registration submission)
-    // In Step 8 this just advances to Success; Step 9 adds the real server call
+    // ── Registration action: calls register_user server function ────────
+    let register_action = Action::new({
+        let email = email.clone();
+        let password = password.clone();
+        let username = username.clone();
+        let referral_code = referral_code.clone();
+        move |_: &()| {
+            let email_val = email.get();
+            let password_val = password.get();
+            let username_val = username.get();
+            let referral_val = referral_code.get();
+            async move {
+                register_user(email_val, password_val, username_val, referral_val).await
+            }
+        }
+    });
+
+    // Pending signal for registration loading state
+    let register_pending = Signal::derive(move || register_action.pending().get());
+
+    // The on_register action dispatched by the form clears backend errors, then calls register_action
     let on_register = Action::new(move |_: &()| {
-        let step = current_step;
-        async move {
-            step.set(RegStep::Success);
+        email_backend_error.set(None);
+        username_backend_error.set(None);
+        register_action.dispatch(());
+        async move {}
+    });
+
+    // ── Verify account action (called after successful registration) ────
+    let verify_acct_action = Action::new(move |userid: &String| {
+        let userid = userid.clone();
+        async move { verify_account(userid).await }
+    });
+
+    // ── Handle register_action results ──────────────────────────────────
+    Effect::new(move |_| {
+        if let Some(result) = register_action.value().get() {
+            match result {
+                Ok(response) => {
+                    let code = response.code().unwrap_or("");
+                    match code {
+                        "10601" => {
+                            // Success — call verify_account and advance
+                            if let Some(userid) = &response.user_id {
+                                verify_acct_action.dispatch(userid.clone());
+                            }
+
+                            // Store email in session storage for login page auto-fill
+                            #[cfg(feature = "hydrate")]
+                            {
+                                if let Some(window) = web_sys::window() {
+                                    if let Ok(Some(storage)) = window.session_storage() {
+                                        let _ = storage.set_item("newUserEmail", &email.get());
+                                    }
+                                }
+                            }
+
+                            toast.show(user_friendly_msg("10601"), ToastType::Success);
+                            current_step.set(RegStep::Success);
+                        }
+                        "30601" => {
+                            // Duplicate email
+                            email_backend_error
+                                .set(Some(user_friendly_msg("30601").to_string()));
+                            focus_field("email");
+                        }
+                        "30202" => {
+                            // Invalid username
+                            username_backend_error
+                                .set(Some(user_friendly_msg("30202").to_string()));
+                            focus_field("username");
+                        }
+                        other => {
+                            toast.show(user_friendly_msg(other), ToastType::Error);
+                        }
+                    }
+                }
+                Err(e) => {
+                    leptos::logging::error!("Registration error: {:?}", e);
+                    toast.show(
+                        "Connection error. Please check your network and try again.",
+                        ToastType::Error,
+                    );
+                }
+            }
+        }
+    });
+
+    // ── Handle verify_acct_action results (logging only) ────────────────
+    Effect::new(move |_| {
+        if let Some(result) = verify_acct_action.value().get() {
+            match result {
+                Ok(response) => {
+                    leptos::logging::log!("Account verification: {:?}", response.response_code);
+                }
+                Err(e) => {
+                    leptos::logging::warn!("Account verification failed: {:?}", e);
+                }
+            }
         }
     });
 
@@ -316,6 +413,9 @@ pub fn RegisterPage() -> impl IntoView {
                                 confirm_password=confirm_password
                                 privacy_accepted=privacy_accepted
                                 eula_accepted=eula_accepted
+                                email_backend_error=email_backend_error
+                                username_backend_error=username_backend_error
+                                pending=register_pending
                                 on_submit=on_register
                             />
                         </div>
