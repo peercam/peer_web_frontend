@@ -1,0 +1,9 @@
+{
+  "data": {
+    "verifyReferralString": {
+      "status": "error",
+      "ResponseCode": "31010",
+      "affectedRows": null
+    }
+  }
+}

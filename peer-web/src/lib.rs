@@ -1,4 +1,13 @@
 pub mod app;
+pub mod api;
+pub mod components;
+pub mod models;
+pub mod pages;
+pub mod state;
+
+// Re-export commonly used types
+pub use models::common::ApiError;
+pub use models::user::{RegistrationInput, RegisterResponse, ReferralVerifyResponse, VerifyAccountResponse};
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]

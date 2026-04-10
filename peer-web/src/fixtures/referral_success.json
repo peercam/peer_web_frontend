@@ -1,0 +1,16 @@
+{
+  "data": {
+    "verifyReferralString": {
+      "status": "success",
+      "ResponseCode": "11011",
+      "affectedRows": [
+        {
+          "uid": "85d5f836-b1f5-4c4e-9381-1b058e13df93",
+          "username": "peer_referrer",
+          "slug": "abc12",
+          "img": "https://cdn.peer.inc/avatars/default.png"
+        }
+      ]
+    }
+  }
+}

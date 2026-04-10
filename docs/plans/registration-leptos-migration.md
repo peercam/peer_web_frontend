@@ -275,6 +275,8 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 **Goal:** Build a reusable toast/notification component matching the existing behaviour and remap response codes to user-friendly messages.
 
+**Detailed plan:** [step12-toast-notification-component.md](step12-toast-notification-component.md)
+
 ### Implementation
 
 - `<Toast message=... toast_type=... />` component with auto-dismiss (3s)
@@ -292,6 +294,8 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 ## Step 13 — Accessibility & Screen Reader Support
 
 **Goal:** Ensure the registration flow meets WCAG 2.1 AA, matching or exceeding the current accessibility features.
+
+**Detailed plan:** [step13-accessibility-screen-reader-support.md](step13-accessibility-screen-reader-support.md)
 
 ### Implementation
 
@@ -311,6 +315,8 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 ## Step 14 — CSS & Visual Parity
 
 **Goal:** Achieve pixel-level visual parity with the existing PHP registration page.
+
+**Detailed plan:** [step14-css-visual-parity.md](step14-css-visual-parity.md)
 
 ### Implementation
 
