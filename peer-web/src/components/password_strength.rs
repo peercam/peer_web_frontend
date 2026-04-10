@@ -28,6 +28,9 @@ pub fn PasswordStrengthMeter(
     // Derived: which requirements are still unmet
     let requirements = Memo::new(move |_| validation.get().requirements);
 
+    // Derived: numeric strength value (1-5) for aria-valuenow
+    let strength_numeric = Memo::new(move |_| validation.get().strength.numeric());
+
     view! {
         <div
             class=move || {
@@ -59,14 +62,35 @@ pub fn PasswordStrengthMeter(
             </div>
 
             // Visual strength meter bar
-            <div class="strength-meter">
+            <div
+                class="strength-meter"
+                role="meter"
+                aria-label="Password strength"
+                aria-valuenow=move || strength_numeric.get().to_string()
+                aria-valuemin="1"
+                aria-valuemax="5"
+                aria-valuetext=move || {
+                    format!("Password strength: {}", strength_label.get())
+                }
+            >
                 <div class=move || fill_class.get() id="strengthFill">
-                    <span class="strength-segment segment-weak"></span>
-                    <span class="strength-segment segment-weak2"></span>
-                    <span class="strength-segment segment-medium"></span>
-                    <span class="strength-segment segment-strong"></span>
-                    <span class="strength-segment segment-excellent"></span>
+                    <span class="strength-segment segment-weak" aria-hidden="true"></span>
+                    <span class="strength-segment segment-weak2" aria-hidden="true"></span>
+                    <span class="strength-segment segment-medium" aria-hidden="true"></span>
+                    <span class="strength-segment segment-strong" aria-hidden="true"></span>
+                    <span class="strength-segment segment-excellent" aria-hidden="true"></span>
                 </div>
+            </div>
+
+            // Screen reader announcement for strength changes
+            <div class="sr-only" aria-live="polite" aria-atomic="true">
+                {move || {
+                    if visible.get() {
+                        format!("Password strength: {}", strength_label.get())
+                    } else {
+                        String::new()
+                    }
+                }}
             </div>
 
             // Unmet requirements list

@@ -206,6 +206,7 @@ pub fn RegistrationStep(
                     <span class="input-icon" aria-hidden="true">
                         <i class="peer-icon peer-icon-envelope"></i>
                     </span>
+                    <label for="email" class="sr-only">"Email address"</label>
                     <input
                         type="email"
                         id="email"
@@ -213,6 +214,7 @@ pub fn RegistrationStep(
                         placeholder="Enter your email"
                         required=true
                         aria-describedby="emailValidation emailHelp"
+                        aria-invalid=move || if has_email_error.get() { "true" } else { "false" }
                         autocomplete="email"
                         prop:value=move || email.get()
                         on:input=move |ev| {
@@ -253,6 +255,7 @@ pub fn RegistrationStep(
                     <span class="input-icon" aria-hidden="true">
                         <i class="peer-icon peer-icon-user"></i>
                     </span>
+                    <label for="username" class="sr-only">"Username"</label>
                     <input
                         type="text"
                         id="username"
@@ -260,6 +263,7 @@ pub fn RegistrationStep(
                         placeholder="Choose a username"
                         required=true
                         aria-describedby="usernameValidation usernameHelp"
+                        aria-invalid=move || if has_username_error.get() { "true" } else { "false" }
                         autocomplete="username"
                         prop:value=move || username.get()
                         on:input=move |ev| {
@@ -300,6 +304,7 @@ pub fn RegistrationStep(
                     <span class="input-icon" aria-hidden="true">
                         <i class="peer-icon peer-icon-lock"></i>
                     </span>
+                    <label for="password" class="sr-only">"Password"</label>
                     <input
                         type=move || if show_password.get() { "text" } else { "password" }
                         id="password"
@@ -307,19 +312,22 @@ pub fn RegistrationStep(
                         placeholder="Create a strong password"
                         required=true
                         aria-describedby="passwordValidation passwordHelp passwordStrength"
+                        aria-invalid=move || if !password.get().is_empty() && !is_password_valid.get() { "true" } else { "false" }
                         autocomplete="new-password"
                         prop:value=move || password.get()
                         on:input=move |ev| {
                             password.set(event_target_value(&ev));
                         }
                     />
-                    <span
+                    <button
+                        type="button"
                         class="toggle-passwordBtn-icon"
                         id="togglePasswordBtn"
-                        title="Toggle password visibility"
                         aria-label=move || {
                             if show_password.get() { "Hide password" } else { "Show password" }
                         }
+                        aria-pressed=move || if show_password.get() { "true" } else { "false" }
+                        aria-controls="password"
                         on:click=move |_| {
                             show_password.update(|v| *v = !*v);
                         }
@@ -330,8 +338,8 @@ pub fn RegistrationStep(
                             } else {
                                 "peer-icon peer-icon-eye-close"
                             }
-                        }></i>
-                    </span>
+                        } aria-hidden="true"></i>
+                    </button>
                 </div>
                 <div
                     class="validation-message medium_font"
@@ -358,6 +366,7 @@ pub fn RegistrationStep(
                     <span class="input-icon" aria-hidden="true">
                         <i class="peer-icon peer-icon-lock"></i>
                     </span>
+                    <label for="confirmPassword" class="sr-only">"Confirm password"</label>
                     <input
                         type=move || if show_confirm_password.get() { "text" } else { "password" }
                         id="confirmPassword"
@@ -365,19 +374,22 @@ pub fn RegistrationStep(
                         placeholder="Confirm your password"
                         required=true
                         aria-describedby="confirmPasswordValidation confirmPasswordHelp"
+                        aria-invalid=move || if !confirm_password.get().is_empty() && !is_confirm_valid.get() { "true" } else { "false" }
                         autocomplete="new-password"
                         prop:value=move || confirm_password.get()
                         on:input=move |ev| {
                             confirm_password.set(event_target_value(&ev));
                         }
                     />
-                    <span
+                    <button
+                        type="button"
                         class="toggle-passwordBtn-icon"
                         id="toggleConfirmPasswordBtn"
-                        title="Toggle confirm password visibility"
                         aria-label=move || {
                             if show_confirm_password.get() { "Hide password" } else { "Show password" }
                         }
+                        aria-pressed=move || if show_confirm_password.get() { "true" } else { "false" }
+                        aria-controls="confirmPassword"
                         on:click=move |_| {
                             show_confirm_password.update(|v| *v = !*v);
                         }
@@ -388,8 +400,8 @@ pub fn RegistrationStep(
                             } else {
                                 "peer-icon peer-icon-eye-close"
                             }
-                        }></i>
-                    </span>
+                        } aria-hidden="true"></i>
+                    </button>
                 </div>
                 <div
                     class="validation-message medium_font"
@@ -423,6 +435,7 @@ pub fn RegistrationStep(
                             id="readPrivacy"
                             name="readPrivacy"
                             aria-describedby="checkboxValidation"
+                            aria-invalid=move || if checkbox_error_shown.get() && !privacy_accepted.get() { "true" } else { "false" }
                             prop:checked=move || privacy_accepted.get()
                             on:change=move |ev| {
                                 privacy_accepted.set(event_target_checked(&ev));
@@ -434,8 +447,10 @@ pub fn RegistrationStep(
                         />
                         <span class="checkbox-label medium_font">
                             "I agree to the "
-                            <a href="https://peerapp.de/privacy.html" target="_blank">
-                                "Privacy Policy."
+                            <a href="https://peerapp.de/privacy.html" target="_blank" rel="noopener noreferrer">
+                                "Privacy Policy"
+                                <span class="sr-only">" (opens in new tab)"</span>
+                                "."
                             </a>
                         </span>
                     </label>
@@ -458,6 +473,7 @@ pub fn RegistrationStep(
                             id="agreementEULA"
                             name="agreementEULA"
                             aria-describedby="checkboxValidation"
+                            aria-invalid=move || if checkbox_error_shown.get() && !eula_accepted.get() { "true" } else { "false" }
                             prop:checked=move || eula_accepted.get()
                             on:change=move |ev| {
                                 eula_accepted.set(event_target_checked(&ev));
@@ -469,8 +485,9 @@ pub fn RegistrationStep(
                         />
                         <span class="checkbox-label medium_font">
                             "I agree to the "
-                            <a href="https://peerapp.de/EULA.html" target="_blank">
+                            <a href="https://peerapp.de/EULA.html" target="_blank" rel="noopener noreferrer">
                                 "End User License Agreement (EULA)"
+                                <span class="sr-only">" (opens in new tab)"</span>
                             </a>
                             "."
                         </span>

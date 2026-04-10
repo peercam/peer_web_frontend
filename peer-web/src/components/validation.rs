@@ -76,6 +76,17 @@ impl PasswordStrength {
         }
     }
 
+    /// Numeric value (1–5) for aria-valuenow.
+    pub fn numeric(&self) -> u8 {
+        match self {
+            Self::VeryWeak => 1,
+            Self::Weak => 2,
+            Self::NeedsImprovement => 3,
+            Self::Good => 4,
+            Self::Excellent => 5,
+        }
+    }
+
     /// Human-readable label for screen readers and display.
     pub fn label(&self) -> &'static str {
         match self {

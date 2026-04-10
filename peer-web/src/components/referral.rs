@@ -66,6 +66,7 @@ pub fn ReferralStep(
                     <span class="input-icon" aria-hidden="true">
                         <i class="peer-icon peer-icon-referral"></i>
                     </span>
+                    <label for="referralCode" class="sr-only">"Referral code"</label>
                     <input
                         type="text"
                         id="referralCode"
@@ -73,6 +74,7 @@ pub fn ReferralStep(
                         placeholder="Enter your referral code"
                         required=true
                         aria-describedby="referralCodeValidation referralHelp"
+                        aria-invalid=move || if !referral_code.get().is_empty() && !is_valid.get() { "true" } else { "false" }
                         autocomplete="off"
                         prop:value=move || referral_code.get()
                         on:input=move |ev| {

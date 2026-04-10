@@ -1,6 +1,9 @@
 /* Import the registration/login styles from the legacy PHP app */
 @import "login-register.css";
 
+/* Import accessibility styles */
+@import "accessibility.css";
+
 /* Import Poppins font */
 @import url("/fonts/font-poppins/stylesheet.css");
 

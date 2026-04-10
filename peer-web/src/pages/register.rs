@@ -21,6 +21,7 @@ use crate::api::registration::{register_user, verify_account, verify_referral};
 use crate::components::back_button::BackButton;
 use crate::components::referral::{DefaultReferralView, ReferralStep};
 use crate::components::registration_form::{focus_field, RegistrationStep};
+use crate::components::step_announcer::StepAnnouncer;
 use crate::components::success_step::SuccessStep;
 use crate::components::toast::{use_toast, ToastType};
 use crate::models::user::ReferralUser;
@@ -459,6 +460,11 @@ pub fn RegisterPage() -> impl IntoView {
         <Title text="Peer Network - Register"/>
         <Meta name="description" content="Create your Peer Network account. Join the blockchain-based social network."/>
 
+        // Skip navigation link — first focusable element
+        <a href="#main-form" class="skip-link sr-only">
+            "Skip to registration form"
+        </a>
+
         <div class="container large_font">
             // ── Left panel: phone mockup ────────────────────────────────
             <div class="container_left">
@@ -502,7 +508,7 @@ pub fn RegisterPage() -> impl IntoView {
                     </div>
 
                     // ── Center area: form steps ─────────────────────────
-                    <div class="center_area">
+                    <div class="center_area" id="main-form" tabindex="-1">
 
                         // Step 1: Referral Code
                         <div
@@ -591,14 +597,7 @@ pub fn RegisterPage() -> impl IntoView {
                 </div>
 
                 // ── Screen reader step announcer ────────────────────────
-                <div
-                    id="step-announcer"
-                    class="sr-only"
-                    aria-live="polite"
-                    aria-atomic="true"
-                >
-                    {step_announcement}
-                </div>
+                <StepAnnouncer announcement=step_announcement.into() />
             </div>
         </div>
     }
