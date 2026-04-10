@@ -19,6 +19,7 @@ use leptos_router::hooks::use_query_map;
 
 use crate::api::registration::verify_referral;
 use crate::components::referral::{DefaultReferralView, ReferralStep};
+use crate::components::registration_form::RegistrationStep;
 use crate::components::toast::{use_toast, ToastType};
 use crate::models::user::ReferralUser;
 use crate::utils::response_codes::user_friendly_msg;
@@ -87,6 +88,14 @@ pub fn RegisterPage() -> impl IntoView {
     let referral_code = RwSignal::new(String::new());
     let verified_referrer = RwSignal::new(None::<ReferralUser>);
 
+    // Step 2 signals
+    let email = RwSignal::new(String::new());
+    let username = RwSignal::new(String::new());
+    let password = RwSignal::new(String::new());
+    let confirm_password = RwSignal::new(String::new());
+    let privacy_accepted = RwSignal::new(false);
+    let eula_accepted = RwSignal::new(false);
+
     // ── Toast context ───────────────────────────────────────────────────
     let toast = use_toast();
 
@@ -127,6 +136,15 @@ pub fn RegisterPage() -> impl IntoView {
 
     // Pending signal for loading state
     let verify_pending = Signal::derive(move || verify_action.pending().get());
+
+    // Action for Step 8 → Step 9 (registration submission)
+    // In Step 8 this just advances to Success; Step 9 adds the real server call
+    let on_register = Action::new(move |_: &()| {
+        let step = current_step;
+        async move {
+            step.set(RegStep::Success);
+        }
+    });
 
     // ── Handle verify_action results ────────────────────────────────────
     Effect::new(move |_| {
@@ -291,8 +309,15 @@ pub fn RegisterPage() -> impl IntoView {
                                     "Create your account in few seconds and start earning on your favorite content."
                                 </p>
                             </div>
-                            // Registration form placeholder — Step 8 will replace this
-                            <p class="medium_font">"[Registration form — Step 8]"</p>
+                            <RegistrationStep
+                                email=email
+                                username=username
+                                password=password
+                                confirm_password=confirm_password
+                                privacy_accepted=privacy_accepted
+                                eula_accepted=eula_accepted
+                                on_submit=on_register
+                            />
                         </div>
 
                         // Step 3: Success
