@@ -2,4 +2,4 @@
 
 pub mod register;
 
-pub use register::RegisterPage;
+pub use register::{RegisterPage, RegStep};
