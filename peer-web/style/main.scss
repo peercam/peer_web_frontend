@@ -1,19 +1,14 @@
 /* Import the registration/login styles from the legacy PHP app */
-@import "login-register.css";
+@import url("/css/login-register.css");
 
 /* Import accessibility styles */
-@import "accessibility.css";
+@import url("/css/accessibility.css");
 
 /* Import Poppins font */
 @import url("/fonts/font-poppins/stylesheet.css");
 
 /* Import Peer icon font */
 @import url("/fonts/peer-icon-font/css/peer-network.css");
-
-body {
-	font-family: sans-serif;
-	text-align: center;
-}
 
 /* Loading spinner for buttons */
 .spinner {
