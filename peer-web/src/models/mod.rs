@@ -1,5 +1,6 @@
 //! Data models mirroring the Peer GraphQL schema.
 
+pub mod auth;
 pub mod common;
 pub mod user;
 

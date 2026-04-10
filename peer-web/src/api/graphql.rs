@@ -326,6 +326,63 @@ pub struct VerifyAccountData {
 }
 
 // ============================================================================
+// Authentication mutations
+// ============================================================================
+
+/// Mutation: Login with email and password.
+pub const LOGIN_MUTATION: &str = r#"
+mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+        status
+        ResponseCode
+        accessToken
+        refreshToken
+    }
+}
+"#;
+
+/// Mutation: Refresh access token using refresh token.
+pub const REFRESH_TOKEN_MUTATION: &str = r#"
+mutation RefreshToken($refreshToken: String!) {
+    refreshToken(refreshToken: $refreshToken) {
+        status
+        ResponseCode
+        accessToken
+        refreshToken
+    }
+}
+"#;
+
+/// Mutation: Logout and invalidate refresh token.
+pub const LOGOUT_MUTATION: &str = r#"
+mutation Logout($refreshToken: String!) {
+    logout(refreshToken: $refreshToken) {
+        status
+        ResponseCode
+    }
+}
+"#;
+
+/// Wrapper for the `login` mutation response.
+#[derive(Debug, Deserialize)]
+pub struct LoginData {
+    pub login: crate::models::auth::AuthPayload,
+}
+
+/// Wrapper for the `refreshToken` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RefreshTokenData {
+    pub refresh_token: crate::models::auth::AuthPayload,
+}
+
+/// Wrapper for the `logout` mutation response.
+#[derive(Debug, Deserialize)]
+pub struct LogoutData {
+    pub logout: crate::models::auth::LogoutPayload,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 

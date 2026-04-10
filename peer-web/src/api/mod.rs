@@ -1,5 +1,6 @@
 //! API layer for communicating with the Peer GraphQL backend.
 
+pub mod auth;
 pub mod graphql;
 pub mod registration;
 
@@ -16,3 +17,4 @@ pub use graphql::{
 pub use graphql::{mutate, query};
 
 pub use registration::{verify_account, verify_referral, register_user};
+pub use auth::{login, refresh_access_token, logout_user, check_session};

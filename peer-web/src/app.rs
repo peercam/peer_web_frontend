@@ -6,7 +6,8 @@ use leptos_router::{
 };
 
 use crate::components::toast::ToastProvider;
-use crate::pages::RegisterPage;
+use crate::pages::{LoginPage, RegisterPage};
+use crate::state::auth::provide_auth_context;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -29,6 +30,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
+    provide_auth_context();
 
     view! {
         <Stylesheet id="leptos" href="/pkg/peer-web.css"/>
@@ -38,6 +40,7 @@ pub fn App() -> impl IntoView {
                 <main>
                     <Routes fallback=|| "Page not found.".into_view()>
                         <Route path=StaticSegment("") view=HomePage/>
+                        <Route path=StaticSegment("login") view=LoginPage/>
                         <Route path=StaticSegment("register") view=RegisterPage/>
                     </Routes>
                 </main>

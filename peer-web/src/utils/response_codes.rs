@@ -16,6 +16,15 @@ static RESPONSE_CODES: LazyLock<HashMap<&'static str, &'static str>> = LazyLock:
     m.insert("10701", "Account verified! You can now log in.");
     m.insert("10801", "Login successful! Welcome back.");
 
+    // ── Login & Auth ─────────────────────────────────────────────────
+    m.insert("30801", "Invalid email or password. Please try again.");
+    m.insert("60801", "Your account is not verified. Please check your email.");
+    m.insert("40801", "Something went wrong. Please try again later.");
+    m.insert("10901", "Session refreshed.");
+    m.insert("30901", "Your session has expired. Please log in again.");
+    m.insert("40901", "Something went wrong refreshing your session. Please try again.");
+    m.insert("11001", "Logged out successfully.");
+
     // ── Referral ─────────────────────────────────────────────────────
     m.insert("11011", "Referral information loaded.");
     m.insert("21002", "Creating new referral link for you.");

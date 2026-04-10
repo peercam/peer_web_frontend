@@ -100,6 +100,22 @@ pub mod response_codes {
     pub const USERID_GENERATION_FAILED: &str = "40602";
     pub const VERIFICATION_SERVER_ERROR: &str = "40701";
     pub const REFERRAL_SERVER_ERROR: &str = "41013";
+
+    // Login
+    pub const LOGIN_SUCCESS: &str = "10801";
+    pub const INVALID_CREDENTIALS: &str = "30801";
+    pub const ACCOUNT_NOT_VERIFIED: &str = "60801";
+    pub const LOGIN_SERVER_ERROR: &str = "40801";
+
+    // Token refresh
+    pub const TOKEN_REFRESHED: &str = "10901";
+    pub const MISSING_REFRESH_TOKEN: &str = "30101";
+    pub const INVALID_REFRESH_TOKEN: &str = "30901";
+    pub const REFRESH_SERVER_ERROR: &str = "40901";
+
+    // Logout
+    pub const LOGOUT_SUCCESS: &str = "11001";
+    pub const LOGOUT_SERVER_ERROR: &str = "41001";
 }
 
 /// Map response codes to user-friendly messages.
