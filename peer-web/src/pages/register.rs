@@ -20,6 +20,7 @@ use leptos_router::hooks::use_query_map;
 use crate::api::registration::{register_user, verify_account, verify_referral};
 use crate::components::referral::{DefaultReferralView, ReferralStep};
 use crate::components::registration_form::{focus_field, RegistrationStep};
+use crate::components::success_step::SuccessStep;
 use crate::components::toast::{use_toast, ToastType};
 use crate::models::user::ReferralUser;
 use crate::utils::response_codes::user_friendly_msg;
@@ -188,17 +189,8 @@ pub fn RegisterPage() -> impl IntoView {
                                 verify_acct_action.dispatch(userid.clone());
                             }
 
-                            // Store email in session storage for login page auto-fill
-                            #[cfg(feature = "hydrate")]
-                            {
-                                if let Some(window) = web_sys::window() {
-                                    if let Ok(Some(storage)) = window.session_storage() {
-                                        let _ = storage.set_item("newUserEmail", &email.get());
-                                    }
-                                }
-                            }
-
                             toast.show(user_friendly_msg("10601"), ToastType::Success);
+                            // SuccessStep component handles sessionStorage write on mount
                             current_step.set(RegStep::Success);
                         }
                         "30601" => {
@@ -292,6 +284,16 @@ pub fn RegisterPage() -> impl IntoView {
             }
         }
     };
+
+    // ── Screen reader step announcement ──────────────────────────────
+    let step_announcement = Memo::new(move |_| {
+        match current_step.get() {
+            RegStep::Referral => "Step 1: Referral Code Entry".to_string(),
+            RegStep::DefaultReferral => "Step 1: Claim Your Invitation".to_string(),
+            RegStep::Register => "Step 2: Registration Form".to_string(),
+            RegStep::Success => "Registration successful! Welcome to peer!".to_string(),
+        }
+    });
 
     // ── View ────────────────────────────────────────────────────────────
     view! {
@@ -426,21 +428,7 @@ pub fn RegisterPage() -> impl IntoView {
                             data-step="3"
                             id="successStep"
                         >
-                            <div class="success-message">
-                                <div class="step-header">
-                                    <span class="icon" aria-hidden="true">
-                                        <i class="peer-icon peer-icon-good-tick-circle"></i>
-                                    </span>
-                                    <h2 class="x_large_font">
-                                        "Welcome to " <strong>"peer!"</strong>
-                                    </h2>
-                                    <p class="large_font">
-                                        "Your account is ready! Start exploring and earn your first token today."
-                                    </p>
-                                </div>
-                                // Login link placeholder — Step 10 will replace this
-                                <p class="medium_font">"[Continue to Login — Step 10]"</p>
-                            </div>
+                            <SuccessStep email=email.into() />
                         </div>
                     </div>
 
@@ -448,6 +436,16 @@ pub fn RegisterPage() -> impl IntoView {
                     <div class="footer_area medium_font">
                         <p class="version version-number"></p>
                     </div>
+                </div>
+
+                // ── Screen reader step announcer ────────────────────────
+                <div
+                    id="step-announcer"
+                    class="sr-only"
+                    aria-live="polite"
+                    aria-atomic="true"
+                >
+                    {step_announcement}
                 </div>
             </div>
         </div>
