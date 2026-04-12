@@ -19,4 +19,5 @@ pub mod success_step;
 pub mod toast;
 pub mod validation;
 pub mod view_post;
+pub mod wallet;
 pub mod widgets;

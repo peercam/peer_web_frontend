@@ -12,8 +12,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 |--------|-------|
 | ✅ Implemented | 2 |
 | 🚧 In Progress | 1 |
-| 📋 Planning | 4 |
-| ❌ Not Started | 13 |
+| 📋 Planning | 5 |
+| ❌ Not Started | 12 |
 | **Total** | **20** |
 
 **Convergence:** ~10%
@@ -42,7 +42,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Invite | `invite.php` | ❌ Not Started | Invite generation |
 | Referral Board | `referralBoard.php` | ❌ Not Started | Referral tracking |
 | **Economy** ||||
-| Wallet | `wallet.php` | ❌ Not Started | Token balance, transfer, transaction history |
+| Wallet | `wallet.php` | 📋 Planning | Token balance, transfer, transaction history ([docs](plans/wallet/wallet-implementation.md)) |
 | Peer Shop | `viewPeerShop.php` | ❌ Not Started | Shop view |
 | My Ads | `myAds.php` | ❌ Not Started | Ad management |
 | **Admin** ||||
@@ -128,7 +128,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 5. 📋 Profile — Planning ([docs](plans/profile/profile-implementation.md))
 6. 📋 New Post — Content creation ([docs](plans/new-post/new-post-implementation.md))
 7. 📋 Chat — Real-time, complex ([docs](plans/chat/chat-implementation.md))
-8. ⬜ Wallet — Financial features
+8. 📋 Wallet — Financial features ([docs](plans/wallet/wallet-implementation.md))
 9. ⬜ Settings — User preferences
 10. ⬜ Admin — Moderation tools
 11. ⬜ Remaining pages
@@ -136,6 +136,14 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 ---
 
 ## Changelog
+
+### 2026-04-12 (Wallet Planning)
+- Wallet implementation planning document created
+- Comprehensive documentation of balance display, P2P transfers, transaction history
+- Detailed analysis of transfer modal flow, fee calculations, validation rules
+- Transaction categories and expandable details documented
+- Wallet marked as "Planning" in tracker
+- Updated summary counts (5 Planning, 12 Not Started)
 
 ### 2026-04-12 (Chat Planning)
 - Chat implementation planning document created

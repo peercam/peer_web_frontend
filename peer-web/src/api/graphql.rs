@@ -1314,6 +1314,151 @@ pub struct CreateChatData {
 }
 
 // ============================================================================
+// Wallet queries and mutations
+// ============================================================================
+
+/// Query: Get current user's token balance.
+pub const BALANCE_QUERY: &str = r#"
+query Balance {
+    balance {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        currentliquidity
+    }
+}
+"#;
+
+/// Query: Get transaction history with pagination.
+pub const TRANSACTION_HISTORY_QUERY: &str = r#"
+query TransactionHistory($offset: Int, $limit: Int) {
+    transactionHistory(offset: $offset, limit: $limit) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            transactionId
+            operationid
+            transactionCategory
+            transactiontype
+            tokenamount
+            netTokenAmount
+            message
+            createdat
+            sender {
+                userid
+                img
+                username
+                slug
+                visibilityStatus
+                hasActiveReports
+                isHiddenForUsers
+            }
+            recipient {
+                userid
+                img
+                username
+                slug
+                visibilityStatus
+                hasActiveReports
+                isHiddenForUsers
+            }
+            fees {
+                total
+                burn
+                peer
+                inviter
+            }
+        }
+    }
+}
+"#;
+
+/// Mutation: Transfer tokens to another user.
+pub const TRANSFER_MUTATION: &str = r#"
+mutation ResolveTransferV2(
+    $recipient: ID!
+    $numberoftokens: Decimal!
+    $message: String!
+) {
+    resolveTransferV2(
+        recipient: $recipient
+        numberoftokens: $numberoftokens
+        message: $message
+    ) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            tokenSendFormatted
+            tokensSubstractedFromWalletFormatted
+            createdat
+        }
+    }
+}
+"#;
+
+/// Query: Get shop order details for a transaction.
+pub const SHOP_ORDER_DETAILS_QUERY: &str = r#"
+query ShopOrderDetails($transactionId: String!) {
+    shopOrderDetails(transactionId: $transactionId) {
+        affectedRows {
+            shopOrderId
+            shopItemId
+            shopItemSpecs {
+                size
+            }
+            deliveryDetails {
+                name
+                email
+                addressline1
+                addressline2
+                city
+                zipcode
+                country
+            }
+        }
+    }
+}
+"#;
+
+/// Wrapper for the `balance` query response.
+#[derive(Debug, Deserialize)]
+pub struct BalanceData {
+    pub balance: crate::models::transaction::BalanceResponse,
+}
+
+/// Wrapper for the `transactionHistory` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransactionHistoryData {
+    pub transaction_history: crate::models::transaction::TransactionHistoryResponse,
+}
+
+/// Wrapper for the `resolveTransferV2` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransferData {
+    pub resolve_transfer_v2: crate::models::transaction::TransferResponse,
+}
+
+/// Wrapper for the `shopOrderDetails` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShopOrderDetailsData {
+    pub shop_order_details: crate::models::transaction::ShopOrderDetailsResponse,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 

@@ -8,6 +8,7 @@ pub mod graphql;
 pub mod posts;
 pub mod profile;
 pub mod registration;
+pub mod wallet;
 
 #[cfg(feature = "ssr")]
 pub mod validation;

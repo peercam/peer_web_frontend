@@ -29,9 +29,11 @@ thiserror = "2"
 once_cell = "1.19"
 chrono = { version = "0.4", features = ["serde"] }
 html-escape = "0.2"
+rust_decimal = { version = "1", features = ["serde", "serde-with-str"] }
 wasm-bindgen = { version = "0.2.106", optional = true }
-web-sys = { version = "0.3", features = ["Window", "Location", "Storage", "Document", "HtmlDocument", "HtmlElement", "Element", "History", "Event", "EventTarget", "IntersectionObserver", "IntersectionObserverInit", "IntersectionObserverEntry", "FileList", "File", "Blob", "DataTransfer", "DragEvent", "Url", "FormData", "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent"], optional = true }
+web-sys = { version = "0.3", features = ["Window", "Location", "Storage", "Document", "HtmlDocument", "HtmlElement", "Element", "History", "Event", "EventTarget", "IntersectionObserver", "IntersectionObserverInit", "IntersectionObserverEntry", "FileList", "File", "Blob", "DataTransfer", "DragEvent", "Url", "FormData", "HtmlInputElement", "HtmlTextAreaElement", "HtmlImageElement", "KeyboardEvent"], optional = true }
 js-sys = { version = "0.3", optional = true }
+gloo-timers = { version = "0.3", features = ["futures"], optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 
 [features]
@@ -41,6 +43,7 @@ hydrate = [
     "dep:wasm-bindgen",
     "dep:web-sys",
     "dep:js-sys",
+    "dep:gloo-timers",
 ]
 ssr = [
     "dep:axum",
