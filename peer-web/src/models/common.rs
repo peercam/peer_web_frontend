@@ -25,7 +25,7 @@ pub struct GraphQLErrorLocation {
 /// 
 /// This matches the `DefaultResponse` type from the GraphQL schema.
 /// Most mutations return this inside a `meta` field.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct DefaultResponse {
     pub status: String,

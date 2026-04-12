@@ -183,6 +183,66 @@ impl VerifyAccountResponse {
     }
 }
 
+/// User preferences from the API.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct UserPreferences {
+    /// Content filtering severity level.
+    #[serde(default)]
+    pub content_filtering_severity_level: Option<String>,
+}
+
+/// Logged-in user profile info (from `getUser` query).
+///
+/// ```graphql
+/// type User {
+///   id: ID!
+///   username: String!
+///   slug: String!
+///   img: String
+///   biography: String
+///   amountFollowers: Int!
+///   amountFollowing: Int!
+///   amountPeers: Int!
+///   userPreferences: UserPreferences
+/// }
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserInfo {
+    pub id: String,
+    pub username: String,
+    pub slug: String,
+    #[serde(default)]
+    pub img: Option<String>,
+    #[serde(default)]
+    pub biography: Option<String>,
+    #[serde(default)]
+    pub amount_followers: i32,
+    #[serde(default)]
+    pub amount_following: i32,
+    #[serde(default)]
+    pub amount_peers: i32,
+    #[serde(default)]
+    pub user_preferences: Option<UserPreferences>,
+}
+
+/// Response wrapper for `getUser` query.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserInfoResponse {
+    pub meta: DefaultResponse,
+    #[serde(rename = "affectedRows")]
+    pub affected_rows: Option<UserInfo>,
+}
+
+impl UserInfoResponse {
+    /// Check if the response indicates success.
+    pub fn is_success(&self) -> bool {
+        self.meta.status == "success"
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

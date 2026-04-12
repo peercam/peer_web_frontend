@@ -383,6 +383,227 @@ pub struct LogoutData {
 }
 
 // ============================================================================
+// Posts queries and mutations
+// ============================================================================
+
+/// Query: List posts with filters.
+pub const LIST_POSTS_QUERY: &str = r#"
+query ListPosts(
+    $filterBy: [PostFilterType!],
+    $contentFilterBy: ContentFilterType,
+    $sortBy: PostSortType,
+    $title: String,
+    $tag: String,
+    $offset: Int,
+    $limit: Int
+) {
+    listPosts(
+        filterBy: $filterBy,
+        contentFilterBy: $contentFilterBy,
+        sortBy: $sortBy,
+        title: $title,
+        tag: $tag,
+        offset: $offset,
+        limit: $limit
+    ) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        counter
+        affectedRows {
+            id
+            contenttype
+            title
+            media
+            cover
+            mediadescription
+            createdat
+            amountlikes
+            amountviews
+            amountcomments
+            amountdislikes
+            isliked
+            isviewed
+            isdisliked
+            issaved
+            tags
+            user {
+                id
+                username
+                slug
+                img
+                isfollowed
+                isfollowing
+                isfriend
+            }
+        }
+    }
+}
+"#;
+
+/// Query: List advertisement posts.
+pub const LIST_AD_POSTS_QUERY: &str = r#"
+query ListAdvertisementPosts(
+    $offset: Int,
+    $limit: Int,
+    $contentFilterBy: ContentFilterType,
+    $title: String,
+    $tag: String
+) {
+    listAdvertisementPosts(
+        offset: $offset,
+        limit: $limit,
+        contentFilterBy: $contentFilterBy,
+        title: $title,
+        tag: $tag
+    ) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        counter
+        affectedRows {
+            post {
+                id
+                contenttype
+                title
+                media
+                cover
+                mediadescription
+                createdat
+                amountlikes
+                amountviews
+                amountcomments
+                amountdislikes
+                isliked
+                isviewed
+                isdisliked
+                issaved
+                tags
+                user {
+                    id
+                    username
+                    slug
+                    img
+                    isfollowed
+                    isfollowing
+                    isfriend
+                }
+            }
+            advertisement {
+                advertisementid
+                advertisementtype
+                startdate
+                enddate
+            }
+        }
+    }
+}
+"#;
+
+/// Mutation: Perform an action on a post (like, dislike, save, view).
+pub const POST_ACTION_MUTATION: &str = r#"
+mutation ResolvePostAction($postid: ID!, $action: PostActionType!) {
+    resolvePostAction(postid: $postid, action: $action) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+    }
+}
+"#;
+
+/// Query: Search users by username.
+pub const SEARCH_USERS_QUERY: &str = r#"
+query SearchUser($username: String!, $offset: Int, $limit: Int) {
+    searchUser(username: $username, offset: $offset, limit: $limit) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        counter
+        affectedRows {
+            id
+            username
+            slug
+            img
+        }
+    }
+}
+"#;
+
+/// Query: Get user info.
+pub const GET_USER_QUERY: &str = r#"
+query GetUser($id: ID!) {
+    getUser(id: $id) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            id
+            username
+            slug
+            img
+            biography
+            amountFollowers
+            amountFollowing
+            amountPeers
+            userPreferences {
+                contentFilteringSeverityLevel
+            }
+        }
+    }
+}
+"#;
+
+/// Wrapper for the `listPosts` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListPostsData {
+    pub list_posts: crate::models::post::PostListResponse,
+}
+
+/// Wrapper for the `listAdvertisementPosts` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListAdPostsData {
+    pub list_advertisement_posts: crate::models::post::AdListResponse,
+}
+
+/// Wrapper for the `resolvePostAction` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PostActionData {
+    pub resolve_post_action: crate::models::post::PostActionResponse,
+}
+
+/// Wrapper for the `searchUser` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchUserData {
+    pub search_user: crate::models::post::UserSearchResponse,
+}
+
+/// Wrapper for the `getUser` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetUserData {
+    pub get_user: crate::models::user::UserInfoResponse,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 

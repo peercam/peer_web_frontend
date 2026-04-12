@@ -10,6 +10,9 @@
 /* Import Peer icon font */
 @import url("/fonts/peer-icon-font/css/peer-network.css");
 
+/* Import dashboard styles */
+@import "dashboard";
+
 /* Loading spinner for buttons */
 .spinner {
     display: inline-block;

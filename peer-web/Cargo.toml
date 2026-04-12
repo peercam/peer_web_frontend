@@ -28,7 +28,8 @@ cfg-if = "1"
 thiserror = "2"
 once_cell = "1.19"
 wasm-bindgen = { version = "0.2.106", optional = true }
-web-sys = { version = "0.3", features = ["Window", "Location", "Storage", "Document", "HtmlDocument", "HtmlElement", "Element", "History", "Event", "EventTarget"], optional = true }
+web-sys = { version = "0.3", features = ["Window", "Location", "Storage", "Document", "HtmlDocument", "HtmlElement", "Element", "History", "Event", "EventTarget", "IntersectionObserver", "IntersectionObserverInit", "IntersectionObserverEntry"], optional = true }
+js-sys = { version = "0.3", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 
 [features]
@@ -37,6 +38,7 @@ hydrate = [
     "dep:console_error_panic_hook",
     "dep:wasm-bindgen",
     "dep:web-sys",
+    "dep:js-sys",
 ]
 ssr = [
     "dep:axum",

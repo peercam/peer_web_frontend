@@ -102,6 +102,37 @@ fn is_unauthorized_api(error: &ApiError) -> bool {
         || error.to_string().to_lowercase().contains("unauthorized")
 }
 
+/// Read the access token from the request cookies (SSR only).
+///
+/// Used by server functions that need to forward the auth token
+/// to the GraphQL backend.
+#[cfg(feature = "ssr")]
+pub async fn get_access_token_from_cookies() -> Result<String, ServerFnError> {
+    use http::request::Parts;
+
+    let parts = use_context::<Parts>()
+        .ok_or_else(|| ServerFnError::new("No request context available"))?;
+
+    parts
+        .headers
+        .get_all(http::header::COOKIE)
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .flat_map(|s| s.split(';'))
+        .map(|s| s.trim())
+        .find_map(|cookie| {
+            let mut kv = cookie.splitn(2, '=');
+            let key = kv.next()?.trim();
+            let val = kv.next()?.trim();
+            if key == "access_token" {
+                Some(val.to_string())
+            } else {
+                None
+            }
+        })
+        .ok_or_else(|| ServerFnError::new("No access token found"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
