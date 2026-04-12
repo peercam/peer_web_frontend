@@ -2,6 +2,7 @@
 
 pub mod auth_guard;
 pub mod back_button;
+pub mod chat;
 pub mod dashboard;
 pub mod filters;
 pub mod left_panel;

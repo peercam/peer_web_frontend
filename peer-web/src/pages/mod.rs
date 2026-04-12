@@ -1,5 +1,6 @@
 //! Page components (one per route).
 
+pub mod chat;
 pub mod dashboard;
 pub mod login;
 pub mod new_post;
@@ -8,6 +9,7 @@ pub mod register;
 pub mod view_post;
 pub mod view_profile;
 
+pub use chat::ChatPage;
 pub use dashboard::DashboardPage;
 pub use login::LoginPage;
 pub use new_post::NewPostPage;

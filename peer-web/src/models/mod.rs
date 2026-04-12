@@ -1,12 +1,14 @@
 //! Data models mirroring the Peer GraphQL schema.
 
 pub mod auth;
+pub mod chat;
 pub mod comment;
 pub mod common;
 pub mod post;
 pub mod profile;
 pub mod user;
 
+pub use chat::*;
 pub use comment::*;
 pub use common::*;
 pub use post::*;

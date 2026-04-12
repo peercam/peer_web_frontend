@@ -2,6 +2,7 @@
 
 pub mod auth;
 pub mod auth_fetch;
+pub mod chat;
 pub mod comments;
 pub mod graphql;
 pub mod posts;
@@ -20,6 +21,7 @@ pub use graphql::{
     CREATE_COMMENT_MUTATION, LIKE_COMMENT_MUTATION, UNLIKE_COMMENT_MUTATION,
     GET_PROFILE_QUERY, LIST_FOLLOW_RELATIONS_QUERY, LIST_FRIENDS_QUERY, LIST_USER_POSTS_QUERY,
     TOGGLE_FOLLOW_MUTATION, TOGGLE_BLOCK_MUTATION, REPORT_USER_MUTATION,
+    LIST_CHATS_QUERY, SEND_CHAT_MESSAGE_MUTATION, CREATE_CHAT_MUTATION,
 };
 
 #[cfg(feature = "ssr")]
@@ -31,3 +33,4 @@ pub use auth_fetch::{auth_fetch, auth_fetch_api, is_unauthorized};
 pub use posts::{list_posts, list_ad_posts, post_action, search_users, get_user_info};
 pub use comments::{guest_get_post, get_post, list_comments, list_child_comments, create_comment, like_comment, unlike_comment};
 pub use profile::{get_profile, list_follow_relations, list_friends, list_user_posts, toggle_follow, toggle_block, report_user, fetch_biography};
+pub use chat::{list_chats, send_chat_message, create_chat, refresh_chat_messages};

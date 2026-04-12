@@ -12,8 +12,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 |--------|-------|
 | ✅ Implemented | 2 |
 | 🚧 In Progress | 1 |
-| 📋 Planning | 3 |
-| ❌ Not Started | 14 |
+| 📋 Planning | 4 |
+| ❌ Not Started | 13 |
 | **Total** | **20** |
 
 **Convergence:** ~10%
@@ -38,7 +38,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Edit Profile | `edit_profile.php` | ❌ Not Started | Profile editing |
 | Settings | `profileSettings.php` | ❌ Not Started | Preferences, account settings |
 | **Social** ||||
-| Chat | `chat.php` | ❌ Not Started | Real-time messaging (Firestore), group/private |
+| Chat | `chat.php` | 📋 Planning | Real-time messaging (Firestore), group/private ([docs](plans/chat/chat-implementation.md)) |
 | Invite | `invite.php` | ❌ Not Started | Invite generation |
 | Referral Board | `referralBoard.php` | ❌ Not Started | Referral tracking |
 | **Economy** ||||
@@ -127,7 +127,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 4. 📋 View Post — Planning ([docs](plans/view-post/view-post-implementation.md))
 5. 📋 Profile — Planning ([docs](plans/profile/profile-implementation.md))
 6. 📋 New Post — Content creation ([docs](plans/new-post/new-post-implementation.md))
-7. ⬜ Chat — Real-time, complex
+7. 📋 Chat — Real-time, complex ([docs](plans/chat/chat-implementation.md))
 8. ⬜ Wallet — Financial features
 9. ⬜ Settings — User preferences
 10. ⬜ Admin — Moderation tools
@@ -136,6 +136,13 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 ---
 
 ## Changelog
+
+### 2026-04-12 (Chat Planning)
+- Chat implementation planning document created
+- Comprehensive documentation of private/group chat, Firebase real-time integration
+- Detailed analysis of chat UI components, message handling, contact list
+- Chat marked as "Planning" in tracker
+- Updated summary counts (4 Planning, 13 Not Started)
 
 ### 2026-04-12 (New Post Planning)
 - New Post implementation planning document created

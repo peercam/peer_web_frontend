@@ -1216,6 +1216,104 @@ pub struct SearchTagsData {
 }
 
 // ============================================================================
+// Chat queries and mutations
+// ============================================================================
+
+/// Query: List all chats for the current user.
+pub const LIST_CHATS_QUERY: &str = r#"
+query ListChats($limit: Int, $offset: Int) {
+    listChats(limit: $limit, offset: $offset) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            id
+            image
+            name
+            createdat
+            updatedat
+            chatmessages {
+                id
+                senderid
+                chatid
+                content
+                createdat
+            }
+            chatparticipants {
+                userid
+                img
+                username
+                slug
+                hasaccess
+            }
+        }
+    }
+}
+"#;
+
+/// Mutation: Send a message to a chat.
+pub const SEND_CHAT_MESSAGE_MUTATION: &str = r#"
+mutation SendChatMessage($chatid: ID!, $content: String!) {
+    sendChatMessage(chatid: $chatid, content: $content) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            id
+            senderid
+            chatid
+            content
+            createdat
+        }
+    }
+}
+"#;
+
+/// Mutation: Create a new chat (private or group).
+pub const CREATE_CHAT_MUTATION: &str = r#"
+mutation CreateChat($name: String!, $recipients: [String!]!, $image: String) {
+    createChat(input: { name: $name, recipients: $recipients, image: $image }) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            chatid
+        }
+    }
+}
+"#;
+
+/// Wrapper for the `listChats` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListChatsData {
+    pub list_chats: crate::models::chat::ListChatsResponse,
+}
+
+/// Wrapper for the `sendChatMessage` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SendChatMessageData {
+    pub send_chat_message: crate::models::chat::SendMessageResponse,
+}
+
+/// Wrapper for the `createChat` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateChatData {
+    pub create_chat: crate::models::chat::CreateChatResponse,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 
