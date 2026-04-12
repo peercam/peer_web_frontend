@@ -100,5 +100,5 @@ pub fn set_remember_me(value: bool) {
 
 /// Check if "remember me" is set.
 pub fn get_remember_me() -> bool {
-    get_cookie("remember_me").map_or(false, |v| v == "true")
+    get_cookie("remember_me").is_some_and(|v| v == "true")
 }

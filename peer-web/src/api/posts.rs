@@ -14,6 +14,7 @@ use crate::models::post::{
 /// Variables for the listPosts query.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 struct ListPostsVars {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     filter_by: Vec<String>,
@@ -31,6 +32,7 @@ struct ListPostsVars {
 /// Variables for the listAdvertisementPosts query.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 struct ListAdPostsVars {
     #[serde(skip_serializing_if = "Option::is_none")]
     content_filter_by: Option<String>,
@@ -44,6 +46,7 @@ struct ListAdPostsVars {
 
 /// Variables for the resolvePostAction mutation.
 #[derive(Debug, Serialize)]
+#[allow(dead_code)]
 struct PostActionVars {
     postid: String,
     action: String,
@@ -51,6 +54,7 @@ struct PostActionVars {
 
 /// Variables for the searchUser query.
 #[derive(Debug, Serialize)]
+#[allow(dead_code)]
 struct SearchUserVars {
     username: String,
     offset: i32,
@@ -59,6 +63,7 @@ struct SearchUserVars {
 
 /// Variables for the getUser query.
 #[derive(Debug, Serialize)]
+#[allow(dead_code)]
 struct GetUserVars {
     id: String,
 }

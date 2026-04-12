@@ -2,12 +2,12 @@ use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
-    StaticSegment,
+    path, StaticSegment,
 };
 
 use crate::components::toast::ToastProvider;
 use crate::hooks::use_proactive_refresh;
-use crate::pages::{DashboardPage, LoginPage, RegisterPage};
+use crate::pages::{DashboardPage, LoginPage, RegisterPage, ViewPostPage};
 use crate::state::auth::provide_auth_context;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -47,6 +47,8 @@ pub fn App() -> impl IntoView {
                         <Route path=StaticSegment("login") view=LoginPage/>
                         <Route path=StaticSegment("register") view=RegisterPage/>
                         <Route path=StaticSegment("dashboard") view=DashboardPage/>
+                        <Route path=path!("/post/:id") view=ViewPostPage/>
+                        <Route path=path!("/p/:id") view=ViewPostPage/>
                     </Routes>
                 </main>
             </Router>

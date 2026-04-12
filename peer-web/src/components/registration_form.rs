@@ -52,9 +52,7 @@ pub fn RegistrationStep(
             return err;
         }
         let e = email.get();
-        if e.is_empty() {
-            String::new()
-        } else if is_email_valid.get() {
+        if e.is_empty() || is_email_valid.get() {
             String::new()
         } else {
             "Please enter a valid email address".to_string()
@@ -83,9 +81,7 @@ pub fn RegistrationStep(
             return err;
         }
         let u = username.get();
-        if u.is_empty() {
-            String::new()
-        } else if is_username_valid.get() {
+        if u.is_empty() || is_username_valid.get() {
             String::new()
         } else {
             "Username must be 3-23 characters".to_string()
@@ -130,9 +126,7 @@ pub fn RegistrationStep(
     });
     let confirm_message = Memo::new(move |_| {
         let c = confirm_password.get();
-        if c.is_empty() {
-            String::new()
-        } else if is_confirm_valid.get() {
+        if c.is_empty() || is_confirm_valid.get() {
             String::new()
         } else {
             "Passwords do not match".to_string()

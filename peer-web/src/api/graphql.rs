@@ -604,6 +604,272 @@ pub struct GetUserData {
 }
 
 // ============================================================================
+// Guest Post & Comments queries and mutations
+// ============================================================================
+
+/// Query: Get a single post for guest viewing (no auth required).
+pub const GUEST_POST_QUERY: &str = r#"
+query GuestListPost($postid: ID!) {
+    guestListPost(postid: $postid) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            id
+            contenttype
+            title
+            media
+            cover
+            mediadescription
+            createdat
+            amountlikes
+            amountviews
+            amountcomments
+            amountdislikes
+            tags
+            user {
+                id
+                username
+                slug
+                img
+            }
+        }
+    }
+}
+"#;
+
+/// Query: Get a single post for authenticated viewing.
+pub const GET_POST_QUERY: &str = r#"
+query ListPost($postid: ID!) {
+    listPosts(postid: $postid, limit: 1) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            id
+            contenttype
+            title
+            media
+            cover
+            mediadescription
+            createdat
+            amountlikes
+            amountviews
+            amountcomments
+            amountdislikes
+            amounttrending
+            isliked
+            isviewed
+            isdisliked
+            issaved
+            isreported
+            tags
+            hasActiveReports
+            visibilityStatus
+            isHiddenForUsers
+            user {
+                id
+                username
+                slug
+                img
+                isfollowed
+                isfollowing
+                isfriend
+            }
+        }
+    }
+}
+"#;
+
+/// Query: List top-level comments for a post.
+pub const LIST_COMMENTS_QUERY: &str = r#"
+query ListComments($postid: ID!, $commentOffset: Int, $commentLimit: Int) {
+    listComments(
+        postid: $postid
+        commentOffset: $commentOffset
+        commentLimit: $commentLimit
+    ) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        counter
+        affectedRows {
+            commentid
+            userid
+            postid
+            parentid
+            content
+            createdat
+            amountlikes
+            amountreplies
+            isliked
+            user {
+                id
+                username
+                slug
+                img
+                isfollowed
+                isfollowing
+            }
+        }
+    }
+}
+"#;
+
+/// Query: List child comments (replies) for a parent comment.
+pub const LIST_CHILD_COMMENTS_QUERY: &str = r#"
+query ListChildComments($parent: ID!, $offset: Int, $limit: Int) {
+    listChildComments(parent: $parent, offset: $offset, limit: $limit) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        counter
+        affectedRows {
+            commentid
+            userid
+            postid
+            parentid
+            content
+            createdat
+            amountlikes
+            amountreplies
+            isliked
+            user {
+                id
+                username
+                slug
+                img
+                isfollowed
+                isfollowing
+            }
+        }
+    }
+}
+"#;
+
+/// Mutation: Create a new comment or reply.
+pub const CREATE_COMMENT_MUTATION: &str = r#"
+mutation CreateComment($postid: ID!, $content: String!, $parentid: ID) {
+    createComment(
+        action: COMMENT
+        postid: $postid
+        content: $content
+        parentid: $parentid
+    ) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        counter
+        affectedRows {
+            commentid
+            userid
+            content
+            createdat
+            amountlikes
+            amountreplies
+            isliked
+            postid
+            parentid
+            user {
+                id
+                username
+                slug
+                img
+                isfollowed
+                isfollowing
+            }
+        }
+    }
+}
+"#;
+
+/// Mutation: Like a comment.
+pub const LIKE_COMMENT_MUTATION: &str = r#"
+mutation LikeComment($commentid: ID!) {
+    likeComment(commentid: $commentid) {
+        status
+        ResponseCode
+        ResponseMessage
+    }
+}
+"#;
+
+/// Mutation: Unlike a comment.
+pub const UNLIKE_COMMENT_MUTATION: &str = r#"
+mutation UnlikeComment($commentid: ID!) {
+    unlikeComment(commentid: $commentid) {
+        status
+        ResponseCode
+        ResponseMessage
+    }
+}
+"#;
+
+/// Wrapper for the `guestListPost` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GuestPostData {
+    pub guest_list_post: crate::models::post::PostListResponse,
+}
+
+/// Wrapper for the `listPosts` single post query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetPostData {
+    pub list_posts: crate::models::post::PostListResponse,
+}
+
+/// Wrapper for the `listComments` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListCommentsData {
+    pub list_comments: crate::models::comment::CommentListResponse,
+}
+
+/// Wrapper for the `listChildComments` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListChildCommentsData {
+    pub list_child_comments: crate::models::comment::CommentListResponse,
+}
+
+/// Wrapper for the `createComment` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateCommentData {
+    pub create_comment: crate::models::comment::CreateCommentResponse,
+}
+
+/// Wrapper for the `likeComment` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LikeCommentData {
+    pub like_comment: crate::models::comment::LikeCommentResponse,
+}
+
+/// Wrapper for the `unlikeComment` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnlikeCommentData {
+    pub unlike_comment: crate::models::comment::LikeCommentResponse,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 

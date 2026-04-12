@@ -8,6 +8,7 @@ use leptos::prelude::*;
 use crate::models::post::{PostFilterType, PostSortType};
 
 /// Key constants for localStorage persistence.
+#[allow(dead_code)]
 mod storage_keys {
     pub const CONTENT_TYPES: &str = "selectedContentTypes";
     pub const FEED_FILTER: &str = "selected-feed";

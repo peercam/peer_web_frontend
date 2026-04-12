@@ -94,9 +94,9 @@ pub fn LoginForm() -> impl IntoView {
                     }
                 }
                 Err(e) => {
-                    server_error.set(Some(format!(
-                        "Connection error. Please check your network and try again."
-                    )));
+                    server_error.set(Some(
+                        "Connection error. Please check your network and try again.".to_string()
+                    ));
                     leptos::logging::error!("Login error: {:?}", e);
                 }
             }

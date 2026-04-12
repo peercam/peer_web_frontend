@@ -272,10 +272,6 @@ pub fn RegisterPage() -> impl IntoView {
 
     // ── Registration action: calls register_user server function ────────
     let register_action = Action::new({
-        let email = email.clone();
-        let password = password.clone();
-        let username = username.clone();
-        let referral_code = referral_code.clone();
         move |_: &()| {
             let email_val = email.get();
             let password_val = password.get();

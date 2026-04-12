@@ -1,9 +1,7 @@
 //! User search dropdown component.
 
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 
-use crate::api::posts::search_users;
 use crate::models::post::UserSearchResult;
 
 /// User search input with dropdown results.

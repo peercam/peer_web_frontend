@@ -2,7 +2,7 @@
 
 This document tracks the progress of migrating features from the legacy PHP/JS frontend to the new Leptos (Rust/WASM) rewrite.
 
-**Last Updated:** 2026-04-10
+**Last Updated:** 2026-04-12
 
 ---
 
@@ -11,8 +11,9 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Status | Count |
 |--------|-------|
 | ✅ Implemented | 2 |
-| 🚧 In Progress | 0 |
-| ❌ Not Started | 18 |
+| 🚧 In Progress | 1 |
+| 📋 Planning | 1 |
+| ❌ Not Started | 16 |
 | **Total** | **20** |
 
 **Convergence:** ~10%
@@ -28,8 +29,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation |
 | Forgot Password | `forgotpassword.php` | ❌ Not Started | Password reset flow |
 | **Core Features** ||||
-| Dashboard | `dashboard.php` | ❌ Not Started | Post feed, filters, sort, infinite scroll |
-| View Post | `post.php` | ❌ Not Started | Single post view, comments, guest mode |
+| Dashboard | `dashboard.php` | 🚧 In Progress | Post feed, filters, sort, infinite scroll |
+| View Post | `post.php` | 📋 Planning | Single post view, comments, guest mode |
 | New Post | `newpost.php` | ❌ Not Started | Text/media creation, image cropping, video encoding |
 | **Profile** ||||
 | My Profile | `profile.php` | ❌ Not Started | User profile, posts, followers/following |
@@ -122,8 +123,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 1. ✅ ~~Registration~~ — Complete
 2. ✅ ~~Login / Auth~~ — Complete ([docs](plans/login/login-auth-implementation.md))
-3. 📋 Dashboard — [Planning doc](plans/dashboard/dashboard-implementation.md)
-4. ⬜ View Post — Guest-accessible, SEO important
+3. � Dashboard — In progress ([docs](plans/dashboard/dashboard-implementation.md))
+4. 📋 View Post — Planning ([docs](plans/view-post/view-post-implementation.md))
 5. ⬜ Profile — User identity
 6. ⬜ New Post — Content creation
 7. ⬜ Chat — Real-time, complex
@@ -135,6 +136,12 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 ---
 
 ## Changelog
+
+### 2026-04-12
+- View Post implementation planning document created
+- Dashboard marked as "In Progress" (substantial code exists)
+- View Post marked as "Planning"
+- Updated summary counts
 
 ### 2026-04-10
 - Login / Auth marked as complete

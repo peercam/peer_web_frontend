@@ -156,10 +156,10 @@ pub fn is_valid_email(input: &str) -> bool {
     let domain_parts: Vec<&str> = domain.split('.').collect();
 
     // TLD must be at least 2 chars
-    if let Some(tld) = domain_parts.last() {
-        if tld.len() < 2 || !tld.chars().all(|c| c.is_ascii_alphabetic()) {
-            return false;
-        }
+    if let Some(tld) = domain_parts.last()
+        && (tld.len() < 2 || !tld.chars().all(|c| c.is_ascii_alphabetic()))
+    {
+        return false;
     }
 
     // All domain parts must be valid
@@ -175,7 +175,7 @@ pub fn is_valid_username(input: &str) -> bool {
     let input = input.trim();
     let len = input.len();
 
-    if len < 3 || len > 23 {
+    if !(3..=23).contains(&len) {
         return false;
     }
 
