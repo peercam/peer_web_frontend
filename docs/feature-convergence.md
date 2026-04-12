@@ -12,8 +12,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 |--------|-------|
 | ✅ Implemented | 2 |
 | 🚧 In Progress | 1 |
-| 📋 Planning | 2 |
-| ❌ Not Started | 15 |
+| 📋 Planning | 3 |
+| ❌ Not Started | 14 |
 | **Total** | **20** |
 
 **Convergence:** ~10%
@@ -31,7 +31,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | **Core Features** ||||
 | Dashboard | `dashboard.php` | 🚧 In Progress | Post feed, filters, sort, infinite scroll |
 | View Post | `post.php` | 📋 Planning | Single post view, comments, guest mode |
-| New Post | `newpost.php` | ❌ Not Started | Text/media creation, image cropping, video encoding |
+| New Post | `newpost.php` | 📋 Planning | Text/media creation, image cropping, video encoding ([docs](plans/new-post/new-post-implementation.md)) |
 | **Profile** ||||
 | My Profile | `profile.php` | 📋 Planning | User profile, posts, followers/following ([docs](plans/profile/profile-implementation.md)) |
 | View Profile | `view-profile.php` | 📋 Planning | Other users' profiles ([docs](plans/profile/profile-implementation.md)) |
@@ -126,7 +126,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 3. � Dashboard — In progress ([docs](plans/dashboard/dashboard-implementation.md))
 4. 📋 View Post — Planning ([docs](plans/view-post/view-post-implementation.md))
 5. 📋 Profile — Planning ([docs](plans/profile/profile-implementation.md))
-6. ⬜ New Post — Content creation
+6. 📋 New Post — Content creation ([docs](plans/new-post/new-post-implementation.md))
 7. ⬜ Chat — Real-time, complex
 8. ⬜ Wallet — Financial features
 9. ⬜ Settings — User preferences
@@ -136,6 +136,13 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 ---
 
 ## Changelog
+
+### 2026-04-12 (New Post Planning)
+- New Post implementation planning document created
+- Comprehensive documentation of all four content types (text, image, audio, video)
+- Detailed analysis of image cropping, voice recording, video trimming features
+- New Post marked as "Planning" in tracker
+- Updated summary counts (3 Planning, 14 Not Started)
 
 ### 2026-04-12 (Profile Planning)
 - Profile (My Profile + View Profile) implementation planning document created

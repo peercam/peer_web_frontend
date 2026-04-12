@@ -297,3 +297,282 @@ impl FeedItem {
         &self.post().id
     }
 }
+
+// ============================================================================
+// Post Creation Types
+// ============================================================================
+
+/// Content type for post creation (lowercase serialization).
+///
+/// Used with the `createPost` mutation which expects lowercase values.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum CreateContentType {
+    #[default]
+    Text,
+    Image,
+    Audio,
+    Video,
+}
+
+impl std::fmt::Display for CreateContentType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CreateContentType::Text => write!(f, "text"),
+            CreateContentType::Image => write!(f, "image"),
+            CreateContentType::Audio => write!(f, "audio"),
+            CreateContentType::Video => write!(f, "video"),
+        }
+    }
+}
+
+impl CreateContentType {
+    /// Get the display name for UI.
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            CreateContentType::Text => "Text Post",
+            CreateContentType::Image => "Image Post",
+            CreateContentType::Audio => "Audio Post",
+            CreateContentType::Video => "Video Post",
+        }
+    }
+
+    /// Get the icon class for this content type.
+    pub fn icon_class(&self) -> &'static str {
+        match self {
+            CreateContentType::Text => "peer-icon-text",
+            CreateContentType::Image => "peer-icon-image",
+            CreateContentType::Audio => "peer-icon-audio",
+            CreateContentType::Video => "peer-icon-video",
+        }
+    }
+
+    /// Maximum number of media files allowed.
+    pub fn max_media(&self) -> usize {
+        match self {
+            CreateContentType::Image => 5,
+            CreateContentType::Video => 2,
+            CreateContentType::Audio => 1,
+            CreateContentType::Text => 1,
+        }
+    }
+
+    /// Check if this content type requires media upload.
+    pub fn requires_media(&self) -> bool {
+        !matches!(self, CreateContentType::Text)
+    }
+}
+
+/// Input for creating a new post.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePostInput {
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mediadescription: Option<String>,
+    pub contenttype: CreateContentType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub media: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cover: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uploaded_files: Option<String>,
+}
+
+impl CreatePostInput {
+    /// Validate the input fields.
+    pub fn validate(&self) -> Result<(), String> {
+        // Title: 1-63 chars
+        if self.title.is_empty() {
+            return Err("Title is required".to_string());
+        }
+        if self.title.len() > 63 {
+            return Err("Title must be 63 characters or less".to_string());
+        }
+
+        // Description: max 500 chars
+        if let Some(ref desc) = self.mediadescription {
+            if desc.len() > 500 {
+                return Err("Description must be 500 characters or less".to_string());
+            }
+        }
+
+        // Tags: max 10, valid format
+        if let Some(ref tags) = self.tags {
+            if tags.len() > 10 {
+                return Err("Maximum 10 tags allowed".to_string());
+            }
+            for tag in tags {
+                if !is_valid_tag(tag) {
+                    return Err(format!("Invalid tag format: {}", tag));
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+/// Check if a tag name is valid (alphanumeric/underscores, 2-53 chars).
+pub fn is_valid_tag(tag: &str) -> bool {
+    let len = tag.len();
+    len >= 2
+        && len <= 53
+        && tag
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
+
+/// Post eligibility response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PostEligibilityResponse {
+    pub meta: DefaultResponse,
+    #[serde(default)]
+    pub eligibility_token: Option<String>,
+}
+
+impl PostEligibilityResponse {
+    /// Check if eligibility was granted.
+    pub fn is_eligible(&self) -> bool {
+        self.meta.status == "success" && self.eligibility_token.is_some()
+    }
+
+    /// Get the eligibility token if available.
+    pub fn token(&self) -> Option<&str> {
+        self.eligibility_token.as_deref()
+    }
+}
+
+/// Upload response from `/upload-post`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadPostResponse {
+    pub status: String,
+    #[serde(rename = "ResponseCode")]
+    pub response_code: String,
+    #[serde(default)]
+    pub affected_rows: Option<UploadAffectedRows>,
+}
+
+/// Affected rows from upload response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadAffectedRows {
+    pub uploaded_files: String,
+}
+
+impl UploadPostResponse {
+    /// Check if upload was successful.
+    pub fn is_success(&self) -> bool {
+        self.status == "success" && self.response_code == "11515"
+    }
+
+    /// Get the uploaded file names.
+    pub fn uploaded_files(&self) -> Option<&str> {
+        self.affected_rows.as_ref().map(|a| a.uploaded_files.as_str())
+    }
+}
+
+/// Response from createPost mutation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePostResponse {
+    pub meta: DefaultResponse,
+    #[serde(default)]
+    pub affected_rows: Option<CreatedPost>,
+}
+
+/// Created post data.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatedPost {
+    pub id: String,
+    pub contenttype: String,
+    pub title: String,
+}
+
+impl CreatePostResponse {
+    /// Check if post was created successfully.
+    pub fn is_success(&self) -> bool {
+        self.meta.status == "success"
+    }
+
+    /// Get the created post ID.
+    pub fn post_id(&self) -> Option<&str> {
+        self.affected_rows.as_ref().map(|p| p.id.as_str())
+    }
+}
+
+/// Tag from search results.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Tag {
+    pub name: String,
+}
+
+/// Tag search response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TagSearchResponse {
+    pub meta: DefaultResponse,
+    pub counter: i32,
+    #[serde(rename = "affectedRows", default)]
+    pub affected_rows: Vec<Tag>,
+}
+
+impl TagSearchResponse {
+    /// Check if search was successful.
+    pub fn is_success(&self) -> bool {
+        self.meta.status == "success"
+    }
+
+    /// Get the tag names.
+    pub fn tag_names(&self) -> Vec<String> {
+        self.affected_rows.iter().map(|t| t.name.clone()).collect()
+    }
+}
+
+/// Represents a media file for upload.
+#[derive(Debug, Clone)]
+pub struct MediaFile {
+    /// File name.
+    pub name: String,
+    /// MIME type.
+    pub mime_type: String,
+    /// File data as bytes.
+    pub data: Vec<u8>,
+    /// Preview URL (for displaying in UI).
+    pub preview_url: Option<String>,
+}
+
+impl MediaFile {
+    /// Create a new media file.
+    pub fn new(name: String, mime_type: String, data: Vec<u8>) -> Self {
+        Self {
+            name,
+            mime_type,
+            data,
+            preview_url: None,
+        }
+    }
+
+    /// Create with a preview URL.
+    pub fn with_preview(mut self, url: String) -> Self {
+        self.preview_url = Some(url);
+        self
+    }
+
+    /// Get file size in bytes.
+    pub fn size(&self) -> usize {
+        self.data.len()
+    }
+
+    /// Convert to base64 data URL.
+    #[cfg(feature = "hydrate")]
+    pub fn to_data_url(&self) -> String {
+        use base64::{Engine, engine::general_purpose::STANDARD};
+        format!("data:{};base64,{}", self.mime_type, STANDARD.encode(&self.data))
+    }
+}

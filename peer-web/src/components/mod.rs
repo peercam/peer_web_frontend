@@ -6,6 +6,7 @@ pub mod dashboard;
 pub mod filters;
 pub mod left_panel;
 pub mod login_form;
+pub mod new_post;
 pub mod password_strength;
 pub mod posts;
 pub mod profile;

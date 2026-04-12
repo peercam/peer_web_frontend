@@ -1139,6 +1139,83 @@ pub struct ReportUserData {
 }
 
 // ============================================================================
+// Post Creation queries and mutations
+// ============================================================================
+
+/// Query: Get post eligibility token.
+pub const POST_ELIGIBILITY_QUERY: &str = r#"
+query PostEligibility {
+    postEligibility {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        eligibilityToken
+    }
+}
+"#;
+
+/// Mutation: Create a new post.
+pub const CREATE_POST_MUTATION: &str = r#"
+mutation CreatePost($action: PostType!, $input: PostInput!) {
+    createPost(action: $action, input: $input) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            id
+            contenttype
+            title
+        }
+    }
+}
+"#;
+
+/// Query: Search tags by name.
+pub const SEARCH_TAGS_QUERY: &str = r#"
+query SearchTags($tagName: String!, $offset: Int, $limit: Int) {
+    searchTags(tagName: $tagName, offset: $offset, limit: $limit) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        counter
+        affectedRows {
+            name
+        }
+    }
+}
+"#;
+
+/// Wrapper for the `postEligibility` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PostEligibilityData {
+    pub post_eligibility: crate::models::post::PostEligibilityResponse,
+}
+
+/// Wrapper for the `createPost` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePostData {
+    pub create_post: crate::models::post::CreatePostResponse,
+}
+
+/// Wrapper for the `searchTags` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchTagsData {
+    pub search_tags: crate::models::post::TagSearchResponse,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 
