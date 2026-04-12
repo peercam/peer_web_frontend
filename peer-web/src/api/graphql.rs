@@ -870,6 +870,275 @@ pub struct UnlikeCommentData {
 }
 
 // ============================================================================
+// Profile queries and mutations
+// ============================================================================
+
+/// Query: Get a user's profile.
+pub const GET_PROFILE_QUERY: &str = r#"
+query GetProfile($userid: ID, $contentFilterBy: ContentFilterType) {
+    getProfile(userid: $userid, contentFilterBy: $contentFilterBy) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            id
+            username
+            status
+            slug
+            img
+            biography
+            visibilityStatus
+            isHiddenForUsers
+            hasActiveReports
+            iFollowThisUser
+            thisUserFollowsMe
+            isreported
+            amountposts
+            amounttrending
+            amountfollowed
+            amountfollower
+            amountfriends
+            amountblocked
+            amountreports
+        }
+    }
+}
+"#;
+
+/// Query: List followers and following for a user.
+pub const LIST_FOLLOW_RELATIONS_QUERY: &str = r#"
+query ListFollowRelations(
+    $userid: ID
+    $contentFilterBy: ContentFilterType
+    $offset: Int
+    $limit: Int
+) {
+    listFollowRelations(
+        userid: $userid
+        contentFilterBy: $contentFilterBy
+        offset: $offset
+        limit: $limit
+    ) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        counter
+        affectedRows {
+            followers {
+                userid
+                username
+                slug
+                img
+                visibilityStatus
+                isHiddenForUsers
+                hasActiveReports
+                isfollowed
+                isfollowing
+            }
+            following {
+                userid
+                username
+                slug
+                img
+                visibilityStatus
+                isHiddenForUsers
+                hasActiveReports
+                isfollowed
+                isfollowing
+            }
+        }
+    }
+}
+"#;
+
+/// Query: List mutual follows (peers/friends).
+pub const LIST_FRIENDS_QUERY: &str = r#"
+query ListFriends(
+    $userid: ID
+    $contentFilterBy: ContentFilterType
+    $offset: Int
+    $limit: Int
+) {
+    listFriends(
+        userid: $userid
+        contentFilterBy: $contentFilterBy
+        offset: $offset
+        limit: $limit
+    ) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        counter
+        affectedRows {
+            userid
+            img
+            username
+            slug
+            biography
+            visibilityStatus
+            isHiddenForUsers
+            hasActiveReports
+        }
+    }
+}
+"#;
+
+/// Query: List posts for a specific user (profile posts feed).
+pub const LIST_USER_POSTS_QUERY: &str = r#"
+query ListUserPosts(
+    $userid: ID!
+    $filterBy: [PostFilterType!]
+    $contentFilterBy: ContentFilterType
+    $sortBy: PostSortType
+    $offset: Int
+    $limit: Int
+) {
+    listPosts(
+        userid: $userid
+        filterBy: $filterBy
+        contentFilterBy: $contentFilterBy
+        sortBy: $sortBy
+        offset: $offset
+        limit: $limit
+    ) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        counter
+        affectedRows {
+            id
+            contenttype
+            title
+            media
+            cover
+            mediadescription
+            createdat
+            amountlikes
+            amountviews
+            amountcomments
+            amountdislikes
+            amounttrending
+            isliked
+            isviewed
+            isdisliked
+            issaved
+            isreported
+            tags
+            hasActiveReports
+            visibilityStatus
+            isHiddenForUsers
+            user {
+                id
+                username
+                slug
+                img
+                isfollowed
+                isfollowing
+                isfriend
+            }
+        }
+    }
+}
+"#;
+
+/// Mutation: Toggle follow status for a user.
+pub const TOGGLE_FOLLOW_MUTATION: &str = r#"
+mutation ToggleUserFollowStatus($userid: ID!) {
+    toggleUserFollowStatus(userid: $userid) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        isfollowing
+    }
+}
+"#;
+
+/// Mutation: Toggle block status for a user.
+pub const TOGGLE_BLOCK_MUTATION: &str = r#"
+mutation ToggleBlockUserStatus($userid: ID!) {
+    toggleBlockUserStatus(userid: $userid) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+    }
+}
+"#;
+
+/// Mutation: Report a user.
+pub const REPORT_USER_MUTATION: &str = r#"
+mutation ReportUser($userid: ID!) {
+    reportUser(userid: $userid) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+    }
+}
+"#;
+
+/// Wrapper for the `getProfile` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetProfileData {
+    pub get_profile: crate::models::profile::ProfileResponse,
+}
+
+/// Wrapper for the `listFollowRelations` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListFollowRelationsData {
+    pub list_follow_relations: crate::models::profile::FollowRelationsResponse,
+}
+
+/// Wrapper for the `listFriends` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListFriendsData {
+    pub list_friends: crate::models::profile::FriendsResponse,
+}
+
+/// Wrapper for the `toggleUserFollowStatus` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToggleFollowData {
+    pub toggle_user_follow_status: crate::models::profile::FollowStatusResponse,
+}
+
+/// Wrapper for the `toggleBlockUserStatus` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToggleBlockData {
+    pub toggle_block_user_status: crate::models::profile::GenericMutationResponse,
+}
+
+/// Wrapper for the `reportUser` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReportUserData {
+    pub report_user: crate::models::profile::GenericMutationResponse,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 

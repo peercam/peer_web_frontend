@@ -12,8 +12,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 |--------|-------|
 | ✅ Implemented | 2 |
 | 🚧 In Progress | 1 |
-| 📋 Planning | 1 |
-| ❌ Not Started | 16 |
+| 📋 Planning | 2 |
+| ❌ Not Started | 15 |
 | **Total** | **20** |
 
 **Convergence:** ~10%
@@ -33,8 +33,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | View Post | `post.php` | 📋 Planning | Single post view, comments, guest mode |
 | New Post | `newpost.php` | ❌ Not Started | Text/media creation, image cropping, video encoding |
 | **Profile** ||||
-| My Profile | `profile.php` | ❌ Not Started | User profile, posts, followers/following |
-| View Profile | `view-profile.php` | ❌ Not Started | Other users' profiles |
+| My Profile | `profile.php` | 📋 Planning | User profile, posts, followers/following ([docs](plans/profile/profile-implementation.md)) |
+| View Profile | `view-profile.php` | 📋 Planning | Other users' profiles ([docs](plans/profile/profile-implementation.md)) |
 | Edit Profile | `edit_profile.php` | ❌ Not Started | Profile editing |
 | Settings | `profileSettings.php` | ❌ Not Started | Preferences, account settings |
 | **Social** ||||
@@ -125,7 +125,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 2. ✅ ~~Login / Auth~~ — Complete ([docs](plans/login/login-auth-implementation.md))
 3. � Dashboard — In progress ([docs](plans/dashboard/dashboard-implementation.md))
 4. 📋 View Post — Planning ([docs](plans/view-post/view-post-implementation.md))
-5. ⬜ Profile — User identity
+5. 📋 Profile — Planning ([docs](plans/profile/profile-implementation.md))
 6. ⬜ New Post — Content creation
 7. ⬜ Chat — Real-time, complex
 8. ⬜ Wallet — Financial features
@@ -136,6 +136,12 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 ---
 
 ## Changelog
+
+### 2026-04-12 (Profile Planning)
+- Profile (My Profile + View Profile) implementation planning document created
+- Profile marked as "Planning" in tracker
+- Updated priority list with Profile documentation link
+- Summary counts updated (2 Planning, 15 Not Started)
 
 ### 2026-04-12
 - View Post implementation planning document created

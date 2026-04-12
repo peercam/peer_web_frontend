@@ -8,6 +8,7 @@ pub mod left_panel;
 pub mod login_form;
 pub mod password_strength;
 pub mod posts;
+pub mod profile;
 pub mod referral;
 pub mod registration_form;
 pub mod search;
