@@ -3,6 +3,7 @@
 pub mod chat;
 pub mod dashboard;
 pub mod forgot_password;
+pub mod invite;
 pub mod login;
 pub mod new_post;
 pub mod profile;
@@ -16,6 +17,7 @@ pub mod wallet;
 pub use chat::ChatPage;
 pub use dashboard::DashboardPage;
 pub use forgot_password::ForgotPasswordPage;
+pub use invite::InvitePage;
 pub use login::LoginPage;
 pub use new_post::NewPostPage;
 pub use profile::MyProfilePage;

@@ -345,77 +345,142 @@ Once all 7 tests pass in Rust and CI is green:
 
 ---
 
-## 3. Phase 1 — Login & Session Flows
+## 3. Phase 1 — Login & Session Flows ✅
+
+> **Status:** Complete (14 April 2026) — [Detailed plan](./phase-1-login-session-flows.md)
 
 **Depends on:** Phase 0
 **Driven by:** `peer-web/src/pages/login.rs`, `peer-web/src/api/auth.rs`
-**Detailed plan:** [phase-1-login-session-flows.md](./phase-1-login-session-flows.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
+
+**Outcome:** 9 new auth/account mutations, auth middleware, 2 seeded users, 24 new integration tests (33 total).
 
 ### New files
 
 | File | Contents |
 |------|----------|
-| `src/schema/mutation/auth.rs` | `login`, `refresh_token`, `logout`, `delete_account`, `request_password_reset`, `reset_password_token_verify`, `reset_password`, `change_password`, `contactus` |
-| `src/types/auth.rs` | `AuthPayload`, `ResetPasswordRequestResponse`, `ContactusResponse`, `ContactusResponsePayload` |
+| `src/schema/mutation/auth.rs` | `login`, `refresh_token`, `logout`, `delete_account`, `request_password_reset`, `reset_password_token_verify`, `reset_password`, `update_password`, `contactus` |
+| `src/types/auth.rs` | `AuthPayload`, `LogoutPayload`, `ResetPasswordRequestResponse`, `ContactusResponse`, `ContactusResponsePayload` |
 
-### State extensions
+### File tree after Phase 1
+
+```
+tests/mock_backend/src/
+├── lib.rs               # Updated: CurrentUser struct, auth context extraction
+├── main.rs
+├── state.rs             # Updated: User, ContactMessage, token/password maps
+├── seed.rs              # Updated: 2 seeded users with known credentials
+├── types/
+│   ├── mod.rs           # Updated: pub mod auth
+│   ├── registration.rs
+│   └── auth.rs          # NEW
+└── schema/
+    ├── mod.rs           # Updated: MutationRoot(RegistrationMutation, AuthMutation)
+    ├── query.rs
+    └── mutation/
+        ├── mod.rs       # Updated: pub mod auth
+        ├── registration.rs  # Updated: register creates User records
+        └── auth.rs      # NEW: 9 auth mutations
+```
+
+### State extensions (actual)
 
 ```rust
 pub struct MockState {
-    // ... existing fields ...
-    pub user_passwords: HashMap<Uuid, String>,      // uid → plaintext (mock only)
-    pub access_tokens: HashMap<String, Uuid>,        // token → uid
-    pub refresh_tokens: HashMap<String, Uuid>,       // token → uid
+    // --- Phase 0 fields ---
+    pub known_referrals: HashSet<Uuid>,
+    pub registered_emails: HashSet<String>,
+    pub verified_users: HashSet<Uuid>,
+
+    // --- Phase 1 fields ---
+    pub users: HashMap<Uuid, User>,
+    pub user_passwords: HashMap<Uuid, String>,       // uid → plaintext (mock only!)
+    pub access_tokens: HashMap<String, Uuid>,         // token → uid
+    pub refresh_tokens: HashMap<String, Uuid>,        // token → uid
     pub password_reset_tokens: HashMap<String, Uuid>, // token → uid
     pub deleted_users: HashSet<Uuid>,
+    pub contact_messages: Vec<ContactMessage>,
 }
 ```
 
-### Resolvers to implement
+### Seed data
 
-| Mutation | Input | Logic | Key response codes |
-|----------|-------|-------|--------------------|
-| `login(email, password)` | email + password | Look up user by email → verify password → generate mock JWT tokens | `10801` success, `30801` invalid creds, `60801` not verified |
-| `refreshToken(refreshToken)` | refresh token string | Validate token in `refresh_tokens` map → issue new pair | `10901` success, `30901` invalid token |
-| `logout` | (auth header) | Remove tokens from maps | `11001` success |
-| `deleteAccount(password)` | password | Verify password → set user status to deleted | `11012` success, `31001` wrong password |
-| `requestPasswordReset(email)` | email | Generate reset token, store in map | `11901` always (prevents enumeration) |
-| `resetPasswordTokenVerify(token)` | token | Check `password_reset_tokens` | `11902` valid, `31904` invalid |
-| `resetPassword(token, password)` | token + new password | Update password, clear tokens | `11005` success, `31904` invalid token |
-| `changePassword(oldPassword, newPassword)` | old + new (auth'd) | Verify old → update | `11001` success |
-| `contactus(name, email, message)` | name + email + message | No-op, return success | `10401` success |
+Two pre-populated users are created in `MockState::default()`:
 
-### Mock JWT strategy
-
-Generate deterministic tokens (no real signing): `mock-access-<uuid>-<timestamp>` and `mock-refresh-<uuid>-<timestamp>`. The mock validates by presence in the `access_tokens` / `refresh_tokens` maps, not by cryptographic verification.
+| User | Email | Password | Verified | UUID |
+|------|-------|----------|----------|------|
+| peerTester | `test@peer.com` | `TestPass123` | ✅ Yes | `00000000-0000-4000-a000-000000000001` |
+| newSignup | `unverified@peer.com` | `TestPass456` | ❌ No | `00000000-0000-4000-a000-000000000002` |
 
 ### Auth middleware
 
-Add an Axum middleware or async-graphql guard that extracts the `Authorization: Bearer <token>` header, resolves it to a `Uuid` via `access_tokens`, and injects the current user ID into the async-graphql context. Unauthenticated requests to protected resolvers return `60501`.
+Auth context is extracted in `lib.rs::graphql_handler`:
+- Reads `Authorization: Bearer <token>` header
+- Resolves token → user UUID via `access_tokens` map
+- Injects `CurrentUser(Option<Uuid>)` into async-graphql context
+- Resolvers use `get_current_user(ctx)` / `require_auth(ctx)` helpers
 
-### Tests (≥12 new)
+### Mock token strategy
 
-| # | Scenario |
-|---|----------|
-| 1 | Register → verify → login success |
-| 2 | Login with wrong password → `30801` |
-| 3 | Login unverified account → `60801` |
-| 4 | Login deleted account → `30801` |
-| 5 | Refresh token success |
-| 6 | Refresh with invalid token → `30901` |
-| 7 | Logout invalidates tokens |
-| 8 | Delete account → re-login fails |
-| 9 | Password reset flow (request → verify → reset → login with new password) |
-| 10 | Reset with bad token → `31904` |
-| 11 | Change password (authenticated) |
-| 12 | Contact us returns `10401` |
+Tokens are deterministic strings with atomic counter for uniqueness: `mock-access-<uuid>-<timestamp>-<seq>`. Validated by map lookup, not cryptographic verification.
+
+### Resolvers implemented
+
+| Mutation | Input | Key response codes |
+|----------|-------|--------------------|
+| `login(email, password)` | email + password | `10801` success, `30801` invalid creds, `60801` not verified |
+| `refreshToken(refreshToken)` | refresh token string | `10901` success, `30901` invalid token |
+| `logout(refreshToken)` | refresh token string | `11001` success |
+| `deleteAccount(password)` | password (auth required) | `11012` success, `31001` wrong password, `60501` unauth |
+| `requestPasswordReset(email)` | email | `11901` always (anti-enumeration) |
+| `resetPasswordTokenVerify(token)` | token | `11902` valid, `31904` invalid |
+| `resetPassword(token, password)` | token + new password | `11005` success, `31904` invalid token |
+| `updatePassword(password, expassword)` | new + old (auth required) | `11001` success, `31001` wrong old, `60501` unauth |
+| `contactus(name, email, message)` | name + email + message | `10401` success |
+
+> **Deviation from plan:** The plan called the mutation `changePassword` but the frontend uses `updatePassword(password, expassword)`. The implementation matches the frontend's field names.
+
+### Registration mutation update
+
+The Phase 0 `register` mutation was updated to also create a `User` record and store the password in `user_passwords`, so that newly registered (and verified) users can log in.
+
+### Tests (24 new, 33 total)
+
+| # | Test | Assert |
+|---|------|--------|
+| 1 | `test_login_seeded_user` | `10801`, tokens returned |
+| 2 | `test_register_verify_login_flow` | End-to-end happy path |
+| 3 | `test_login_wrong_password` | `30801` |
+| 4 | `test_login_nonexistent_email` | `30801` |
+| 5 | `test_login_unverified_account` | `60801` |
+| 6 | `test_login_deleted_account` | Delete → re-login → `30801` |
+| 7 | `test_refresh_token_success` | `10901`, new tokens |
+| 8 | `test_refresh_invalid_token` | `30901` |
+| 9 | `test_refresh_after_logout` | Logout → refresh fails `30901` |
+| 10 | `test_logout_success` | `11001` |
+| 11 | `test_delete_account_success` | `11012`, re-login fails |
+| 12 | `test_delete_account_wrong_password` | `31001` |
+| 13 | `test_delete_account_unauthenticated` | `60501` |
+| 14 | `test_password_reset_flow` | Full request → verify → reset → login new |
+| 15 | `test_reset_token_verify_invalid` | `31904` |
+| 16 | `test_reset_password_invalid_token` | `31904` |
+| 17 | `test_reset_password_invalidates_sessions` | Old access token fails after reset |
+| 18 | `test_update_password_success` | `11001`, new password works |
+| 19 | `test_update_password_wrong_old` | `31001` |
+| 20 | `test_update_password_unauthenticated` | `60501` |
+| 21 | `test_contactus_success` | `10401` with payload |
+| 22 | `test_request_password_reset_unknown_email` | `11901` (anti-enum), no token generated |
+| 23 | `test_refresh_then_old_token_invalid` | Old refresh token consumed |
+| 24 | `test_protected_mutation_without_auth` | `60501` |
 
 ### Phase 1 definition of done
 
-- [ ] All auth mutations return correct response shapes
-- [ ] Auth middleware blocks unauthenticated calls to protected resolvers
-- [ ] Token lifecycle (issue → refresh → logout/invalidate) works end-to-end
-- [ ] ≥12 integration tests pass
+- [x] All 9 auth mutations return correct response shapes
+- [x] Auth middleware blocks unauthenticated calls to protected resolvers
+- [x] Token lifecycle (issue → refresh → logout/invalidate) works end-to-end
+- [x] 24 integration tests pass (exceeds ≥12 target)
+- [x] `cargo clippy -- -D warnings` passes
+- [x] `cargo fmt --check` passes
+- [x] All Phase 0 tests still pass (33 total)
 
 ---
 

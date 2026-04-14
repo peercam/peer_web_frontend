@@ -92,25 +92,27 @@ Each phase has a self-contained gate. A phase is **not complete** until every it
 | 0.13 | `peer-web` can import `mock_backend::app()` as dev-dependency | `cd peer-web && cargo check --tests` succeeds |
 | 0.14 | Node.js files removed: `server.js`, `resolvers.js`, `schema.graphql`, `state.js`, `test.js`, `package.json`, `package-lock.json` | `ls tests/mock_backend/*.js tests/mock_backend/package*.json` → "No such file" |
 
-### Gate 1 — Login & Session Flows
+### Gate 1 — Login & Session Flows ✅
 
-| # | Criterion | Verification method |
-|---|-----------|---------------------|
-| 1.1 | Register → verify → login returns `10801` + access/refresh tokens | Integration test |
-| 1.2 | Login with wrong password returns `30801` | Integration test |
-| 1.3 | Login with unverified account returns `60801` | Integration test |
-| 1.4 | Login with deleted account returns `30801` | Integration test |
-| 1.5 | `refreshToken` with valid token returns `10901` + new token pair | Integration test |
-| 1.6 | `refreshToken` with invalid/expired token returns `30901` | Integration test |
-| 1.7 | `logout` invalidates tokens — subsequent `refreshToken` fails | Integration test |
-| 1.8 | `deleteAccount` soft-deletes — re-login fails | Integration test |
-| 1.9 | Password reset flow: `requestPasswordReset` → `resetPasswordTokenVerify` → `resetPassword` → login with new password | Integration test |
-| 1.10 | `resetPassword` with invalid token returns `31904` | Integration test |
-| 1.11 | `updatePassword` (authenticated) changes password | Integration test |
-| 1.12 | `contactus` returns `10401` | Integration test |
-| 1.13 | Protected mutation without auth header returns `60501` | Integration test |
-| 1.14 | Auth middleware extracts `Authorization: Bearer <token>` and injects current user | Verified via protected resolver test |
-| 1.15 | ≥12 integration tests pass for Phase 1 | `cargo test` count |
+> **Status:** All criteria verified (14 April 2026) — 24 Phase 1 tests, 33 total.
+
+| # | Criterion | Verification method | Status |
+|---|-----------|---------------------|--------|
+| 1.1 | Register → verify → login returns `10801` + access/refresh tokens | `test_register_verify_login_flow` | ✅ |
+| 1.2 | Login with wrong password returns `30801` | `test_login_wrong_password` | ✅ |
+| 1.3 | Login with unverified account returns `60801` | `test_login_unverified_account` | ✅ |
+| 1.4 | Login with deleted account returns `30801` | `test_login_deleted_account` | ✅ |
+| 1.5 | `refreshToken` with valid token returns `10901` + new token pair | `test_refresh_token_success` | ✅ |
+| 1.6 | `refreshToken` with invalid/expired token returns `30901` | `test_refresh_invalid_token` | ✅ |
+| 1.7 | `logout` invalidates tokens — subsequent `refreshToken` fails | `test_refresh_after_logout` | ✅ |
+| 1.8 | `deleteAccount` soft-deletes — re-login fails | `test_delete_account_success` | ✅ |
+| 1.9 | Password reset flow: `requestPasswordReset` → `resetPasswordTokenVerify` → `resetPassword` → login with new password | `test_password_reset_flow` | ✅ |
+| 1.10 | `resetPassword` with invalid token returns `31904` | `test_reset_password_invalid_token` | ✅ |
+| 1.11 | `updatePassword` (authenticated) changes password | `test_update_password_success` | ✅ |
+| 1.12 | `contactus` returns `10401` | `test_contactus_success` | ✅ |
+| 1.13 | Protected mutation without auth header returns `60501` | `test_protected_mutation_without_auth` | ✅ |
+| 1.14 | Auth middleware extracts `Authorization: Bearer <token>` and injects current user | Verified via `test_delete_account_success` + `test_update_password_success` | ✅ |
+| 1.15 | ≥12 integration tests pass for Phase 1 | 24 Phase 1 tests pass (33 total) | ✅ |
 
 ### Gate 2 — Users & Profiles
 

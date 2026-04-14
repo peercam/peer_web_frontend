@@ -10,13 +10,13 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 | Status | Count |
 |--------|-------|
-| ✅ Implemented | 4 |
-| 🟡 Near-Complete | 6 |
-| 🚧 In Progress | 3 |
-| ❌ Not Started | 7 |
+| ✅ Implemented | 5 |
+| 🟡 Near-Complete | 7 |
+| 🚧 In Progress | 2 |
+| ❌ Not Started | 6 |
 | **Total** | **20** |
 
-**Convergence:** ~55%
+**Convergence:** ~57%
 
 ---
 
@@ -39,7 +39,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Settings | `profileSettings.php` | � Implemented (with gaps) | 142-line page + 7 sub-components (profile, passwords, email, username, content, notifications, preferences), API layer (282L) ([docs](plans/settings/settings-implementation.md)). **Gaps:** deactivate/delete account UI not wired (API exists, menu is a no-op), profile save runs sequentially instead of in parallel |
 | **Social** ||||
 | Chat | `chat.php` | 🟡 Core Implemented | 141-line page + 7 components (chat_list, contacts_overlay, group_review, chat_input, chat_messages, chat_container, chat_item), API layer (151L), state module, SCSS (851L) ([docs](plans/chat/chat-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5). **Gaps:** Firebase real-time listener missing (no polling fallback), unread indicators missing, chat search logic not connected |
-| Invite | `invite.php` | ❌ Not Started | Invite generation |
+| Invite | `invite.php` | ✅ Implemented | Deep-link relay page: platform detection, `peer://invite/{uuid}` deep link, app store / registration fallback, localStorage persistence, clipboard copy ([docs](plans/invite/invite-implementation.md)) |
 | Referral Board | `referralBoard.php` | ✅ Implemented | Referral link + copy, invited/inviter tabs, user cards, auth guard ([docs](plans/referral-board/referral-board-implementation.md)) |
 | **Economy** ||||
 | Wallet | `wallet.php` | 🟡 Implemented (tests pending) | 146-line page + transfer_modal (760L), balance_header, transaction_history, transaction_item, API layer (246L), SCSS (1092L) ([docs](plans/wallet/wallet-implementation.md)). **Gaps:** shop purchase order details UI not wired (model + query exist), thousand-separator formatting missing |
@@ -127,7 +127,7 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 | Phase | Scope | Plan | Quality | Status |
 |-------|-------|------|---------|--------|
 | 0 — Skeleton & Parity | 3 registration mutations, health check, 9 integration tests | [phase-0](plans/mock-backend/phase-0-mock-backend-skeleton.md) | ⭐⭐⭐⭐ (4/5) | ✅ Done — Node.js replaced, async-graphql v7 + axum 0.8 |
-| 1 — Login & Session | login, refreshToken, logout, deleteAccount, updatePassword, password reset | [phase-1](plans/mock-backend/phase-1-login-session-flows.md) | ⭐⭐⭐⭐⭐ (5/5) | 🚧 In Progress |
+| 1 — Login & Session | login, refreshToken, logout, deleteAccount, updatePassword, password reset, contactus — 9 mutations, auth middleware, 24 tests | [phase-1](plans/mock-backend/phase-1-login-session-flows.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 33 total tests, 2 seeded users, `CurrentUser` context |
 | 2 — Users & Profiles | getProfile, searchUser, follow/block/report, preferences, profile edits | [phase-2](plans/mock-backend/phase-2-users-and-profiles.md) | — | ❌ Not Started |
 | 3 — Posts & Content | listPosts, guestListPost, postAction, createPost, searchTags, ads | [phase-3](plans/mock-backend/phase-3-posts-content.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
 | 4 — Social (Comments, Chat) | listComments, createComment, like/unlike, listChats, sendMessage, createChat | [phase-4](plans/mock-backend/phase-4-social-comments-chat.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
@@ -150,11 +150,48 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 9. 🟡 Settings — Implemented (with gaps), delete account UI not wired ([docs](plans/settings/settings-implementation.md))
 10. ✅ ~~Referral Board~~ — Complete, full UI + API, pending mock backend endpoints ([docs](plans/referral-board/referral-board-implementation.md))
 11. ⬜ Admin — Moderation tools (no plan yet)
-12. ⬜ Remaining pages — Invite, Peer Shop, My Ads, Download, Version History (no plans yet)
+12. ✅ ~~Invite~~ — Complete, deep-link relay page ([docs](plans/invite/invite-implementation.md))
+13. ⬜ Remaining pages — Peer Shop, My Ads, Download, Version History (no plans yet)
 
 ---
 
 ## Changelog
+
+### 2026-04-14 (Invite Page Review & Doc Update)
+- **Summary table fixed:** 🟡 count corrected 6→7, 🚧 count corrected 3→2 (stale after Invite moved to ✅)
+- **Invite plan updated** (`plans/invite/invite-implementation.md`):
+  - File manifest: added actual line counts (185L Rust, 26L SCSS)
+  - SSR Considerations: documented `#[cfg(feature = "hydrate")]` gating pattern and SSR no-op fallback
+  - Appendix added: 6 implementation deviations catalogued (inlined helpers, `#[cfg]` gating, `detect_platform` signature, case-insensitive iOS detection, `Rc<Cell<Option<Timeout>>>` cancellation pattern, no legacy clipboard fallback)
+
+### 2026-04-14 (Invite Page Implemented)
+- **Invite page implemented** — `src/pages/invite.rs` (185L), `style/invite.scss` (26L)
+- Route `/invite` added to `app.rs`, module registered in `pages/mod.rs`
+- SCSS imported in `main.scss`
+- All client logic `#[cfg(feature = "hydrate")]` gated; SSR renders static fallback HTML
+- `Rc<Cell<Option<Timeout>>>` pattern for cancellable fallback timer
+- Builds clean on both `--features hydrate` and `--features ssr`
+- Plan status updated to ✅ Complete, scope checkboxes marked done, open questions resolved
+
+### 2026-04-14 (Mock Backend Phase 1 Complete)
+- **Phase 1 — Login & Session Flows** marked ✅ Done
+- 9 new auth/account mutations implemented: `login`, `refreshToken`, `logout`, `deleteAccount`, `requestPasswordReset`, `resetPasswordTokenVerify`, `resetPassword`, `updatePassword`, `contactus`
+- Auth middleware: `Authorization: Bearer <token>` header extraction → `CurrentUser` context injection
+- 2 seeded users: verified (`test@peer.com` / `TestPass123`) and unverified (`unverified@peer.com` / `TestPass456`)
+- `register` mutation updated to create `User` records so login works for newly registered users
+- 24 new integration tests (33 total), all passing with `cargo clippy` + `cargo fmt` clean
+- New files: `src/types/auth.rs`, `src/schema/mutation/auth.rs`
+- Modified: `state.rs` (User struct, token maps), `seed.rs` (seed users/credentials), `lib.rs` (auth extraction), `schema/mod.rs` (MutationRoot expanded)
+- Mock token strategy: `mock-access-<uid>-<ts>-<seq>` with atomic counter for uniqueness
+- Phase 1 plan doc, parent plan, acceptance criteria, and README all updated
+
+### 2026-04-14 (Invite Page Planning)
+- **Invite page plan created** ([docs](plans/invite/invite-implementation.md))
+- Deep-link landing page for referral links (`/invite?referralUuid=...`)
+- Scope: platform detection (Android/iOS/Desktop), `peer://` deep-link attempt, auto-fallback timer (1.5s), manual "Click Here" button, localStorage persistence, clipboard copy before redirect
+- Lightweight: ~150 lines Rust, ~30 lines SCSS, no API calls, no auth required
+- Connects Referral Board (✅ generates links) → Invite (this) → Register (✅ accepts `?referralUuid=`)
+- **Priority list updated:** Invite split out of "Remaining pages" at #12
 
 ### 2026-04-14 (Mock Backend Phase 0 Documentation Update)
 - **Phase 0 plan doc updated** to reflect actual implementation:

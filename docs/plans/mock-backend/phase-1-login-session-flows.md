@@ -3,6 +3,7 @@
 > **Parent Plan:** [mock-backend-rust-rewrite.md](./mock-backend-rust-rewrite.md)
 > **Depends on:** [Phase 0 — Project Skeleton & Parity](./phase-0-mock-backend-skeleton.md)
 > **Goal:** Add all authentication and account management mutations so the Leptos login page, token refresh, logout, password reset, and contact-us flows work end-to-end against the mock.
+> **Status:** ✅ Complete (14 April 2026)
 > **Plan Quality:** ⭐⭐⭐⭐⭐ (5/5)
 
 ---
@@ -1352,69 +1353,69 @@ async fn test_protected_mutation_without_auth() {
 
 ### Build & Test Gates
 
-- [ ] `cargo build` succeeds without warnings
-- [ ] `cargo test --all-targets` passes all Phase 0 tests (7 parity + 2 extras) AND all Phase 1 tests (≥16 new)
-- [ ] `cargo clippy -- -D warnings` passes
-- [ ] `cargo fmt --check` passes
+- [x] `cargo build` succeeds without warnings
+- [x] `cargo test --all-targets` passes all Phase 0 tests (9) AND all Phase 1 tests (24 new) — **33 total**
+- [x] `cargo clippy -- -D warnings` passes
+- [x] `cargo fmt --check` passes
 
 ### Functional Requirements — Auth Mutations
 
-- [ ] `login(email, password)` returns `AuthPayload` with `accessToken` + `refreshToken` on success (`10801`)
-- [ ] `login` returns `30801` for wrong password, non-existent email, and deleted accounts
-- [ ] `login` returns `60801` for unverified accounts
-- [ ] `refreshToken(refreshToken)` returns new token pair (`10901`)
-- [ ] `refreshToken` returns `30901` for invalid/used token
-- [ ] `logout(refreshToken)` returns `11001` and invalidates tokens
-- [ ] `deleteAccount(password)` returns `11012` and soft-deletes user
-- [ ] `deleteAccount` returns `60501` when unauthenticated
-- [ ] `deleteAccount` returns `31001` when password is wrong
+- [x] `login(email, password)` returns `AuthPayload` with `accessToken` + `refreshToken` on success (`10801`)
+- [x] `login` returns `30801` for wrong password, non-existent email, and deleted accounts
+- [x] `login` returns `60801` for unverified accounts
+- [x] `refreshToken(refreshToken)` returns new token pair (`10901`)
+- [x] `refreshToken` returns `30901` for invalid/used token
+- [x] `logout(refreshToken)` returns `11001` and invalidates tokens
+- [x] `deleteAccount(password)` returns `11012` and soft-deletes user
+- [x] `deleteAccount` returns `60501` when unauthenticated
+- [x] `deleteAccount` returns `31001` when password is wrong
 
 ### Functional Requirements — Password Reset
 
-- [ ] `requestPasswordReset(email)` always returns `11901` (anti-enumeration)
-- [ ] `requestPasswordReset` generates a token for existing users (no token for unknown emails)
-- [ ] `resetPasswordTokenVerify(token)` returns `11902` for valid tokens, `31904` for invalid
-- [ ] `resetPassword(token, password)` updates password and returns `11005`
-- [ ] `resetPassword` returns `31904` for invalid tokens
-- [ ] `resetPassword` invalidates all existing sessions for the user
-- [ ] `resetPassword` consumes the reset token (single-use)
+- [x] `requestPasswordReset(email)` always returns `11901` (anti-enumeration)
+- [x] `requestPasswordReset` generates a token for existing users (no token for unknown emails)
+- [x] `resetPasswordTokenVerify(token)` returns `11902` for valid tokens, `31904` for invalid
+- [x] `resetPassword(token, password)` updates password and returns `11005`
+- [x] `resetPassword` returns `31904` for invalid tokens
+- [x] `resetPassword` invalidates all existing sessions for the user
+- [x] `resetPassword` consumes the reset token (single-use)
 
 ### Functional Requirements — Password Change
 
-- [ ] `updatePassword(password, expassword)` changes password when old password matches (`11001`)
-- [ ] `updatePassword` returns `31001` when old password is wrong
-- [ ] `updatePassword` returns `60501` when unauthenticated
-- [ ] After password change, login works with new password and fails with old
+- [x] `updatePassword(password, expassword)` changes password when old password matches (`11001`)
+- [x] `updatePassword` returns `31001` when old password is wrong
+- [x] `updatePassword` returns `60501` when unauthenticated
+- [x] After password change, login works with new password and fails with old
 
 ### Functional Requirements — Contact
 
-- [ ] `contactus(name, email, message)` returns `10401` with payload
+- [x] `contactus(name, email, message)` returns `10401` with payload
 
 ### Auth Middleware
 
-- [ ] `Authorization: Bearer <token>` header is parsed and resolved to a user ID
-- [ ] Authenticated user ID is available in resolver context via `CurrentUser`
-- [ ] Protected mutations return `60501` when no valid token is provided
-- [ ] Guest mutations (`login`, `refreshToken`, `logout`, `requestPasswordReset`, `resetPasswordTokenVerify`, `resetPassword`, `contactus`) work without authentication
+- [x] `Authorization: Bearer <token>` header is parsed and resolved to a user ID
+- [x] Authenticated user ID is available in resolver context via `CurrentUser`
+- [x] Protected mutations return `60501` when no valid token is provided
+- [x] Guest mutations (`login`, `refreshToken`, `logout`, `requestPasswordReset`, `resetPasswordTokenVerify`, `resetPassword`, `contactus`) work without authentication
 
 ### Response Shape Compatibility
 
-- [ ] `AuthPayload` fields: `status`, `ResponseCode` (PascalCase), `accessToken`, `refreshToken` (camelCase)
-- [ ] `LogoutPayload` fields: `status`, `ResponseCode`
-- [ ] `DefaultResponse` fields: `status`, `RequestId`, `ResponseCode`, `ResponseMessage` (all PascalCase)
-- [ ] `ResetPasswordRequestResponse` includes `nextAttemptAt`
-- [ ] `ContactusResponse` includes nested `affectedRows` with `ContactusResponsePayload`
+- [x] `AuthPayload` fields: `status`, `ResponseCode` (PascalCase), `accessToken`, `refreshToken` (camelCase)
+- [x] `LogoutPayload` fields: `status`, `ResponseCode`
+- [x] `DefaultResponse` fields: `status`, `RequestId`, `ResponseCode`, `ResponseMessage` (all PascalCase)
+- [x] `ResetPasswordRequestResponse` includes `nextAttemptAt`
+- [x] `ContactusResponse` includes nested `affectedRows` with `ContactusResponsePayload`
 
 ### State & Isolation
 
-- [ ] `POST /reset` resets all auth state (tokens, passwords, deleted users) back to seed defaults
-- [ ] Seeded verified user (`test@peer.com` / `TestPass123`) works for login out of the box
-- [ ] Seeded unverified user (`unverified@peer.com` / `TestPass456`) returns `60801` on login
-- [ ] Registering new users via Phase 0's `register` mutation creates records that `login` can authenticate
+- [x] `POST /reset` resets all auth state (tokens, passwords, deleted users) back to seed defaults
+- [x] Seeded verified user (`test@peer.com` / `TestPass123`) works for login out of the box
+- [x] Seeded unverified user (`unverified@peer.com` / `TestPass456`) returns `60801` on login
+- [x] Registering new users via Phase 0's `register` mutation creates records that `login` can authenticate
 
 ### Cross-Cutting (carried from parent plan)
 
-- [ ] No `unwrap()` in resolver paths — all errors return proper GraphQL responses
-- [ ] Every resolver has ≥1 success and ≥1 error integration test
-- [ ] Response codes match values in `docs/backend_api/01-authentication-and-account.md`
-- [ ] No runtime dependencies on Node.js, npm, or non-Rust tooling
+- [x] No `unwrap()` in resolver paths — all errors return proper GraphQL responses
+- [x] Every resolver has ≥1 success and ≥1 error integration test
+- [x] Response codes match values in `docs/backend_api/01-authentication-and-account.md`
+- [x] No runtime dependencies on Node.js, npm, or non-Rust tooling

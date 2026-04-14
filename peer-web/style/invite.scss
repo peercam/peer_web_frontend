@@ -1,0 +1,26 @@
+.invite-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: var(--bg, #0a0a0a);
+}
+
+.invite-prompt {
+  font-size: 1rem;
+  color: var(--white-opacity-70, rgba(255, 255, 255, 0.7));
+  text-align: center;
+  line-height: 1.6;
+}
+
+.invite-link {
+  color: var(--accent, #6c63ff);
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 4px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
