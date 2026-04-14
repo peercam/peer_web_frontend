@@ -25,20 +25,20 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Feature | Legacy File | peer-web Status | Notes |
 |---------|-------------|-----------------|-------|
 | **Authentication** ||||
-| Login | `login.php` | ✅ Implemented | Email/password, remember-me, auto-login, redirect handling |
+| Login | `login.php` | ✅ Implemented | Email/password, remember-me, auto-login, redirect handling ([docs](plans/login/login-auth-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation |
 | Forgot Password | `forgotpassword.php` | 📋 Planning | 4-step password reset flow ([docs](plans/forgot-password/forgot-password-implementation.md)) |
 | **Core Features** ||||
-| Dashboard | `dashboard.php` | 🚧 In Progress | Post feed, filters, sort, infinite scroll |
+| Dashboard | `dashboard.php` | 🚧 In Progress | Post feed, filters, sort, infinite scroll ([docs](plans/dashboard/dashboard-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | View Post | `post.php` | 📋 Planning | Single post view, comments, guest mode |
-| New Post | `newpost.php` | 📋 Planning | Text/media creation, image cropping, video encoding ([docs](plans/new-post/new-post-implementation.md)) |
+| New Post | `newpost.php` | 📋 Planning | Text/media creation, image cropping, video encoding ([docs](plans/new-post/new-post-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | **Profile** ||||
 | My Profile | `profile.php` | 📋 Planning | User profile, posts, followers/following ([docs](plans/profile/profile-implementation.md)) |
 | View Profile | `view-profile.php` | 📋 Planning | Other users' profiles ([docs](plans/profile/profile-implementation.md)) |
 | Edit Profile | `edit_profile.php` | ❌ Not Started | Profile editing |
 | Settings | `profileSettings.php` | 📋 Planning | Profile editing, credentials, content prefs, logout, deactivation ([docs](plans/settings/settings-implementation.md)) |
 | **Social** ||||
-| Chat | `chat.php` | 📋 Planning | Real-time messaging (Firestore), group/private ([docs](plans/chat/chat-implementation.md)) |
+| Chat | `chat.php` | 📋 Planning | Real-time messaging (Firestore), group/private ([docs](plans/chat/chat-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | Invite | `invite.php` | ❌ Not Started | Invite generation |
 | Referral Board | `referralBoard.php` | ❌ Not Started | Referral tracking |
 | **Economy** ||||
@@ -95,7 +95,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | API Module | Legacy Location | peer-web Status | Notes |
 |------------|----------------|-----------------|-------|
 | GraphQL Client | `js/lib/const.js` | ✅ Implemented | `src/api/graphql.rs` |
-| Auth (JWT) | `auth.php` | ✅ Implemented | Server fns, HttpOnly cookies, proactive refresh, 401 interceptor |
+| Auth (JWT) | `auth.php` | ✅ Implemented | Server fns, HttpOnly cookies, proactive refresh, 401 interceptor. Mock backend: [Phase 1 plan](plans/mock-backend/phase-1-login-session-flows.md) — ⭐⭐⭐⭐⭐ (5/5) |
 | Registration | `js/register/` | ✅ Implemented | Verify referral, register user |
 | Posts | `js/posts.js` | ❌ Not Started | CRUD operations |
 | Comments | `js/comments.js` | ❌ Not Started | Create, list comments |
@@ -135,6 +135,21 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 ---
 
 ## Changelog
+
+### 2026-04-14 (Dashboard Plan Quality Review)
+- Dashboard implementation plan reviewed and rated ⭐⭐⭐⭐ (4/5)
+- Strong: thorough legacy analysis with layout diagram, complete API reference (4 GraphQL ops + response codes), substantial Leptos 0.8 component code (IntersectionObserver, debounce, post card, filters, widgets), well-structured 7-phase plan, good model design (FeedItem enum), iterative v1→v2 changelog, complete file manifest (22 new + 9 modified)
+- Gaps: feed/sort filter components under-specified (one-liners), ad interleaving logic missing, sparse error handling (no API failure states), view post overlay hollow, mobile layout unspecified, filter state provider not shown, no SCSS code
+
+### 2026-04-14 (Chat Plan Quality Review)
+- Chat implementation plan reviewed and rated ⭐⭐⭐⭐ (4/5)
+- Strong: legacy analysis, architecture diagrams, component decomposition, API reference, testing strategy
+- Gaps: Firebase interop under-specified, group review screen missing, no dual-source deduplication, sparse error handling
+
+### 2026-04-14 (New Post Plan Quality Review)
+- New Post implementation plan reviewed and rated ⭐⭐⭐⭐ (4/5)
+- Strong: excellent scope definition with detailed in-scope/out-of-scope checklists, thorough legacy file mapping, 6 ASCII layout diagrams (main layout + each content type + preview modes), complete API reference (4 endpoints — postEligibility, /upload-post REST, createPost, searchTags — with full GraphQL schemas, response codes, media limits, token costs), substantial Leptos component code (page, image cropper, voice recorder, video trimmer, tag input, submit logic), clean component decomposition (~15 files), 6-phase plan, comprehensive testing strategy (unit/component/integration/E2E), 30-item migration checklist
+- Gaps: FFmpeg WASM interop hand-wavy (hardest technical challenge left as "consider" options), ~5 components listed but never detailed (image slider, drop zone, preview full/card), no SCSS code provided, several types undefined (MediaFile, AudioBlob, VideoBlob, FileData), no error recovery strategy (upload failure mid-flow, rate limiting, token rejection), no mobile/responsive layout, no file size limits documented, no accessibility considerations, multi-image cropping workflow unclear (sequential vs batch)
 
 ### 2026-04-14 (Forgot Password Planning)
 - Forgot Password implementation planning document created

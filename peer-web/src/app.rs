@@ -7,7 +7,7 @@ use leptos_router::{
 
 use crate::components::toast::ToastProvider;
 use crate::hooks::use_proactive_refresh;
-use crate::pages::{ChatPage, DashboardPage, LoginPage, MyProfilePage, NewPostPage, RegisterPage, SettingsPage, ViewPostPage, ViewProfilePage, WalletPage};
+use crate::pages::{ChatPage, DashboardPage, ForgotPasswordPage, LoginPage, MyProfilePage, NewPostPage, RegisterPage, SettingsPage, ViewPostPage, ViewProfilePage, WalletPage};
 use crate::state::auth::provide_auth_context;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -46,6 +46,7 @@ pub fn App() -> impl IntoView {
                         <Route path=StaticSegment("") view=HomePage/>
                         <Route path=StaticSegment("login") view=LoginPage/>
                         <Route path=StaticSegment("register") view=RegisterPage/>
+                        <Route path=StaticSegment("forgotpassword") view=ForgotPasswordPage/>
                         <Route path=StaticSegment("dashboard") view=DashboardPage/>
                         <Route path=StaticSegment("profile") view=MyProfilePage/>
                         <Route path=StaticSegment("settings") view=SettingsPage/>

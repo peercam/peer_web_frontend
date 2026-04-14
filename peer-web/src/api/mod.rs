@@ -4,6 +4,7 @@ pub mod auth;
 pub mod auth_fetch;
 pub mod chat;
 pub mod comments;
+pub mod forgot_password;
 pub mod graphql;
 pub mod posts;
 pub mod profile;

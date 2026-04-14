@@ -55,6 +55,16 @@ static RESPONSE_CODES: LazyLock<HashMap<&'static str, &'static str>> = LazyLock:
     m.insert("40602", "We're having trouble creating your account. Please try again.");
     m.insert("40701", "We couldn't verify your account. Please try again or contact support.");
 
+    // ── Password Reset ───────────────────────────────────────────────
+    m.insert("11005", "Password changed successfully.");
+    m.insert("11901", "If an account exists, you'll receive an email with instructions.");
+    m.insert("11902", "Code verified.");
+    m.insert("30104", "Please enter a valid email address.");
+    m.insert("31901", "Too many requests. Please try again later.");
+    m.insert("31903", "Too many requests. Please contact support at peernetworkpse@gmail.com.");
+    m.insert("31904", "This password reset link isn't valid anymore. Please request a new one.");
+    m.insert("41004", "Something went wrong. Please try again.");
+
     m
 });
 

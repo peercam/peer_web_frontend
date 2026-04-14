@@ -300,6 +300,7 @@ Once all 7 tests pass in Rust and CI is green:
 
 **Depends on:** Phase 0
 **Driven by:** `peer-web/src/pages/login.rs`, `peer-web/src/api/auth.rs`
+**Detailed plan:** [phase-1-login-session-flows.md](./phase-1-login-session-flows.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
 
 ### New files
 
