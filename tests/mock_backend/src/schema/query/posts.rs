@@ -57,15 +57,31 @@ fn sort_posts(
             });
         }
         PostSortType::Comments => {
-            // Phase 4 will populate comment counts; for now sort by created_at
-            posts.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+            posts.sort_by(|a, b| {
+                let a_c = state
+                    .comments
+                    .iter()
+                    .filter(|c| c.post_id == a.id && c.visibility_status == "VISIBLE")
+                    .count();
+                let b_c = state
+                    .comments
+                    .iter()
+                    .filter(|c| c.post_id == b.id && c.visibility_status == "VISIBLE")
+                    .count();
+                b_c.cmp(&a_c)
+            });
         }
         PostSortType::Trending => {
             posts.sort_by(|a, b| {
                 let score = |id: Uuid| -> usize {
                     let likes = state.post_likes.iter().filter(|(_, p)| *p == id).count();
                     let views = state.post_views.iter().filter(|(_, p)| *p == id).count();
-                    likes * 2 + views
+                    let comments = state
+                        .comments
+                        .iter()
+                        .filter(|c| c.post_id == id && c.visibility_status == "VISIBLE")
+                        .count();
+                    likes * 2 + views + comments
                 };
                 score(b.id).cmp(&score(a.id))
             });

@@ -4,8 +4,10 @@ use axum::{
 };
 use http_body_util::BodyExt;
 use mock_backend::seed::{
-    SEED_POST_1, SEED_POST_3, SEED_POST_4, SEED_POST_8, SEED_USER_ALICE, SEED_USER_BOB,
-    SEED_USER_CAROL, SEED_USER_DAVE, SEED_USER_VERIFIED,
+    SEED_CHAT_GROUP, SEED_CHAT_PRIVATE, SEED_COMMENT_1, SEED_COMMENT_2, SEED_COMMENT_3,
+    SEED_COMMENT_4, SEED_COMMENT_5, SEED_POST_1, SEED_POST_2, SEED_POST_3, SEED_POST_4,
+    SEED_POST_5, SEED_POST_8, SEED_USER_ALICE, SEED_USER_BOB, SEED_USER_CAROL, SEED_USER_DAVE,
+    SEED_USER_VERIFIED,
 };
 use mock_backend::{app, app_with_state, state::MockState};
 use serde_json::{Value, json};
@@ -3763,4 +3765,1172 @@ async fn test_list_posts_followed_filter() {
             );
         }
     }
+}
+
+// ============================================================================
+// Phase 4: Comments & Chat Tests
+// ============================================================================
+
+const COMMENT_FIELDS: &str = "commentid userid postid parentid content createdat amountlikes amountreplies isliked user { id username slug img isfollowed isfollowing }";
+
+// --- Comment Query Tests ---
+
+#[tokio::test]
+async fn test_list_comments_with_seed_data() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listComments(postid: "{SEED_POST_1}") {{ meta {{ ResponseCode }} counter affectedRows {{ {COMMENT_FIELDS} }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listComments"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "11601");
+    assert!(data["counter"].as_i64().unwrap() >= 2);
+    let rows = data["affectedRows"].as_array().unwrap();
+    assert!(rows.len() >= 2);
+    // All should be top-level (no parentid)
+    for row in rows {
+        assert!(row["parentid"].is_null());
+        assert!(!row["commentid"].as_str().unwrap().is_empty());
+        assert!(!row["user"]["username"].as_str().unwrap().is_empty());
+    }
+}
+
+#[tokio::test]
+async fn test_list_comments_no_comments() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listComments(postid: "{SEED_POST_2}") {{ meta {{ ResponseCode }} counter affectedRows {{ {COMMENT_FIELDS} }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listComments"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "21601");
+    assert_eq!(data["counter"].as_i64().unwrap(), 0);
+    assert!(data["affectedRows"].is_null());
+}
+
+#[tokio::test]
+async fn test_list_comments_pagination() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listComments(postid: "{SEED_POST_1}", commentOffset: 0, commentLimit: 1) {{ meta {{ ResponseCode }} counter affectedRows {{ {COMMENT_FIELDS} }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listComments"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "11601");
+    assert!(data["counter"].as_i64().unwrap() >= 2);
+    assert_eq!(data["affectedRows"].as_array().unwrap().len(), 1);
+}
+
+#[tokio::test]
+async fn test_list_comments_invalid_post_uuid() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listComments(postid: "not-a-uuid") {{ meta {{ ResponseCode }} counter }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listComments"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "30209");
+}
+
+#[tokio::test]
+async fn test_list_child_comments_with_replies() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listChildComments(parent: "{SEED_COMMENT_1}") {{ meta {{ ResponseCode }} counter affectedRows {{ {COMMENT_FIELDS} }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listChildComments"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "11607");
+    assert!(data["counter"].as_i64().unwrap() >= 1);
+    let rows = data["affectedRows"].as_array().unwrap();
+    // Reply has parentid set
+    assert_eq!(
+        rows[0]["parentid"].as_str().unwrap(),
+        SEED_COMMENT_1.to_string()
+    );
+}
+
+#[tokio::test]
+async fn test_list_child_comments_no_replies() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listChildComments(parent: "{SEED_COMMENT_2}") {{ meta {{ ResponseCode }} counter }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listChildComments"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "21606");
+    assert_eq!(data["counter"].as_i64().unwrap(), 0);
+}
+
+#[tokio::test]
+async fn test_list_child_comments_invalid_uuid() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { listChildComments(parent: "bad-uuid") { meta { ResponseCode } counter } }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listChildComments"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "30209");
+}
+
+// --- Comment Mutation Tests ---
+
+#[tokio::test]
+async fn test_create_top_level_comment() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_1}", content: "Test comment") {{ meta {{ ResponseCode }} counter affectedRows {{ {COMMENT_FIELDS} }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["createComment"];
+    let code = data["meta"]["ResponseCode"].as_str().unwrap();
+    assert!(code == "11608" || code == "11605");
+    assert_eq!(data["counter"].as_i64().unwrap(), 1);
+    let rows = data["affectedRows"].as_array().unwrap();
+    assert_eq!(rows[0]["content"].as_str().unwrap(), "Test comment");
+    assert!(rows[0]["parentid"].is_null());
+    assert_eq!(rows[0]["postid"].as_str().unwrap(), SEED_POST_1.to_string());
+}
+
+#[tokio::test]
+async fn test_create_reply_comment() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_1}", content: "A reply", parentid: "{SEED_COMMENT_1}") {{ meta {{ ResponseCode }} counter affectedRows {{ {COMMENT_FIELDS} }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["createComment"];
+    let code = data["meta"]["ResponseCode"].as_str().unwrap();
+    assert!(code == "11608" || code == "11605");
+    let rows = data["affectedRows"].as_array().unwrap();
+    assert_eq!(
+        rows[0]["parentid"].as_str().unwrap(),
+        SEED_COMMENT_1.to_string()
+    );
+}
+
+#[tokio::test]
+async fn test_create_comment_empty_content() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_1}", content: "") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["createComment"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "30265");
+}
+
+#[tokio::test]
+async fn test_create_comment_content_too_long() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let long_content = "x".repeat(201);
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_1}", content: "{long_content}") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["createComment"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "30265");
+}
+
+#[tokio::test]
+async fn test_create_comment_nonexistent_post() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { createComment(action: COMMENT, postid: "ffffffff-ffff-4fff-afff-ffffffffffff", content: "test") { meta { ResponseCode } } }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["createComment"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "31602");
+}
+
+#[tokio::test]
+async fn test_create_reply_nonexistent_parent() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_1}", content: "test", parentid: "ffffffff-ffff-4fff-afff-ffffffffffff") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["createComment"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "31603");
+}
+
+#[tokio::test]
+async fn test_create_reply_to_reply_fails() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // SEED_COMMENT_5 is a reply to SEED_COMMENT_1 (has parent_id set)
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_1}", content: "nested reply", parentid: "{SEED_COMMENT_5}") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["createComment"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "41604");
+}
+
+#[tokio::test]
+async fn test_create_comment_without_auth() {
+    let res = graphql(
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_1}", content: "test") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+    )
+    .await;
+
+    let data = &res["data"]["createComment"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "60501");
+}
+
+#[tokio::test]
+async fn test_created_comment_appears_in_list() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Create a comment on post 2 (which has no comments)
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_2}", content: "New comment here") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // Now list comments
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listComments(postid: "{SEED_POST_2}") {{ meta {{ ResponseCode }} counter affectedRows {{ content }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listComments"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "11601");
+    assert_eq!(data["counter"].as_i64().unwrap(), 1);
+    let rows = data["affectedRows"].as_array().unwrap();
+    assert_eq!(rows[0]["content"].as_str().unwrap(), "New comment here");
+}
+
+// --- Comment Like/Unlike Tests ---
+
+#[tokio::test]
+async fn test_like_comment() {
+    let state = default_shared_state();
+    // Login as verified user (who did NOT author SEED_COMMENT_1, which was by alice)
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ likeComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode ResponseMessage }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["likeComment"];
+    assert_eq!(data["ResponseCode"].as_str().unwrap(), "11603");
+
+    // Verify isliked and amountlikes in listComments
+    let res2 = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listComments(postid: "{SEED_POST_1}") {{ affectedRows {{ commentid isliked amountlikes }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let rows = res2["data"]["listComments"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    let c1 = rows
+        .iter()
+        .find(|r| r["commentid"].as_str().unwrap() == SEED_COMMENT_1.to_string())
+        .unwrap();
+    assert_eq!(c1["isliked"].as_bool().unwrap(), true);
+    assert!(c1["amountlikes"].as_i64().unwrap() >= 1);
+}
+
+#[tokio::test]
+async fn test_like_own_comment() {
+    let state = default_shared_state();
+    // SEED_COMMENT_2 is authored by SEED_USER_VERIFIED
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(r#"mutation {{ likeComment(commentid: "{SEED_COMMENT_2}") {{ ResponseCode }} }}"#),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["likeComment"];
+    assert_eq!(data["ResponseCode"].as_str().unwrap(), "31606");
+}
+
+#[tokio::test]
+async fn test_like_comment_duplicate() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Like once
+    graphql_with_auth(
+        &state,
+        &format!(r#"mutation {{ likeComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode }} }}"#),
+        &token,
+    )
+    .await;
+
+    // Like again
+    let res = graphql_with_auth(
+        &state,
+        &format!(r#"mutation {{ likeComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode }} }}"#),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["likeComment"];
+    assert_eq!(data["ResponseCode"].as_str().unwrap(), "31604");
+}
+
+#[tokio::test]
+async fn test_unlike_comment() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Like first
+    graphql_with_auth(
+        &state,
+        &format!(r#"mutation {{ likeComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode }} }}"#),
+        &token,
+    )
+    .await;
+
+    // Unlike
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ unlikeComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["unlikeComment"];
+    assert_eq!(data["ResponseCode"].as_str().unwrap(), "11603");
+}
+
+#[tokio::test]
+async fn test_like_nonexistent_comment() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { likeComment(commentid: "ffffffff-ffff-4fff-afff-ffffffffffff") { ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["likeComment"];
+    assert_eq!(data["ResponseCode"].as_str().unwrap(), "31601");
+}
+
+#[tokio::test]
+async fn test_like_comment_without_auth() {
+    let res = graphql(&format!(
+        r#"mutation {{ likeComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode }} }}"#
+    ))
+    .await;
+
+    let data = &res["data"]["likeComment"];
+    assert_eq!(data["ResponseCode"].as_str().unwrap(), "60501");
+}
+
+// --- Comment Report Tests ---
+
+#[tokio::test]
+async fn test_report_comment() {
+    let state = default_shared_state();
+    // SEED_COMMENT_1 is by alice, login as verified user
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ reportComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["reportComment"];
+    assert_eq!(data["ResponseCode"].as_str().unwrap(), "11604");
+}
+
+#[tokio::test]
+async fn test_report_own_comment() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ reportComment(commentid: "{SEED_COMMENT_2}") {{ ResponseCode }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["reportComment"];
+    assert_eq!(data["ResponseCode"].as_str().unwrap(), "31607");
+}
+
+#[tokio::test]
+async fn test_report_comment_duplicate() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Report once
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ reportComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // Report again
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ reportComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["reportComment"];
+    assert_eq!(data["ResponseCode"].as_str().unwrap(), "31605");
+}
+
+// --- Daily Free Action Tests ---
+
+#[tokio::test]
+async fn test_daily_free_action_first_4_free() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    for i in 0..4 {
+        let res = graphql_with_auth(
+            &state,
+            &format!(
+                r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_1}", content: "comment {i}") {{ meta {{ ResponseCode }} }} }}"#
+            ),
+            &token,
+        )
+        .await;
+
+        let code = res["data"]["createComment"]["meta"]["ResponseCode"]
+            .as_str()
+            .unwrap();
+        assert_eq!(code, "11608", "Comment {i} should be free");
+    }
+}
+
+#[tokio::test]
+async fn test_daily_paid_action_5th_comment() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Create 4 free comments
+    for i in 0..4 {
+        graphql_with_auth(
+            &state,
+            &format!(
+                r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_1}", content: "free {i}") {{ meta {{ ResponseCode }} }} }}"#
+            ),
+            &token,
+        )
+        .await;
+    }
+
+    // 5th should be paid
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_1}", content: "paid comment") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let code = res["data"]["createComment"]["meta"]["ResponseCode"]
+        .as_str()
+        .unwrap();
+    assert_eq!(code, "11605");
+}
+
+// --- Chat Query Tests ---
+
+#[tokio::test]
+async fn test_list_chats_with_seed_data() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listChats {
+                meta { ResponseCode }
+                affectedRows {
+                    id name image createdat updatedat
+                    chatparticipants { userid username slug img hasaccess }
+                    chatmessages { id senderid chatid content createdat }
+                }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listChats"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "11801");
+    let rows = data["affectedRows"].as_array().unwrap();
+    assert_eq!(rows.len(), 2);
+    // Should be sorted by updatedat desc (group chat more recent)
+    assert_eq!(rows[0]["id"].as_str().unwrap(), SEED_CHAT_GROUP.to_string());
+    assert_eq!(
+        rows[1]["id"].as_str().unwrap(),
+        SEED_CHAT_PRIVATE.to_string()
+    );
+}
+
+#[tokio::test]
+async fn test_list_chats_no_chats() {
+    let state = default_shared_state();
+    let token = login_as(&state, "carol@peer.com", "CarolPass123").await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { listChats { meta { ResponseCode } affectedRows { id } } }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listChats"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "21801");
+    assert!(data["affectedRows"].is_null());
+}
+
+#[tokio::test]
+async fn test_list_chats_without_auth() {
+    let res = graphql(r#"query { listChats { meta { ResponseCode } } }"#).await;
+
+    let data = &res["data"]["listChats"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "60501");
+}
+
+#[tokio::test]
+async fn test_chat_includes_correct_participants() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listChats {
+                affectedRows { id chatparticipants { userid } }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let rows = res["data"]["listChats"]["affectedRows"].as_array().unwrap();
+    let group = rows
+        .iter()
+        .find(|r| r["id"].as_str().unwrap() == SEED_CHAT_GROUP.to_string())
+        .unwrap();
+    let participants: Vec<&str> = group["chatparticipants"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|p| p["userid"].as_str().unwrap())
+        .collect();
+    assert_eq!(participants.len(), 3);
+    assert!(participants.contains(&SEED_USER_VERIFIED.to_string().as_str()));
+    assert!(participants.contains(&SEED_USER_ALICE.to_string().as_str()));
+    assert!(participants.contains(&SEED_USER_BOB.to_string().as_str()));
+}
+
+#[tokio::test]
+async fn test_chat_messages_ordered_by_time() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listChats {
+                affectedRows { id chatmessages { createdat } }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let rows = res["data"]["listChats"]["affectedRows"].as_array().unwrap();
+    let private = rows
+        .iter()
+        .find(|r| r["id"].as_str().unwrap() == SEED_CHAT_PRIVATE.to_string())
+        .unwrap();
+    let msgs = private["chatmessages"].as_array().unwrap();
+    assert!(msgs.len() >= 2);
+    for pair in msgs.windows(2) {
+        assert!(pair[0]["createdat"].as_str().unwrap() <= pair[1]["createdat"].as_str().unwrap());
+    }
+}
+
+#[tokio::test]
+async fn test_private_chat_no_name_image() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listChats {
+                affectedRows { id name image }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let rows = res["data"]["listChats"]["affectedRows"].as_array().unwrap();
+    let private = rows
+        .iter()
+        .find(|r| r["id"].as_str().unwrap() == SEED_CHAT_PRIVATE.to_string())
+        .unwrap();
+    assert!(private["name"].is_null());
+    assert!(private["image"].is_null());
+}
+
+#[tokio::test]
+async fn test_group_chat_has_name() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listChats {
+                affectedRows { id name }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let rows = res["data"]["listChats"]["affectedRows"].as_array().unwrap();
+    let group = rows
+        .iter()
+        .find(|r| r["id"].as_str().unwrap() == SEED_CHAT_GROUP.to_string())
+        .unwrap();
+    assert_eq!(group["name"].as_str().unwrap(), "Rust Developers");
+}
+
+// --- Chat Mutation Tests ---
+
+#[tokio::test]
+async fn test_create_private_chat() {
+    let state = default_shared_state();
+    let token = login_as(&state, "carol@peer.com", "CarolPass123").await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createChat(input: {{ name: "dm", recipients: ["{SEED_USER_DAVE}"] }}) {{ meta {{ ResponseCode }} affectedRows {{ chatid }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["createChat"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "11802");
+    assert!(!data["affectedRows"]["chatid"].as_str().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn test_create_private_chat_already_exists() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Try to create a chat between verified_user and alice — already exists as SEED_CHAT_PRIVATE
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createChat(input: {{ name: "dm", recipients: ["{SEED_USER_ALICE}"] }}) {{ meta {{ ResponseCode }} affectedRows {{ chatid }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["createChat"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "11803");
+    assert_eq!(
+        data["affectedRows"]["chatid"].as_str().unwrap(),
+        SEED_CHAT_PRIVATE.to_string()
+    );
+}
+
+#[tokio::test]
+async fn test_create_group_chat() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createChat(input: {{ name: "New Group", recipients: ["{SEED_USER_ALICE}", "{SEED_USER_CAROL}"] }}) {{ meta {{ ResponseCode }} affectedRows {{ chatid }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["createChat"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "11802");
+}
+
+#[tokio::test]
+async fn test_create_chat_no_recipients() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { createChat(input: { name: "empty", recipients: [] }) { meta { ResponseCode } } }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["createChat"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "30301");
+}
+
+#[tokio::test]
+async fn test_create_chat_without_auth() {
+    let res = graphql(
+        &format!(
+            r#"mutation {{ createChat(input: {{ name: "dm", recipients: ["{SEED_USER_ALICE}"] }}) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+    )
+    .await;
+
+    let data = &res["data"]["createChat"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "60501");
+}
+
+#[tokio::test]
+async fn test_send_chat_message() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ sendChatMessage(chatid: "{SEED_CHAT_PRIVATE}", content: "Hello!") {{ meta {{ ResponseCode }} affectedRows {{ id senderid chatid content createdat }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["sendChatMessage"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "11804");
+    let msg = &data["affectedRows"];
+    assert_eq!(msg["content"].as_str().unwrap(), "Hello!");
+    assert_eq!(
+        msg["senderid"].as_str().unwrap(),
+        SEED_USER_VERIFIED.to_string()
+    );
+    assert_eq!(
+        msg["chatid"].as_str().unwrap(),
+        SEED_CHAT_PRIVATE.to_string()
+    );
+}
+
+#[tokio::test]
+async fn test_send_message_nonexistent_chat() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { sendChatMessage(chatid: "ffffffff-ffff-4fff-afff-ffffffffffff", content: "test") { meta { ResponseCode } } }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["sendChatMessage"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "30304");
+}
+
+#[tokio::test]
+async fn test_send_message_not_participant() {
+    let state = default_shared_state();
+    // Carol is not in SEED_CHAT_PRIVATE
+    let token = login_as(&state, "carol@peer.com", "CarolPass123").await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ sendChatMessage(chatid: "{SEED_CHAT_PRIVATE}", content: "sneaky") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["sendChatMessage"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "30305");
+}
+
+#[tokio::test]
+async fn test_send_empty_message() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ sendChatMessage(chatid: "{SEED_CHAT_PRIVATE}", content: "") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["sendChatMessage"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "30307");
+}
+
+#[tokio::test]
+async fn test_send_message_too_long() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let long_msg = "x".repeat(501);
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ sendChatMessage(chatid: "{SEED_CHAT_PRIVATE}", content: "{long_msg}") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["sendChatMessage"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "30306");
+}
+
+#[tokio::test]
+async fn test_send_message_without_auth() {
+    let res = graphql(
+        &format!(
+            r#"mutation {{ sendChatMessage(chatid: "{SEED_CHAT_PRIVATE}", content: "test") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+    )
+    .await;
+
+    let data = &res["data"]["sendChatMessage"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "60501");
+}
+
+#[tokio::test]
+async fn test_send_message_updates_chat_updatedat() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Get original updatedat
+    let res1 = graphql_with_auth(
+        &state,
+        r#"query { listChats { affectedRows { id updatedat } } }"#,
+        &token,
+    )
+    .await;
+
+    let rows1 = res1["data"]["listChats"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    let private1 = rows1
+        .iter()
+        .find(|r| r["id"].as_str().unwrap() == SEED_CHAT_PRIVATE.to_string())
+        .unwrap();
+    let old_updated = private1["updatedat"].as_str().unwrap().to_string();
+
+    // Send a message
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ sendChatMessage(chatid: "{SEED_CHAT_PRIVATE}", content: "new msg") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // Check updated timestamp
+    let res2 = graphql_with_auth(
+        &state,
+        r#"query { listChats { affectedRows { id updatedat } } }"#,
+        &token,
+    )
+    .await;
+
+    let rows2 = res2["data"]["listChats"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    let private2 = rows2
+        .iter()
+        .find(|r| r["id"].as_str().unwrap() == SEED_CHAT_PRIVATE.to_string())
+        .unwrap();
+    let new_updated = private2["updatedat"].as_str().unwrap();
+    assert!(new_updated > old_updated.as_str());
+}
+
+#[tokio::test]
+async fn test_sent_message_appears_in_list() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ sendChatMessage(chatid: "{SEED_CHAT_PRIVATE}", content: "new visible msg") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listChats {
+                affectedRows { id chatmessages { content } }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let rows = res["data"]["listChats"]["affectedRows"].as_array().unwrap();
+    let private = rows
+        .iter()
+        .find(|r| r["id"].as_str().unwrap() == SEED_CHAT_PRIVATE.to_string())
+        .unwrap();
+    let msgs = private["chatmessages"].as_array().unwrap();
+    let has_new = msgs
+        .iter()
+        .any(|m| m["content"].as_str().unwrap() == "new visible msg");
+    assert!(has_new);
+}
+
+// --- Cross-Cutting Tests ---
+
+#[tokio::test]
+async fn test_post_amountcomments_reflects_comment_count() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Post 1 has seed comments — check amountcomments
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listPosts(postid: "{SEED_POST_1}", filterBy: [], sortBy: NEWEST, offset: 0, limit: 1) {{ affectedRows {{ id amountcomments }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let rows = res["data"]["listPosts"]["affectedRows"].as_array().unwrap();
+    // Post 1 has SEED_COMMENT_1, SEED_COMMENT_2 (top-level) + SEED_COMMENT_5 (reply) = 3 visible comments
+    let comments = rows[0]["amountcomments"].as_i64().unwrap();
+    assert!(comments >= 3, "Expected >= 3 comments, got {comments}");
+
+    // Create a new comment and verify count increases
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_1}", content: "bump count") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let res2 = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listPosts(postid: "{SEED_POST_1}", filterBy: [], sortBy: NEWEST, offset: 0, limit: 1) {{ affectedRows {{ amountcomments }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let new_comments = res2["data"]["listPosts"]["affectedRows"]
+        .as_array()
+        .unwrap()[0]["amountcomments"]
+        .as_i64()
+        .unwrap();
+    assert_eq!(new_comments, comments + 1);
+}
+
+#[tokio::test]
+async fn test_reset_clears_phase4_state() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Create a comment
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_2}", content: "will be cleared") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // Reset
+    {
+        let mut s = state.write().await;
+        s.reset();
+    }
+
+    // Re-login after reset
+    let token2 = login_default(&state).await;
+
+    // Post 2 should have no comments again (seed has none on post 2)
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listComments(postid: "{SEED_POST_2}") {{ meta {{ ResponseCode }} counter }} }}"#
+        ),
+        &token2,
+    )
+    .await;
+
+    let data = &res["data"]["listComments"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "21601");
+    assert_eq!(data["counter"].as_i64().unwrap(), 0);
+
+    // But seed comments on post 1 should still be there
+    let res2 = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listComments(postid: "{SEED_POST_1}") {{ meta {{ ResponseCode }} counter }} }}"#
+        ),
+        &token2,
+    )
+    .await;
+
+    assert_eq!(
+        res2["data"]["listComments"]["meta"]["ResponseCode"]
+            .as_str()
+            .unwrap(),
+        "11601"
+    );
+    assert!(res2["data"]["listComments"]["counter"].as_i64().unwrap() >= 2);
 }

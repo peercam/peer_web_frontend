@@ -5,6 +5,8 @@ use async_graphql::{EmptySubscription, MergedObject, Schema};
 
 use crate::state::SharedState;
 use mutation::auth::AuthMutation;
+use mutation::chat::ChatMutation;
+use mutation::comment::CommentMutation;
 use mutation::post::PostMutation;
 use mutation::profile::ProfileMutation;
 use mutation::registration::RegistrationMutation;
@@ -17,6 +19,8 @@ pub struct MutationRoot(
     pub AuthMutation,
     pub ProfileMutation,
     pub PostMutation,
+    pub CommentMutation,
+    pub ChatMutation,
 );
 
 /// The full GraphQL schema

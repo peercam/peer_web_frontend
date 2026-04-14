@@ -2,7 +2,8 @@ use std::collections::{HashMap, HashSet};
 use uuid::{Uuid, uuid};
 
 use crate::state::{
-    AdvertisementRecord, ContentVisibilityState, MockState, PostRecord, User, UserPreferencesState,
+    AdvertisementRecord, ChatMessageRecord, ChatRecord, CommentRecord, ContentVisibilityState,
+    MockState, PostRecord, User, UserPreferencesState,
 };
 
 /// Primary test referral — matches existing Node.js mock
@@ -29,6 +30,25 @@ pub const SEED_POST_5: Uuid = uuid!("10000000-0000-4000-a000-000000000005");
 pub const SEED_POST_6: Uuid = uuid!("10000000-0000-4000-a000-000000000006");
 pub const SEED_POST_7: Uuid = uuid!("10000000-0000-4000-a000-000000000007");
 pub const SEED_POST_8: Uuid = uuid!("10000000-0000-4000-a000-000000000008");
+
+// --- Phase 4 seed comment UUIDs ---
+pub const SEED_COMMENT_1: Uuid = uuid!("20000000-0000-4000-a000-000000000001");
+pub const SEED_COMMENT_2: Uuid = uuid!("20000000-0000-4000-a000-000000000002");
+pub const SEED_COMMENT_3: Uuid = uuid!("20000000-0000-4000-a000-000000000003");
+pub const SEED_COMMENT_4: Uuid = uuid!("20000000-0000-4000-a000-000000000004");
+pub const SEED_COMMENT_5: Uuid = uuid!("20000000-0000-4000-a000-000000000005");
+pub const SEED_COMMENT_6: Uuid = uuid!("20000000-0000-4000-a000-000000000006");
+
+// --- Phase 4 seed chat UUIDs ---
+pub const SEED_CHAT_PRIVATE: Uuid = uuid!("30000000-0000-4000-a000-000000000001");
+pub const SEED_CHAT_GROUP: Uuid = uuid!("30000000-0000-4000-a000-000000000002");
+
+// --- Phase 4 seed chat message UUIDs ---
+pub const SEED_MSG_1: Uuid = uuid!("40000000-0000-4000-a000-000000000001");
+pub const SEED_MSG_2: Uuid = uuid!("40000000-0000-4000-a000-000000000002");
+pub const SEED_MSG_3: Uuid = uuid!("40000000-0000-4000-a000-000000000003");
+pub const SEED_MSG_4: Uuid = uuid!("40000000-0000-4000-a000-000000000004");
+pub const SEED_MSG_5: Uuid = uuid!("40000000-0000-4000-a000-000000000005");
 
 /// Pre-known credentials for seeded test users
 pub mod credentials {
@@ -267,6 +287,12 @@ impl Default for MockState {
             eligibility_token_status: HashMap::new(),
             uploaded_files: HashMap::new(),
             advertisements: seed_advertisements(),
+            comments: seed_comments(SEED_USER_VERIFIED, SEED_USER_ALICE),
+            comment_likes: seed_comment_likes(SEED_USER_VERIFIED, SEED_USER_ALICE),
+            comment_reports: HashSet::new(),
+            daily_comment_count: HashMap::new(),
+            chats: seed_chats(SEED_USER_VERIFIED, SEED_USER_ALICE, SEED_USER_BOB),
+            chat_messages: seed_chat_messages(SEED_USER_VERIFIED, SEED_USER_ALICE),
         }
     }
 }
@@ -430,4 +456,145 @@ fn seed_advertisements() -> Vec<AdvertisementRecord> {
         start_date: "2025-04-01".into(),
         end_date: "2025-05-01".into(),
     }]
+}
+
+// ============================================================================
+// Phase 4: Seed Comment & Chat Data
+// ============================================================================
+
+fn seed_comments(verified_user: Uuid, user2: Uuid) -> Vec<CommentRecord> {
+    vec![
+        // Top-level comment on post 1 by user2
+        CommentRecord {
+            id: SEED_COMMENT_1,
+            author_id: user2,
+            post_id: SEED_POST_1,
+            parent_id: None,
+            content: "Great photo! Love the colors.".into(),
+            created_at: "2025-04-01T12:00:00Z".into(),
+            visibility_status: "VISIBLE".into(),
+        },
+        // Top-level comment on post 1 by verified_user
+        CommentRecord {
+            id: SEED_COMMENT_2,
+            author_id: verified_user,
+            post_id: SEED_POST_1,
+            parent_id: None,
+            content: "Thanks for the kind words!".into(),
+            created_at: "2025-04-01T13:00:00Z".into(),
+            visibility_status: "VISIBLE".into(),
+        },
+        // Top-level comment on post 3 by verified_user
+        CommentRecord {
+            id: SEED_COMMENT_3,
+            author_id: verified_user,
+            post_id: SEED_POST_3,
+            parent_id: None,
+            content: "These Rust tips are really helpful.".into(),
+            created_at: "2025-04-03T15:00:00Z".into(),
+            visibility_status: "VISIBLE".into(),
+        },
+        // Top-level comment on post 5 by user2
+        CommentRecord {
+            id: SEED_COMMENT_4,
+            author_id: user2,
+            post_id: SEED_POST_5,
+            parent_id: None,
+            content: "Amazing tutorial, well explained!".into(),
+            created_at: "2025-04-05T17:00:00Z".into(),
+            visibility_status: "VISIBLE".into(),
+        },
+        // Reply to comment 1 by verified_user
+        CommentRecord {
+            id: SEED_COMMENT_5,
+            author_id: verified_user,
+            post_id: SEED_POST_1,
+            parent_id: Some(SEED_COMMENT_1),
+            content: "Glad you liked it!".into(),
+            created_at: "2025-04-01T14:00:00Z".into(),
+            visibility_status: "VISIBLE".into(),
+        },
+        // Reply to comment 3 by user2
+        CommentRecord {
+            id: SEED_COMMENT_6,
+            author_id: user2,
+            post_id: SEED_POST_3,
+            parent_id: Some(SEED_COMMENT_3),
+            content: "You're welcome, check out part 2 as well!".into(),
+            created_at: "2025-04-03T16:00:00Z".into(),
+            visibility_status: "VISIBLE".into(),
+        },
+    ]
+}
+
+fn seed_comment_likes(verified_user: Uuid, user2: Uuid) -> HashSet<(Uuid, Uuid)> {
+    HashSet::from([
+        (verified_user, SEED_COMMENT_4), // verified user liked user2's comment
+        (user2, SEED_COMMENT_3),         // user2 liked verified user's comment
+    ])
+}
+
+fn seed_chats(verified_user: Uuid, user2: Uuid, user3: Uuid) -> Vec<ChatRecord> {
+    vec![
+        // Private 1:1 chat between verified_user and user2
+        ChatRecord {
+            id: SEED_CHAT_PRIVATE,
+            name: None,
+            image: None,
+            created_at: "2025-04-01T10:00:00Z".into(),
+            updated_at: "2025-04-02T14:30:00Z".into(),
+            participant_ids: vec![verified_user, user2],
+        },
+        // Group chat with 3 participants
+        ChatRecord {
+            id: SEED_CHAT_GROUP,
+            name: Some("Rust Developers".into()),
+            image: None,
+            created_at: "2025-04-03T09:00:00Z".into(),
+            updated_at: "2025-04-04T11:00:00Z".into(),
+            participant_ids: vec![verified_user, user2, user3],
+        },
+    ]
+}
+
+fn seed_chat_messages(verified_user: Uuid, user2: Uuid) -> Vec<ChatMessageRecord> {
+    vec![
+        // Private chat messages
+        ChatMessageRecord {
+            id: SEED_MSG_1,
+            sender_id: verified_user,
+            chat_id: SEED_CHAT_PRIVATE,
+            content: "Hey, how's the project going?".into(),
+            created_at: "2025-04-01T10:05:00Z".into(),
+        },
+        ChatMessageRecord {
+            id: SEED_MSG_2,
+            sender_id: user2,
+            chat_id: SEED_CHAT_PRIVATE,
+            content: "Going well! Just deployed the new feature.".into(),
+            created_at: "2025-04-02T14:00:00Z".into(),
+        },
+        ChatMessageRecord {
+            id: SEED_MSG_3,
+            sender_id: verified_user,
+            chat_id: SEED_CHAT_PRIVATE,
+            content: "Awesome, I'll check it out.".into(),
+            created_at: "2025-04-02T14:30:00Z".into(),
+        },
+        // Group chat messages
+        ChatMessageRecord {
+            id: SEED_MSG_4,
+            sender_id: verified_user,
+            chat_id: SEED_CHAT_GROUP,
+            content: "Welcome to the Rust devs group!".into(),
+            created_at: "2025-04-03T09:05:00Z".into(),
+        },
+        ChatMessageRecord {
+            id: SEED_MSG_5,
+            sender_id: user2,
+            chat_id: SEED_CHAT_GROUP,
+            content: "Thanks for the invite. What are we working on first?".into(),
+            created_at: "2025-04-04T11:00:00Z".into(),
+        },
+    ]
 }

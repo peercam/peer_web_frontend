@@ -98,6 +98,39 @@ pub struct AdvertisementRecord {
     pub end_date: String,
 }
 
+/// Internal comment storage record (not the GraphQL type).
+#[derive(Debug, Clone)]
+pub struct CommentRecord {
+    pub id: Uuid,
+    pub author_id: Uuid,
+    pub post_id: Uuid,
+    pub parent_id: Option<Uuid>,
+    pub content: String,
+    pub created_at: String,
+    pub visibility_status: String,
+}
+
+/// Internal chat storage record.
+#[derive(Debug, Clone)]
+pub struct ChatRecord {
+    pub id: Uuid,
+    pub name: Option<String>,
+    pub image: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub participant_ids: Vec<Uuid>,
+}
+
+/// Internal chat message storage record.
+#[derive(Debug, Clone)]
+pub struct ChatMessageRecord {
+    pub id: Uuid,
+    pub sender_id: Uuid,
+    pub chat_id: Uuid,
+    pub content: String,
+    pub created_at: String,
+}
+
 /// In-memory mock backend state
 #[derive(Debug, Clone)]
 pub struct MockState {
@@ -135,6 +168,16 @@ pub struct MockState {
     pub eligibility_token_status: HashMap<String, String>,
     pub uploaded_files: HashMap<String, Vec<String>>,
     pub advertisements: Vec<AdvertisementRecord>,
+
+    // --- Phase 4: Comments ---
+    pub comments: Vec<CommentRecord>,
+    pub comment_likes: HashSet<(Uuid, Uuid)>,
+    pub comment_reports: HashSet<(Uuid, Uuid)>,
+    pub daily_comment_count: HashMap<(Uuid, String), u32>,
+
+    // --- Phase 4: Chat ---
+    pub chats: Vec<ChatRecord>,
+    pub chat_messages: Vec<ChatMessageRecord>,
 }
 
 impl MockState {
@@ -271,7 +314,11 @@ impl MockState {
             .iter()
             .filter(|(_, pid)| *pid == record.id)
             .count() as i32;
-        let amountcomments = 0i32;
+        let amountcomments = self
+            .comments
+            .iter()
+            .filter(|c| c.post_id == record.id && c.visibility_status == "VISIBLE")
+            .count() as i32;
         let amounttrending = amountlikes * 2 + amountviews + amountcomments;
 
         let (isliked, isviewed, isdisliked, issaved, isreported) = match viewer_id {
@@ -495,5 +542,124 @@ impl MockState {
                 true
             })
             .collect()
+    }
+
+    // ========================================================================
+    // Phase 4: Comment helpers
+    // ========================================================================
+
+    /// Convert a CommentRecord to the GraphQL Comment type.
+    pub fn comment_record_to_graphql(
+        &self,
+        record: &CommentRecord,
+        viewer_id: Option<Uuid>,
+    ) -> crate::types::comment::Comment {
+        use crate::types::comment::{Comment, CommentUser};
+
+        let author = self.users.get(&record.author_id);
+
+        let amountlikes = self
+            .comment_likes
+            .iter()
+            .filter(|(_, cid)| *cid == record.id)
+            .count() as i32;
+
+        let amountreplies = self
+            .comments
+            .iter()
+            .filter(|c| c.parent_id == Some(record.id) && c.visibility_status == "VISIBLE")
+            .count() as i32;
+
+        let isliked = match viewer_id {
+            Some(uid) => self.comment_likes.contains(&(uid, record.id)),
+            None => false,
+        };
+
+        let user = match author {
+            Some(u) => {
+                let (isfollowed, isfollowing) = match viewer_id {
+                    Some(vid) => (
+                        self.follows.contains(&(vid, u.uid)),
+                        self.follows.contains(&(u.uid, vid)),
+                    ),
+                    None => (false, false),
+                };
+                CommentUser {
+                    id: u.uid.to_string().into(),
+                    username: u.username.clone(),
+                    slug: u.slug.clone(),
+                    img: u.img.clone(),
+                    isfollowed,
+                    isfollowing,
+                }
+            }
+            None => CommentUser {
+                id: record.author_id.to_string().into(),
+                username: "unknown".into(),
+                slug: "unknown".into(),
+                img: None,
+                isfollowed: false,
+                isfollowing: false,
+            },
+        };
+
+        Comment {
+            commentid: record.id.to_string().into(),
+            userid: record.author_id.to_string().into(),
+            postid: record.post_id.to_string().into(),
+            parentid: record.parent_id.map(|p| p.to_string().into()),
+            content: record.content.clone(),
+            createdat: record.created_at.clone(),
+            amountlikes,
+            amountreplies,
+            isliked,
+            user,
+        }
+    }
+
+    // ========================================================================
+    // Phase 4: Chat helpers
+    // ========================================================================
+
+    /// Convert a ChatRecord to the GraphQL Chat type.
+    pub fn chat_record_to_graphql(&self, record: &ChatRecord) -> crate::types::chat::Chat {
+        use crate::types::chat::{Chat, ChatMessage, ChatParticipant};
+
+        let chatparticipants: Vec<ChatParticipant> = record
+            .participant_ids
+            .iter()
+            .filter_map(|uid| {
+                self.users.get(uid).map(|u| ChatParticipant {
+                    userid: u.uid.to_string(),
+                    img: u.img.clone(),
+                    username: u.username.clone(),
+                    slug: Some(u.slug.clone()),
+                    hasaccess: Some(true),
+                })
+            })
+            .collect();
+
+        let chatmessages: Vec<ChatMessage> = self
+            .chat_messages
+            .iter()
+            .filter(|m| m.chat_id == record.id)
+            .map(|m| ChatMessage {
+                id: m.id.to_string(),
+                senderid: m.sender_id.to_string(),
+                chatid: m.chat_id.to_string(),
+                content: m.content.clone(),
+                createdat: m.created_at.clone(),
+            })
+            .collect();
+
+        Chat {
+            id: record.id.to_string(),
+            name: record.name.clone(),
+            image: record.image.clone(),
+            createdat: record.created_at.clone(),
+            updatedat: record.updated_at.clone(),
+            chatmessages,
+            chatparticipants,
+        }
     }
 }
