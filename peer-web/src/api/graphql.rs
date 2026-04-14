@@ -1585,6 +1585,61 @@ pub struct DeleteAccountData {
 }
 
 // ============================================================================
+// Referral queries
+// ============================================================================
+
+/// Query: Get the current user's referral info (UUID and shareable link).
+pub const GET_REFERRAL_INFO_QUERY: &str = r#"
+query GetReferralInfo {
+    getReferralInfo {
+        status
+        ResponseCode
+        referralUuid
+        referralLink
+    }
+}
+"#;
+
+/// Query: List referral relationships (who I invited and who invited me).
+pub const GET_REFERRAL_LIST_QUERY: &str = r#"
+query ReferralList($offset: Int, $limit: Int) {
+    referralList(offset: $offset, limit: $limit) {
+        status
+        counter
+        ResponseCode
+        affectedRows {
+            invitedBy {
+                id
+                username
+                slug
+                img
+            }
+            iInvited {
+                id
+                username
+                slug
+                img
+            }
+        }
+    }
+}
+"#;
+
+/// Wrapper for the `getReferralInfo` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetReferralInfoData {
+    pub get_referral_info: crate::models::referral::ReferralInfoResponse,
+}
+
+/// Wrapper for the `referralList` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetReferralListData {
+    pub referral_list: crate::models::referral::ReferralListResponse,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 

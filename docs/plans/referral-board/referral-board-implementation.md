@@ -2,8 +2,9 @@
 
 **Feature:** Referral Board  
 **Priority:** #10 (after Settings — first truly new feature after all in-progress items)  
-**Status:** ❌ Not Started  
-**Created:** 2026-04-14
+**Status:** ✅ Complete  
+**Created:** 2026-04-14  
+**Completed:** 2026-04-14
 
 ---
 
@@ -27,35 +28,35 @@ Implement the Referral Board page for the Leptos frontend. This page is the core
 
 ### In Scope
 
-- [ ] Referral Board page (`/referral` route)
-- [ ] Auth guard (redirect to `/login` if unauthenticated)
-- [ ] **Referral Link section:**
-  - [ ] Fetch referral link via `getReferralInfo` query
-  - [ ] Display shareable referral link
-  - [ ] Copy-to-clipboard on click (Clipboard API)
-  - [ ] Toast notification on copy ("Link copied!")
-  - [ ] Loading and error states for link fetch
-- [ ] **Tab navigation:**
-  - [ ] "Invited Friends" tab (default active)
-  - [ ] "My Inviter" tab
-  - [ ] Active state styling
-- [ ] **User list (Invited Friends tab):**
-  - [ ] Fetch via `referralList` query
-  - [ ] Grid of user cards (avatar, username, slug)
-  - [ ] Click user card → navigate to `/profile/:slug` or `/u/:slug`
-  - [ ] Empty state ("You haven't referred anyone yet…")
-  - [ ] Loading skeleton
-- [ ] **User list (My Inviter tab):**
-  - [ ] Single user card (or empty if direct signup)
-  - [ ] Empty state ("No inviter found — you joined directly")
-  - [ ] Loading skeleton
-- [ ] **Right sidebar:**
-  - [ ] Profile widget
-  - [ ] Main menu
-  - [ ] New post button
-  - [ ] Version widget
-- [ ] SCSS styling (new `referral-board.scss`)
-- [ ] Responsive layout (desktop/tablet/mobile)
+- [x] Referral Board page (`/referral` route)
+- [x] Auth guard (redirect to `/login` if unauthenticated)
+- [x] **Referral Link section:**
+  - [x] Fetch referral link via `getReferralInfo` query
+  - [x] Display shareable referral link
+  - [x] Copy-to-clipboard on click (Clipboard API)
+  - [x] Toast notification on copy ("Link copied!")
+  - [x] Loading and error states for link fetch
+- [x] **Tab navigation:**
+  - [x] "Invited Friends" tab (default active)
+  - [x] "My Inviter" tab
+  - [x] Active state styling
+- [x] **User list (Invited Friends tab):**
+  - [x] Fetch via `referralList` query
+  - [x] Grid of user cards (avatar, username, slug)
+  - [x] Click user card → navigate to `/profile/:slug` or `/u/:slug`
+  - [x] Empty state ("You haven't referred anyone yet…")
+  - [x] Loading skeleton
+- [x] **User list (My Inviter tab):**
+  - [x] Single user card (or empty if direct signup)
+  - [x] Empty state ("No inviter found — you joined directly")
+  - [x] Loading skeleton
+- [x] **Right sidebar:**
+  - [x] Profile widget
+  - [x] Main menu
+  - [x] New post button
+  - [x] Version widget
+- [x] SCSS styling (new `referral-board.scss`)
+- [x] Responsive layout (desktop/tablet/mobile)
 
 ### Out of Scope (Future Work)
 

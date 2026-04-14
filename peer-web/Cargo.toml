@@ -31,7 +31,8 @@ chrono = { version = "0.4", features = ["serde"] }
 html-escape = "0.2"
 rust_decimal = { version = "1", features = ["serde", "serde-with-str"] }
 wasm-bindgen = { version = "0.2.106", optional = true }
-web-sys = { version = "0.3", features = ["Window", "Location", "Storage", "Document", "HtmlDocument", "HtmlElement", "Element", "History", "Event", "EventTarget", "IntersectionObserver", "IntersectionObserverInit", "IntersectionObserverEntry", "FileList", "File", "Blob", "DataTransfer", "DragEvent", "Url", "FormData", "HtmlInputElement", "HtmlTextAreaElement", "HtmlImageElement", "KeyboardEvent"], optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+web-sys = { version = "0.3", features = ["Window", "Location", "Storage", "Document", "HtmlDocument", "HtmlElement", "Element", "History", "Event", "EventTarget", "IntersectionObserver", "IntersectionObserverInit", "IntersectionObserverEntry", "FileList", "File", "Blob", "DataTransfer", "DragEvent", "Url", "FormData", "HtmlInputElement", "HtmlTextAreaElement", "HtmlImageElement", "KeyboardEvent", "Navigator", "Clipboard"], optional = true }
 js-sys = { version = "0.3", optional = true }
 gloo-timers = { version = "0.3", features = ["futures"], optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -41,6 +42,7 @@ hydrate = [
     "leptos/hydrate",
     "dep:console_error_panic_hook",
     "dep:wasm-bindgen",
+    "dep:wasm-bindgen-futures",
     "dep:web-sys",
     "dep:js-sys",
     "dep:gloo-timers",

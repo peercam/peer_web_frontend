@@ -2,6 +2,7 @@
 
 > **Parent Plan:** [mock-backend-rust-rewrite.md](./mock-backend-rust-rewrite.md)
 > **Goal:** Replace Node.js mock with a Rust crate that passes identical tests
+> **Status:** ✅ Complete (14 April 2026)
 
 ---
 
@@ -50,7 +51,7 @@ tests/mock_backend/
 │       ├── mod.rs           # Type exports
 │       └── registration.rs  # Response types for registration
 └── tests/
-    └── integration.rs       # 7 parity tests
+    └── integration.rs       # 9 integration tests
 ```
 
 ---
@@ -59,9 +60,9 @@ tests/mock_backend/
 
 ### Environment Requirements
 
-- [ ] Rust toolchain ≥1.75 (check with `rustup show`)
-- [ ] Cargo workspace awareness (optional — can be standalone crate)
-- [ ] Port 4000 available for dev server testing
+- [x] Rust toolchain ≥1.75 (check with `rustup show`)
+- [x] Cargo workspace awareness (optional — can be standalone crate)
+- [x] Port 4000 available for dev server testing
 
 ### Dependency Versions (Cargo.toml)
 
@@ -72,8 +73,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-async-graphql = "8"
-async-graphql-axum = "8"
+async-graphql = "7"           # v8 still RC at time of implementation
+async-graphql-axum = "7"
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tower = "0.5"
@@ -82,6 +83,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
 chrono = "0.4"
+regex = "1"                    # UUID format validation
 
 [dev-dependencies]
 reqwest = { version = "0.13", features = ["json"] }
@@ -171,12 +173,15 @@ http-body-util = "0.1"
 ### 4.1 Type Definitions (`types/registration.rs`)
 
 ```rust
-use async_graphql::{InputObject, SimpleObject, ID};
+use async_graphql::{ID, InputObject, SimpleObject};
 use serde::{Deserialize, Serialize};
 
 /// Standard response envelope used by all mutations
+///
+/// Note: Field names use explicit `#[graphql(name)]` instead of
+/// `#[graphql(rename_fields = "PascalCase")]` — the blanket rename
+/// was converting `status` → `Status` which broke GraphQL queries.
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
-#[graphql(rename_fields = "PascalCase")]
 pub struct DefaultResponse {
     pub status: String,
     #[graphql(name = "RequestId")]
@@ -218,7 +223,6 @@ pub struct ReferralUser {
 
 /// Response for verifyReferralString mutation
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
-#[graphql(rename_fields = "PascalCase")]
 pub struct ReferralResponse {
     pub status: String,
     #[graphql(name = "ResponseCode")]
@@ -242,7 +246,6 @@ pub struct RegistrationInput {
 
 /// Response for register mutation
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
-#[graphql(rename_fields = "PascalCase")]
 pub struct RegisterResponse {
     pub status: String,
     #[graphql(name = "ResponseCode")]
@@ -253,7 +256,6 @@ pub struct RegisterResponse {
 
 /// Response for verifyAccount mutation
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
-#[graphql(rename_fields = "PascalCase")]
 pub struct VerifyAccountResponse {
     pub status: String,
     #[graphql(name = "ResponseCode")]
@@ -298,7 +300,7 @@ impl MockState {
 
 ```rust
 use std::collections::HashSet;
-use uuid::{uuid, Uuid};
+use uuid::{Uuid, uuid};
 
 use crate::state::MockState;
 
@@ -336,7 +338,7 @@ pub mod mock_users {
 ### 4.4 Registration Resolvers (`schema/mutation/registration.rs`)
 
 ```rust
-use async_graphql::{Context, Object, ID};
+use async_graphql::{Context, ID, Object};
 use uuid::Uuid;
 
 use crate::seed::mock_users;
@@ -348,6 +350,7 @@ use crate::types::registration::{
 /// UUID regex for validation
 const UUID_REGEX: &str = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$";
 
+#[derive(Default)]
 pub struct RegistrationMutation;
 
 #[Object]
@@ -528,7 +531,11 @@ pub struct QueryRoot;
 #[Object]
 impl QueryRoot {
     /// Health check endpoint (required by GraphQL spec to have at least one query)
-    async fn _health(&self) -> bool {
+    ///
+    /// Note: async-graphql strips leading underscores from method names,
+    /// so we use `#[graphql(name)]` to preserve the `_health` field name.
+    #[graphql(name = "_health")]
+    async fn health(&self) -> bool {
         true
     }
 }
@@ -536,15 +543,17 @@ impl QueryRoot {
 
 ### 4.7 HTTP Router (`lib.rs`)
 
+> **Deviation:** The original plan used `GraphQL::new()` as a service with
+> `route_service()` and `get().post()`. In practice, `GraphQL` doesn't implement
+> the `Handler` trait in axum 0.8, so an explicit `graphql_handler` function is
+> used instead. GraphQL endpoint is POST-only (sufficient for all use cases).
+
 ```rust
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use async_graphql_axum::GraphQL;
-use axum::{
-    routing::{get, post},
-    Json, Router,
-};
+use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
+use axum::{Json, Router, extract::State, routing::post};
 use tower_http::cors::{Any, CorsLayer};
 
 pub mod schema;
@@ -552,7 +561,7 @@ pub mod seed;
 pub mod state;
 pub mod types;
 
-use schema::{build_schema, AppSchema};
+use schema::{AppSchema, build_schema};
 use state::{MockState, SharedState};
 
 /// Application state shared across handlers
@@ -562,11 +571,29 @@ pub struct AppState {
     pub mock_state: SharedState,
 }
 
+/// GraphQL handler
+async fn graphql_handler(State(state): State<AppState>, req: GraphQLRequest) -> GraphQLResponse {
+    state.schema.execute(req.into_inner()).await.into()
+}
+
 /// Reset handler — clears mutable state for test isolation
-async fn reset_handler(state: axum::extract::State<AppState>) -> Json<serde_json::Value> {
+async fn reset_handler(State(state): State<AppState>) -> Json<serde_json::Value> {
     let mut mock_state = state.mock_state.write().await;
     mock_state.reset();
     Json(serde_json::json!({ "status": "ok" }))
+}
+
+fn build_router(app_state: AppState) -> Router {
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    Router::new()
+        .route("/graphql", post(graphql_handler))
+        .route("/reset", post(reset_handler))
+        .layer(cors)
+        .with_state(app_state)
 }
 
 /// Build the application router
@@ -579,16 +606,7 @@ pub fn app() -> Router {
         mock_state,
     };
 
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
-
-    Router::new()
-        .route("/graphql", get(GraphQL::new(schema.clone())).post(GraphQL::new(schema)))
-        .route("/reset", post(reset_handler))
-        .layer(cors)
-        .with_state(app_state)
+    build_router(app_state)
 }
 
 /// Build app with custom initial state (for testing)
@@ -600,16 +618,7 @@ pub fn app_with_state(mock_state: SharedState) -> Router {
         mock_state,
     };
 
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
-
-    Router::new()
-        .route("/graphql", get(GraphQL::new(schema.clone())).post(GraphQL::new(schema)))
-        .route("/reset", post(reset_handler))
-        .layer(cors)
-        .with_state(app_state)
+    build_router(app_state)
 }
 ```
 
@@ -643,6 +652,10 @@ async fn main() {
 
 ### 5.1 Test Harness Setup
 
+> **Note:** Tests use `tower::ServiceExt::oneshot()` for in-process testing
+> without binding a port. A `graphql_stateful()` helper shares state across
+> multiple requests within a single test (needed for duplicate/verify tests).
+
 ```rust
 // tests/integration.rs
 
@@ -651,8 +664,10 @@ use axum::{
     http::{Request, StatusCode},
 };
 use http_body_util::BodyExt;
-use mock_backend::app;
-use serde_json::{json, Value};
+use mock_backend::{app, app_with_state, state::MockState};
+use serde_json::{Value, json};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use tower::ServiceExt;
 
 /// Send a GraphQL query/mutation and return parsed JSON response
@@ -675,16 +690,24 @@ async fn graphql(query: &str) -> Value {
     serde_json::from_slice(&body_bytes).unwrap()
 }
 
-/// Reset mock state via /reset endpoint
-async fn reset_state(app: axum::Router) {
+/// Send a GraphQL query/mutation against a stateful app and return parsed JSON response
+async fn graphql_stateful(state: &Arc<RwLock<MockState>>, query: &str) -> Value {
+    let app = app_with_state(state.clone());
+
+    let body = json!({ "query": query });
+
     let request = Request::builder()
         .method("POST")
-        .uri("/reset")
-        .body(Body::empty())
+        .uri("/graphql")
+        .header("Content-Type", "application/json")
+        .body(Body::from(serde_json::to_string(&body).unwrap()))
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
+
+    let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+    serde_json::from_slice(&body_bytes).unwrap()
 }
 ```
 
@@ -704,133 +727,12 @@ async fn reset_state(app: axum::Router) {
 
 ### 5.3 Full Test Implementation
 
-```rust
-#[tokio::test]
-async fn test_valid_referral() {
-    let res = graphql(r#"
-        mutation {
-            verifyReferralString(referralString: "85d5f836-b1f5-4c4e-9381-1b058e13df93") {
-                status
-                ResponseCode
-                affectedRows { uid username slug img }
-            }
-        }
-    "#).await;
+See [`tests/integration.rs`](../../../tests/mock_backend/tests/integration.rs) for the
+complete implementation. Key patterns:
 
-    let data = &res["data"]["verifyReferralString"];
-    assert_eq!(data["status"], "success");
-    assert_eq!(data["ResponseCode"], "11011");
-    assert!(data["affectedRows"].is_array());
-    assert_eq!(data["affectedRows"][0]["uid"], "usr_mock_001");
-    assert_eq!(data["affectedRows"][0]["username"], "peerTester");
-}
-
-#[tokio::test]
-async fn test_invalid_referral() {
-    let res = graphql(r#"
-        mutation {
-            verifyReferralString(referralString: "not-a-uuid") {
-                status
-                ResponseCode
-                affectedRows { uid }
-            }
-        }
-    "#).await;
-
-    let data = &res["data"]["verifyReferralString"];
-    assert_eq!(data["status"], "error");
-    assert_eq!(data["ResponseCode"], "31010");
-    assert!(data["affectedRows"].is_null());
-}
-
-#[tokio::test]
-async fn test_register_success() {
-    let res = graphql(r#"
-        mutation {
-            register(input: {
-                email: "new@test.com"
-                password: "Abcd1234"
-                username: "newuser"
-                pkey: null
-                referralUuid: "85d5f836-b1f5-4c4e-9381-1b058e13df93"
-            }) {
-                status
-                ResponseCode
-                userid
-            }
-        }
-    "#).await;
-
-    let data = &res["data"]["register"];
-    assert_eq!(data["status"], "success");
-    assert_eq!(data["ResponseCode"], "10601");
-
-    // Verify userid is a valid UUID
-    let userid = data["userid"].as_str().unwrap();
-    assert!(uuid::Uuid::parse_str(userid).is_ok(), "userid should be valid UUID");
-}
-
-#[tokio::test]
-async fn test_register_duplicate_email() {
-    // First registration (uses fresh app instance per test)
-    // Note: For this test we need a stateful app, so we use a custom approach
-    use std::sync::Arc;
-    use tokio::sync::RwLock;
-    use mock_backend::{app_with_state, state::MockState};
-
-    let state = Arc::new(RwLock::new(MockState::default()));
-    let app = app_with_state(state.clone());
-
-    // Helper to make requests against the same app state
-    let graphql_stateful = |app: axum::Router, query: &str| async move {
-        let body = json!({ "query": query });
-        let request = Request::builder()
-            .method("POST")
-            .uri("/graphql")
-            .header("Content-Type", "application/json")
-            .body(Body::from(serde_json::to_string(&body).unwrap()))
-            .unwrap();
-        let response = app.oneshot(request).await.unwrap();
-        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
-        serde_json::from_slice::<Value>(&body_bytes).unwrap()
-    };
-
-    // First registration
-    let app1 = app_with_state(state.clone());
-    let _ = graphql_stateful(app1, r#"
-        mutation {
-            register(input: {
-                email: "dupe@test.com"
-                password: "Abcd1234"
-                username: "user1"
-            }) { status }
-        }
-    "#).await;
-
-    // Second registration with same email
-    let app2 = app_with_state(state.clone());
-    let res = graphql_stateful(app2, r#"
-        mutation {
-            register(input: {
-                email: "dupe@test.com"
-                password: "Abcd1234"
-                username: "user2"
-            }) {
-                status
-                ResponseCode
-                userid
-            }
-        }
-    "#).await;
-
-    let data = &res["data"]["register"];
-    assert_eq!(data["status"], "error");
-    assert_eq!(data["ResponseCode"], "30601");
-    assert!(data["userid"].is_null());
-}
-
-// ... (additional tests follow same pattern)
-```
+- **Stateless tests** (`test_valid_referral`, `test_register_success`, etc.) use the `graphql()` helper which creates a fresh `app()` per call.
+- **Stateful tests** (`test_register_duplicate_email`, `test_verify_account_success`, `test_already_verified`, `test_reset_endpoint`) create a shared `Arc<RwLock<MockState>>` and use `graphql_stateful()` to share state across multiple requests.
+- **Reset test** calls the `/reset` endpoint directly via `app_with_state()` + `oneshot()`.
 
 ---
 
@@ -838,19 +740,19 @@ async fn test_register_duplicate_email() {
 
 ### Files to Delete (after tests pass)
 
-- [ ] `tests/mock_backend/server.js`
-- [ ] `tests/mock_backend/resolvers.js`
-- [ ] `tests/mock_backend/schema.graphql`
-- [ ] `tests/mock_backend/state.js`
-- [ ] `tests/mock_backend/test.js`
-- [ ] `tests/mock_backend/package.json`
-- [ ] `tests/mock_backend/package-lock.json`
-- [ ] `tests/mock_backend/node_modules/` (entire directory)
+- [x] `tests/mock_backend/server.js`
+- [x] `tests/mock_backend/resolvers.js`
+- [x] `tests/mock_backend/schema.graphql`
+- [x] `tests/mock_backend/state.js`
+- [x] `tests/mock_backend/test.js`
+- [x] `tests/mock_backend/package.json`
+- [x] `tests/mock_backend/package-lock.json`
+- [x] `tests/mock_backend/node_modules/` (entire directory)
 
 ### Files to Keep
 
-- [ ] `tests/mock_backend/fixtures/*.json` — Useful as reference data
-- [ ] `tests/mock_backend/README.md` — Update with Rust instructions
+- [x] `tests/mock_backend/fixtures/*.json` — Useful as reference data
+- [x] `tests/mock_backend/README.md` — Update with Rust instructions
 
 ### README.md Updates
 
@@ -898,37 +800,37 @@ cargo test
 
 ### Build & Test Gates
 
-- [ ] `cargo build` succeeds without warnings
-- [ ] `cargo test --all-targets` passes all 9 tests
-- [ ] `cargo clippy -- -D warnings` passes
-- [ ] `cargo fmt --check` passes
+- [x] `cargo build` succeeds without warnings
+- [x] `cargo test --all-targets` passes all 9 tests
+- [x] `cargo clippy -- -D warnings` passes
+- [x] `cargo fmt --check` passes
 
 ### Functional Requirements
 
-- [ ] `POST /graphql` with `verifyReferralString` returns correct response shapes
-- [ ] `POST /graphql` with `register` returns correct response shapes
-- [ ] `POST /graphql` with `verifyAccount` returns correct response shapes
-- [ ] Response codes match exactly: `11011`, `31010`, `10601`, `30601`, `40601`, `10701`, `30701`
-- [ ] Field names match casing: `ResponseCode` (PascalCase), `affectedRows` (camelCase), etc.
-- [ ] `POST /reset` clears `registeredEmails` and `verifiedUsers` but preserves `knownReferrals`
+- [x] `POST /graphql` with `verifyReferralString` returns correct response shapes
+- [x] `POST /graphql` with `register` returns correct response shapes
+- [x] `POST /graphql` with `verifyAccount` returns correct response shapes
+- [x] Response codes match exactly: `11011`, `31010`, `10601`, `30601`, `40601`, `10701`, `30701`
+- [x] Field names match casing: `ResponseCode` (PascalCase), `affectedRows` (camelCase), etc.
+- [x] `POST /reset` clears `registeredEmails` and `verifiedUsers` but preserves `knownReferrals`
 
 ### HTTP Requirements
 
-- [ ] Server binds to `:4000` (or `$PORT`)
-- [ ] CORS allows any origin (for Leptos dev server)
-- [ ] GraphQL endpoint accepts both GET and POST
+- [x] Server binds to `:4000` (or `$PORT`)
+- [x] CORS allows any origin (for Leptos dev server)
+- [~] GraphQL endpoint accepts both GET and POST — **POST-only** (see deviation note in §4.7; sufficient for all current use cases)
 
 ### Migration Requirements
 
-- [ ] All Node.js files deleted (except fixtures/)
-- [ ] README.md updated with Rust instructions
-- [ ] No runtime dependency on Node.js/npm
+- [x] All Node.js files deleted (except fixtures/)
+- [x] README.md updated with Rust instructions
+- [x] No runtime dependency on Node.js/npm
 
 ### Integration Ready
 
-- [ ] `mock_backend::app()` is exported as public API
-- [ ] Can be imported as dev-dependency: `mock_backend = { path = "../../tests/mock_backend" }`
-- [ ] `build_schema()` is exported for potential SDL snapshot tests
+- [x] `mock_backend::app()` is exported as public API
+- [x] Can be imported as dev-dependency: `mock_backend = { path = "../../tests/mock_backend" }`
+- [x] `build_schema()` is exported for potential SDL snapshot tests
 
 ---
 
@@ -943,3 +845,18 @@ cargo test
 | `40601` | error | `register` | Internal server error |
 | `10701` | success | `verifyAccount` | Account verified successfully |
 | `30701` | success | `verifyAccount` | Account is already verified |
+
+---
+
+## Appendix B: Implementation Deviations
+
+| Area | Plan | Actual | Reason |
+|------|------|--------|--------|
+| async-graphql version | `"8"` | `"7"` | v8 was still RC (`8.0.0-rc.4`); v7.2.1 is the latest stable |
+| `regex` dependency | not listed | `regex = "1"` | Used for UUID format validation in `verify_referral_string` |
+| `rename_fields = "PascalCase"` | On all response types | Removed; per-field `#[graphql(name)]` only | Blanket rename converted `status` → `Status`, breaking queries |
+| `_health` query | `async fn _health()` | `#[graphql(name = "_health")] async fn health()` | async-graphql strips leading underscores from method names |
+| `RegistrationMutation` | No `Default` derive | `#[derive(Default)]` | Required by `MergedObject` for `MutationRoot::default()` |
+| GraphQL routing | `GraphQL::new()` as service with `get().post()` | Explicit `graphql_handler` fn, POST-only | `GraphQL` doesn't implement `Handler` trait in axum 0.8 |
+| Router construction | Duplicated in `app()` / `app_with_state()` | Shared `build_router()` helper | DRY |
+| Test helpers | Inline closure in `test_register_duplicate_email` | Top-level `graphql_stateful()` function | Reused across 5 stateful tests |

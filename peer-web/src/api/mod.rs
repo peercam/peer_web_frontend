@@ -8,6 +8,7 @@ pub mod forgot_password;
 pub mod graphql;
 pub mod posts;
 pub mod profile;
+pub mod referral;
 pub mod registration;
 pub mod settings;
 pub mod wallet;
@@ -40,6 +41,7 @@ pub use posts::{list_posts, list_ad_posts, post_action, search_users, get_user_i
 pub use comments::{guest_get_post, get_post, list_comments, list_child_comments, create_comment, like_comment, unlike_comment};
 pub use profile::{get_profile, list_follow_relations, list_friends, list_user_posts, toggle_follow, toggle_block, report_user, fetch_biography};
 pub use chat::{list_chats, send_chat_message, create_chat, refresh_chat_messages};
+pub use referral::{get_referral_info, get_referral_list};
 pub use settings::{
     update_profile_image, update_bio, update_username, update_password,
     update_email, update_content_preferences, delete_account,
