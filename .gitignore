@@ -1,7 +1,6 @@
 .vscode/*
 public/
 test/
-tests/
 video-editor/*
 .gitleaks_out/*
 *.html

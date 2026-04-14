@@ -1687,6 +1687,105 @@ pub struct GetReferralListData {
 }
 
 // ============================================================================
+// Advertisement queries and mutations
+// ============================================================================
+
+/// Query: Get advertisement history with aggregated stats.
+pub const ADVERTISEMENT_HISTORY_QUERY: &str = r#"
+query AdvertisementHistory($filter: AdvertisementHistoryFilter, $sort: AdvertisementSort, $offset: Int, $limit: Int) {
+    advertisementHistory(filter: $filter, sort: $sort, offset: $offset, limit: $limit) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            stats {
+                tokenSpent
+                euroSpent
+                amountAds
+                gemsEarned
+                amountLikes
+                amountViews
+                amountComments
+                amountDislikes
+                amountReports
+            }
+            advertisements {
+                id
+                createdAt
+                type
+                timeframeStart
+                timeframeEnd
+                totalTokenCost
+                totalEuroCost
+                gemsEarned
+                amountLikes
+                amountViews
+                amountComments
+                amountDislikes
+                amountReports
+                post {
+                    id
+                    contenttype
+                    title
+                    media
+                    cover
+                    mediadescription
+                    visibilityStatus
+                    isHiddenForUsers
+                    hasActiveReports
+                    isreported
+                }
+                user {
+                    id
+                    img
+                }
+            }
+        }
+    }
+}
+"#;
+
+/// Mutation: Create a pinned advertisement for a post.
+pub const ADVERTISE_POST_PINNED_MUTATION: &str = r#"
+mutation AdvertisePostPinned($postid: ID!, $advertisePlan: AdvertisementPinnedPlan!) {
+    advertisePostPinned(postid: $postid, advertisePlan: $advertisePlan) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            id
+            createdAt
+            type
+            timeframeStart
+            timeframeEnd
+            totalTokenCost
+            totalEuroCost
+        }
+    }
+}
+"#;
+
+/// Wrapper for the `advertisementHistory` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AdvertisementHistoryData {
+    pub advertisement_history: crate::models::advertisement::AdHistoryResponse,
+}
+
+/// Wrapper for the `advertisePostPinned` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AdvertisePostPinnedData {
+    pub advertise_post_pinned: crate::models::advertisement::AdvertisePostResponse,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 

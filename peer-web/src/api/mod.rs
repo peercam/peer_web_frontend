@@ -1,5 +1,6 @@
 //! API layer for communicating with the Peer GraphQL backend.
 
+pub mod ads;
 pub mod auth;
 pub mod auth_fetch;
 pub mod chat;

@@ -1,0 +1,15 @@
+{
+  "data": {
+    "register": {
+      "status": "error",
+      "ResponseCode": "30601",
+      "userid": null,
+      "meta": {
+        "status": "error",
+        "RequestId": "mock-req-004",
+        "ResponseCode": "30601",
+        "ResponseMessage": "Email is already registered"
+      }
+    }
+  }
+}

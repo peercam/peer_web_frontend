@@ -1,0 +1,14 @@
+{
+  "data": {
+    "verifyAccount": {
+      "status": "success",
+      "ResponseCode": "30701",
+      "meta": {
+        "status": "success",
+        "RequestId": "mock-req-006",
+        "ResponseCode": "30701",
+        "ResponseMessage": "Account is already verified"
+      }
+    }
+  }
+}

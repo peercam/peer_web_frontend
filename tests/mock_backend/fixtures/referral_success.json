@@ -1,0 +1,22 @@
+{
+  "data": {
+    "verifyReferralString": {
+      "ResponseCode": "11011",
+      "affectedRows": [
+        {
+          "uid": "usr_mock_001",
+          "username": "peerTester",
+          "slug": "peertester",
+          "img": "https://via.placeholder.com/96"
+        }
+      ],
+      "status": "success",
+      "meta": {
+        "status": "success",
+        "RequestId": "mock-req-001",
+        "ResponseCode": "11011",
+        "ResponseMessage": "Referral info fetched successfully"
+      }
+    }
+  }
+}

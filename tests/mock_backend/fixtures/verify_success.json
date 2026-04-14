@@ -1,0 +1,14 @@
+{
+  "data": {
+    "verifyAccount": {
+      "status": "success",
+      "ResponseCode": "10701",
+      "meta": {
+        "status": "success",
+        "RequestId": "mock-req-005",
+        "ResponseCode": "10701",
+        "ResponseMessage": "Account verified successfully"
+      }
+    }
+  }
+}

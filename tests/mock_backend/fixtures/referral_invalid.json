@@ -1,0 +1,15 @@
+{
+  "data": {
+    "verifyReferralString": {
+      "ResponseCode": "31010",
+      "affectedRows": null,
+      "status": "error",
+      "meta": {
+        "status": "error",
+        "RequestId": "mock-req-002",
+        "ResponseCode": "31010",
+        "ResponseMessage": "Invalid referral string"
+      }
+    }
+  }
+}

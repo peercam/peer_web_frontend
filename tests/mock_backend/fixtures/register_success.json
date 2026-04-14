@@ -1,0 +1,15 @@
+{
+  "data": {
+    "register": {
+      "status": "success",
+      "ResponseCode": "10601",
+      "userid": "{{GENERATED_UUID}}",
+      "meta": {
+        "status": "success",
+        "RequestId": "mock-req-003",
+        "ResponseCode": "10601",
+        "ResponseMessage": "User registered successfully"
+      }
+    }
+  }
+}

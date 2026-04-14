@@ -25,6 +25,9 @@ pub fn ProfileHeader(
     /// Callback when follow state changes (view profile only).
     #[prop(optional)]
     on_follow_change: Option<Callback<bool>>,
+    /// Callback when boost post mode is activated (own profile only).
+    #[prop(optional)]
+    on_boost_posts: Option<Callback<()>>,
 ) -> impl IntoView {
     let is_hidden = profile.is_hidden();
     let is_illegal = profile.is_illegal();
@@ -85,7 +88,14 @@ pub fn ProfileHeader(
 
                 <div class="profile-actions-wrapper">
                     {if is_own_profile {
-                        view! { <OwnProfileActions/> }.into_any()
+                        match on_boost_posts {
+                            Some(cb) => view! {
+                                <OwnProfileActions on_boost_posts=cb/>
+                            }.into_any(),
+                            None => view! {
+                                <OwnProfileActions/>
+                            }.into_any(),
+                        }
                     } else {
                         match on_follow_change {
                             Some(callback) => view! {

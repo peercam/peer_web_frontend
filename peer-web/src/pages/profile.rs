@@ -41,6 +41,13 @@ fn ProfileMainContent() -> impl IntoView {
         |_| async { get_profile(None, None).await },
     );
 
+    // Boost post mode signal
+    let boost_mode_active = RwSignal::new(false);
+
+    let on_boost = Callback::new(move |_: ()| {
+        boost_mode_active.set(true);
+    });
+
     view! {
         <main class="site_main profile-main">
             <Suspense fallback=move || view! { <ProfileHeaderSkeleton/> }>
@@ -53,6 +60,7 @@ fn ProfileMainContent() -> impl IntoView {
                                     <ProfileHeader
                                         profile=profile
                                         is_own_profile=true
+                                        on_boost_posts=on_boost
                                     />
                                     <ProfilePostList user_id=user_id/>
                                 }.into_any()

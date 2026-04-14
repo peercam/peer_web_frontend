@@ -1,5 +1,6 @@
 //! Data models mirroring the Peer GraphQL schema.
 
+pub mod advertisement;
 pub mod auth;
 pub mod chat;
 pub mod comment;
@@ -12,6 +13,7 @@ pub mod shop;
 pub mod transaction;
 pub mod user;
 
+pub use advertisement::*;
 pub use chat::*;
 pub use comment::*;
 pub use common::*;
