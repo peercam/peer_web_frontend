@@ -53,26 +53,29 @@ From `peer-web/src/api/mod.rs`, the frontend has API modules for:
 
 ---
 
-## 2. Phase 0 — Project Skeleton & Parity
+## 2. Phase 0 — Project Skeleton & Parity ✅
 
-**Outcome:** A `cargo build`-able Rust crate that passes the same 7 test scenarios as the current Node.js mock.
+> **Status:** Complete (14 April 2026) — [Detailed plan](./phase-0-mock-backend-skeleton.md)
+
+**Outcome:** A `cargo build`-able Rust crate that passes 9 integration tests (the original 7 parity tests plus health query and reset endpoint tests).
 
 ### Step 0.1 — Initialise crate
 
-Create `tests/mock_backend/` as a Rust project (alongside, or replacing, the Node.js files):
+The Node.js files have been replaced with a Rust project:
 
 ```
 tests/mock_backend/
 ├── Cargo.toml
+├── README.md
+├── fixtures/              # Kept from Node.js as reference
 ├── src/
 │   ├── main.rs
 │   ├── lib.rs
 │   ├── state.rs
 │   ├── seed.rs
-│   ├── error.rs
 │   ├── types/
 │   │   ├── mod.rs
-│   │   └── response.rs
+│   │   └── registration.rs
 │   └── schema/
 │       ├── mod.rs
 │       ├── query.rs
@@ -80,10 +83,12 @@ tests/mock_backend/
 │           ├── mod.rs
 │           └── registration.rs
 └── tests/
-    └── integration.rs
+    └── integration.rs     # 9 tests
 ```
 
-**Cargo.toml dependencies:**
+> **Note:** `error.rs` and `types/response.rs` from the original plan were not needed — types live in `types/registration.rs` and error handling is inline in resolvers.
+
+**Cargo.toml dependencies (actual):**
 
 ```toml
 [package]
@@ -92,8 +97,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-async-graphql = "8"
-async-graphql-axum = "8"
+async-graphql = "7"           # v8 still RC at time of implementation
+async-graphql-axum = "7"
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tower = "0.5"
@@ -101,9 +106,14 @@ tower-http = { version = "0.6", features = ["cors"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
+chrono = "0.4"
+regex = "1"
 
 [dev-dependencies]
 reqwest = { version = "0.13", features = ["json"] }
+tokio-test = "0.4"
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
 ```
 
 ### Step 0.2 — Core types
@@ -111,14 +121,16 @@ reqwest = { version = "0.13", features = ["json"] }
 Define shared response types that mirror the backend's GraphQL schema exactly (field names, casing):
 
 ```rust
-// types/response.rs
+// types/registration.rs
 
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
-#[graphql(rename_fields = "PascalCase")]
 pub struct DefaultResponse {
     pub status: String,
+    #[graphql(name = "RequestId")]
     pub request_id: String,
+    #[graphql(name = "ResponseCode")]
     pub response_code: String,
+    #[graphql(name = "ResponseMessage")]
     pub response_message: String,
 }
 
@@ -127,6 +139,9 @@ impl DefaultResponse {
     pub fn error(code: &str, message: &str) -> Self { /* ... */ }
 }
 ```
+
+> **Deviation:** `#[graphql(rename_fields = "PascalCase")]` was removed because it renamed
+> `status` → `Status`, breaking GraphQL queries. Per-field `#[graphql(name)]` is used instead.
 
 Additional types for Phase 0:
 
@@ -142,7 +157,7 @@ Additional types for Phase 0:
 
 ```rust
 // state.rs
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -152,12 +167,21 @@ pub struct MockState {
     pub known_referrals: HashSet<Uuid>,
     pub registered_emails: HashSet<String>,
     pub verified_users: HashSet<Uuid>,
-    pub users: HashMap<Uuid, User>,
     // Extended in later phases:
+    // pub users: HashMap<Uuid, User>,
     // pub posts: Vec<Post>,
     // pub wallets: HashMap<Uuid, Balance>,
     // pub comments: Vec<Comment>,
     // pub chats: Vec<Chat>,
+}
+
+impl MockState {
+    /// Reset state to defaults (for test isolation)
+    pub fn reset(&mut self) {
+        self.registered_emails.clear();
+        self.verified_users.clear();
+        // Note: known_referrals are NOT cleared — they're seed data
+    }
 }
 ```
 
@@ -178,7 +202,18 @@ impl Default for MockState {
             known_referrals: HashSet::from([REFERRAL_PRIMARY, REFERRAL_SECONDARY]),
             registered_emails: HashSet::new(),
             verified_users: HashSet::new(),
-            users: HashMap::new(),
+        }
+    }
+}
+
+/// Mock referral user data returned on successful verification
+pub mod mock_users {
+    pub fn referral_user() -> ReferralUser {
+        ReferralUser {
+            uid: ID::from("usr_mock_001"),
+            username: "peerTester".to_string(),
+            slug: "peertester".to_string(),
+            img: Some("https://via.placeholder.com/96".to_string()),
         }
     }
 }
@@ -202,11 +237,14 @@ pub struct QueryRoot;
 
 #[Object]
 impl QueryRoot {
-    async fn _health(&self) -> bool {
+    #[graphql(name = "_health")]
+    async fn health(&self) -> bool {
         true
     }
 }
 ```
+
+> **Deviation:** async-graphql strips leading underscores from method names, so `#[graphql(name = "_health")]` is required.
 
 ### Step 0.7 — Schema assembly
 
@@ -228,19 +266,24 @@ pub fn build_schema(state: SharedState) -> Schema<QueryRoot, MutationRoot, Empty
 
 ```rust
 pub fn app() -> Router {
-    let state = SharedState::default();  // Arc<RwLock<MockState::default()>>
-    let schema = build_schema(state.clone());
+    let mock_state: SharedState = Arc::new(RwLock::new(MockState::default()));
+    let schema = build_schema(mock_state.clone());
+    let app_state = AppState { schema: schema.clone(), mock_state };
+    build_router(app_state)
+}
 
-    Router::new()
-        .route("/graphql", post(graphql_handler).get(graphql_handler))
-        .route("/reset", post(reset_handler))
-        .layer(CorsLayer::permissive())
-        .with_state(AppState { schema, mock_state: state })
+pub fn app_with_state(mock_state: SharedState) -> Router {
+    let schema = build_schema(mock_state.clone());
+    let app_state = AppState { schema: schema.clone(), mock_state };
+    build_router(app_state)
 }
 ```
 
-- `graphql_handler`: Delegates to `async_graphql_axum::GraphQL`
-- `reset_handler`: Acquires write lock, replaces state with `MockState::default()`
+- `graphql_handler`: Explicit async fn extracting `State<AppState>` + `GraphQLRequest`, calls `schema.execute()`
+- `reset_handler`: Acquires write lock, calls `mock_state.reset()` (clears emails/verified but preserves referral seeds)
+- `app_with_state()`: Exposed for tests that need shared state across multiple requests
+
+> **Deviation:** `GraphQL::new()` as a service didn't implement axum 0.8's `Handler` trait, so an explicit handler function is used. GraphQL endpoint is POST-only (sufficient for all use cases).
 
 ### Step 0.9 — Binary entry (`main.rs`)
 
@@ -257,17 +300,19 @@ async fn main() {
 
 ### Step 0.10 — Integration tests
 
-Port all 7 existing Node.js test scenarios to `tests/integration.rs` using `tower::ServiceExt::oneshot`:
+All 9 tests pass using `tower::ServiceExt::oneshot` (in-process, no port binding). Tests using shared state use a `graphql_stateful()` helper with `app_with_state()`.
 
 | # | Test | Assert |
 |---|------|--------|
-| 1 | Valid referral UUID | `status: "success"`, `ResponseCode: "11011"`, `affectedRows[0].uid == "usr_mock_001"` |
-| 2 | Invalid referral string | `status: "error"`, `ResponseCode: "31010"`, `affectedRows: null` |
-| 3 | Register success | `status: "success"`, `ResponseCode: "10601"`, `userid` is valid UUID |
-| 4 | Register duplicate email | `status: "error"`, `ResponseCode: "30601"`, `userid: null` |
-| 5 | Verify account success | `status: "success"`, `ResponseCode: "10701"` |
-| 6 | Already verified | `status: "success"`, `ResponseCode: "30701"` |
-| 7 | Simulated internal error (`fail@`) | `status: "error"`, `ResponseCode: "40601"`, `userid: null` |
+| 1 | `test_valid_referral` | `status: "success"`, `ResponseCode: "11011"`, `affectedRows[0].uid == "usr_mock_001"` |
+| 2 | `test_invalid_referral` | `status: "error"`, `ResponseCode: "31010"`, `affectedRows: null` |
+| 3 | `test_register_success` | `status: "success"`, `ResponseCode: "10601"`, `userid` is valid UUID |
+| 4 | `test_register_duplicate_email` | `status: "error"`, `ResponseCode: "30601"`, `userid: null` |
+| 5 | `test_verify_account_success` | `status: "success"`, `ResponseCode: "10701"` |
+| 6 | `test_already_verified` | `status: "success"`, `ResponseCode: "30701"` |
+| 7 | `test_fail_email_error` | `status: "error"`, `ResponseCode: "40601"`, `userid: null` |
+| 8 | `test_reset_endpoint` | POST /reset clears state, re-register succeeds |
+| 9 | `test_health_query` | `_health` returns `true` |
 
 ### Step 0.11 — Wire into peer-web as dev-dependency
 
@@ -287,12 +332,16 @@ Once all 7 tests pass in Rust and CI is green:
 
 ### Phase 0 definition of done
 
-- [ ] `cargo build` succeeds for the `mock_backend` crate
-- [ ] `cargo test` passes all 7 parity tests (in-process, no port binding)
-- [ ] `cargo run` starts the HTTP server on `:4000` and serves GraphQL
-- [ ] `POST /reset` clears state
-- [ ] `POST /graphql` with the 3 mutations returns identical response shapes to the Node.js mock
-- [ ] `peer-web` E2E tests can import `mock_backend::app()` as a dev-dependency
+- [x] `cargo build` succeeds for the `mock_backend` crate (no warnings)
+- [x] `cargo test` passes all 9 integration tests (in-process, no port binding)
+- [x] `cargo clippy -- -D warnings` passes
+- [x] `cargo fmt --check` passes
+- [x] `cargo run` starts the HTTP server on `:4000` and serves GraphQL
+- [x] `POST /reset` clears state (preserves seed referrals)
+- [x] `POST /graphql` with the 3 mutations returns identical response shapes to the Node.js mock
+- [x] Node.js files removed (fixtures/ kept as reference)
+- [x] README.md updated with Rust instructions
+- [x] `mock_backend::app()` and `build_schema()` exported as public API
 
 ---
 

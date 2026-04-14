@@ -10,13 +10,13 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 | Status | Count |
 |--------|-------|
-| ✅ Implemented | 3 |
+| ✅ Implemented | 4 |
 | 🟡 Near-Complete | 6 |
 | 🚧 In Progress | 3 |
-| ❌ Not Started | 8 |
+| ❌ Not Started | 7 |
 | **Total** | **20** |
 
-**Convergence:** ~50%
+**Convergence:** ~55%
 
 ---
 
@@ -40,7 +40,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | **Social** ||||
 | Chat | `chat.php` | 🟡 Core Implemented | 141-line page + 7 components (chat_list, contacts_overlay, group_review, chat_input, chat_messages, chat_container, chat_item), API layer (151L), state module, SCSS (851L) ([docs](plans/chat/chat-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5). **Gaps:** Firebase real-time listener missing (no polling fallback), unread indicators missing, chat search logic not connected |
 | Invite | `invite.php` | ❌ Not Started | Invite generation |
-| Referral Board | `referralBoard.php` | ❌ Not Started | Referral link, invited/inviter tabs, user cards ([docs](plans/referral-board/referral-board-implementation.md)) |
+| Referral Board | `referralBoard.php` | ✅ Implemented | Referral link + copy, invited/inviter tabs, user cards, auth guard ([docs](plans/referral-board/referral-board-implementation.md)) |
 | **Economy** ||||
 | Wallet | `wallet.php` | 🟡 Implemented (tests pending) | 146-line page + transfer_modal (760L), balance_header, transaction_history, transaction_item, API layer (246L), SCSS (1092L) ([docs](plans/wallet/wallet-implementation.md)). **Gaps:** shop purchase order details UI not wired (model + query exist), thousand-separator formatting missing |
 | Peer Shop | `viewPeerShop.php` | ❌ Not Started | Shop view |
@@ -101,6 +101,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Comments | `js/comments.js` | 🚧 In Progress | `src/api/comments.rs` (204L) — get_post, guest_get_post, list_comments, create_comment, like/unlike |
 | Chat | `js/chat/api.js` | 🚧 In Progress | `src/api/chat.rs` (151L) — list_chats, send_message, create_chat |
 | Wallet | `js/wallet.js` | 🚧 In Progress | `src/api/wallet.rs` (246L) — get_balance, transaction_history, transfer_tokens |
+| Referral | `js/referral.js` | ✅ Implemented | `src/api/referral.rs` (65L) — get_referral_info, get_referral_list |
 | Firebase | `js/firebase_config.js` | ❌ Not Started | Real-time, analytics |
 
 ---
@@ -125,7 +126,7 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 
 | Phase | Scope | Plan | Quality | Status |
 |-------|-------|------|---------|--------|
-| 0 — Skeleton & Parity | 3 registration mutations, health check | [phase-0](plans/mock-backend/phase-0-mock-backend-skeleton.md) | — | ✅ Done (Node.js parity) |
+| 0 — Skeleton & Parity | 3 registration mutations, health check, 9 integration tests | [phase-0](plans/mock-backend/phase-0-mock-backend-skeleton.md) | ⭐⭐⭐⭐ (4/5) | ✅ Done — Node.js replaced, async-graphql v7 + axum 0.8 |
 | 1 — Login & Session | login, refreshToken, logout, deleteAccount, updatePassword, password reset | [phase-1](plans/mock-backend/phase-1-login-session-flows.md) | ⭐⭐⭐⭐⭐ (5/5) | 🚧 In Progress |
 | 2 — Users & Profiles | getProfile, searchUser, follow/block/report, preferences, profile edits | [phase-2](plans/mock-backend/phase-2-users-and-profiles.md) | — | ❌ Not Started |
 | 3 — Posts & Content | listPosts, guestListPost, postAction, createPost, searchTags, ads | [phase-3](plans/mock-backend/phase-3-posts-content.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
@@ -147,12 +148,36 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 7. 🟡 Chat — Core implemented, Firebase real-time missing ([docs](plans/chat/chat-implementation.md))
 8. 🟡 Wallet — Implemented (tests pending), shop order UI not wired ([docs](plans/wallet/wallet-implementation.md))
 9. 🟡 Settings — Implemented (with gaps), delete account UI not wired ([docs](plans/settings/settings-implementation.md))
-10. ⬜ Admin — Moderation tools (no plan yet)
-11. ⬜ Remaining pages — Invite, Referral Board, Peer Shop, My Ads, Download, Version History (no plans yet)
+10. ✅ ~~Referral Board~~ — Complete, full UI + API, pending mock backend endpoints ([docs](plans/referral-board/referral-board-implementation.md))
+11. ⬜ Admin — Moderation tools (no plan yet)
+12. ⬜ Remaining pages — Invite, Peer Shop, My Ads, Download, Version History (no plans yet)
 
 ---
 
 ## Changelog
+
+### 2026-04-14 (Mock Backend Phase 0 Documentation Update)
+- **Phase 0 plan doc updated** to reflect actual implementation:
+  - All task checkboxes and Definition of Done items marked complete
+  - Code snippets updated: removed `rename_fields = "PascalCase"` (broke queries), added `#[graphql(name)]` per-field, fixed `_health` query naming, replaced `GraphQL` service with explicit handler
+  - Cargo.toml: `async-graphql` v8→v7 (v8 still RC), added `regex = "1"`, `chrono = "0.4"`
+  - Test section updated: 7→9 tests, `graphql_stateful()` helper documented
+  - Migration checklist fully checked off (Node.js files deleted, fixtures kept)
+  - Appendix B added: 8 implementation deviations catalogued
+- **Parent plan updated** (`mock-backend-rust-rewrite.md`):
+  - Phase 0 section marked ✅ Complete with all definition-of-done items checked
+  - Directory structure, Cargo.toml, code snippets, and test table updated to match reality
+  - Deviation notes added for async-graphql naming, axum routing, and POST-only GraphQL
+- **Feature convergence table updated**: Phase 0 row now shows quality rating ⭐⭐⭐⭐ (4/5), expanded scope note, and detailed status
+
+### 2026-04-14 (Referral Board Implementation)
+- **Referral Board promoted** ❌→✅ Implemented
+- New files: `src/pages/referral_board.rs` (150L), `src/components/referral_board/` (4 components: header, tabs, user_card, user_grid), `src/api/referral.rs` (65L), `src/models/referral.rs` (150L), `style/referral-board.scss` (180L)
+- Features: referral link display + clipboard copy, "Invited Friends" / "My Inviter" tabs, user card grid with navigation, auth guard, loading skeletons, empty states, responsive layout
+- Tests: 13 passing (11 unit + 2 fixture)
+- API layer entry added for Referral module
+- **Summary counts updated:** 3/6/3/8 → 4/6/3/7; convergence ~50% → ~55%
+- **Priority list updated:** Referral Board marked complete at #10
 
 ### 2026-04-14 (Plan vs Tracker Reconciliation)
 - **5 features promoted** after cross-referencing plan doc statuses against tracker:

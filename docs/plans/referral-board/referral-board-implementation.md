@@ -972,8 +972,64 @@ pub use referral_board::ReferralBoardPage;
 
 ---
 
-## Open Questions
+## Open Questions (Resolved)
 
-1. **Invite page:** Should `/invite?referralUuid=...` be a separate route that does deep-link detection, or just redirect to `/register?referralUuid=...`? (Can be deferred to a separate small ticket.)
+1. **Invite page:** Should `/invite?referralUuid=...` be a separate route that does deep-link detection, or just redirect to `/register?referralUuid=...`?
+   - **Resolution:** Deferred to a separate ticket. Out of scope for this implementation.
+
 2. **Global vs inline toast:** The existing `ToastProvider` provides global toasts. Should the copy notification use that, or keep a local inline toast matching the legacy design?
+   - **Resolution:** Kept inline toast to match legacy design. The `ReferralHeader` component shows a local toast below the link container when copied.
+
 3. **Pagination:** The API supports `offset`/`limit` — should we wire infinite scroll from the start, or implement a simple single-page load for v1?
+   - **Resolution:** Implemented single-page load (`offset: 0, limit: 20`) for v1. Infinite scroll can be added later when needed.
+
+---
+
+## Verification
+
+**Date:** 2026-04-14
+
+### Compilation
+- ✅ `cargo check --all-targets` passes (no referral-specific errors)
+
+### Tests
+All 13 referral-related tests pass:
+
+**Unit tests (11):**
+- `models::referral::tests::test_referral_info_is_success`
+- `models::referral::tests::test_referral_list_user_avatar_url`
+- `models::referral::tests::test_referral_list_user_display_slug`
+- `models::referral::tests::test_referral_list_empty_response`
+- `models::referral::tests::test_deserialize_empty_arrays`
+- `models::referral::tests::test_deserialize_single_object`
+- `models::user::tests::test_referral_response_is_success`
+- `pages::register::tests::test_previous_from_referral_is_none`
+- `pages::register::tests::test_previous_from_default_referral`
+- `api::graphql::tests::test_verify_referral_data_deserialization`
+- `utils::response_codes::tests::invalid_referral_code_returns_friendly_message`
+
+**Fixture tests (2):**
+- `test_referral_success_fixture`
+- `test_referral_invalid_fixture`
+
+### File Manifest (Verified)
+
+| File | Lines | Status |
+|------|-------|--------|
+| `src/pages/referral_board.rs` | ~150 | ✅ |
+| `src/components/referral_board/mod.rs` | 14 | ✅ |
+| `src/components/referral_board/referral_header.rs` | ~90 | ✅ |
+| `src/components/referral_board/referral_tabs.rs` | ~100 | ✅ |
+| `src/components/referral_board/referral_user_card.rs` | ~60 | ✅ |
+| `src/components/referral_board/referral_user_grid.rs` | ~40 | ✅ |
+| `src/api/referral.rs` | ~65 | ✅ |
+| `src/models/referral.rs` | ~150 | ✅ |
+| `style/referral-board.scss` | ~180 | ✅ |
+
+### Routing
+- ✅ `/referral` route registered in `src/app.rs`
+- ✅ `ReferralBoardPage` exported from `src/pages/mod.rs`
+
+### Next Steps
+- Wire mock backend `getReferralInfo` and `referralList` resolvers when mock backend Phase 2 begins
+- Add E2E tests once mock backend supports referral endpoints
