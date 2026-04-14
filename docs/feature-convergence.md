@@ -2,7 +2,7 @@
 
 This document tracks the progress of migrating features from the legacy PHP/JS frontend to the new Leptos (Rust/WASM) rewrite.
 
-**Last Updated:** 2026-04-12
+**Last Updated:** 2026-04-14
 
 ---
 
@@ -12,8 +12,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 |--------|-------|
 | ✅ Implemented | 2 |
 | 🚧 In Progress | 1 |
-| 📋 Planning | 5 |
-| ❌ Not Started | 12 |
+| 📋 Planning | 6 |
+| ❌ Not Started | 11 |
 | **Total** | **20** |
 
 **Convergence:** ~10%
@@ -36,7 +36,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | My Profile | `profile.php` | 📋 Planning | User profile, posts, followers/following ([docs](plans/profile/profile-implementation.md)) |
 | View Profile | `view-profile.php` | 📋 Planning | Other users' profiles ([docs](plans/profile/profile-implementation.md)) |
 | Edit Profile | `edit_profile.php` | ❌ Not Started | Profile editing |
-| Settings | `profileSettings.php` | ❌ Not Started | Preferences, account settings |
+| Settings | `profileSettings.php` | 📋 Planning | Profile editing, credentials, content prefs, logout, deactivation ([docs](plans/settings/settings-implementation.md)) |
 | **Social** ||||
 | Chat | `chat.php` | 📋 Planning | Real-time messaging (Firestore), group/private ([docs](plans/chat/chat-implementation.md)) |
 | Invite | `invite.php` | ❌ Not Started | Invite generation |
@@ -129,13 +129,21 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 6. 📋 New Post — Content creation ([docs](plans/new-post/new-post-implementation.md))
 7. 📋 Chat — Real-time, complex ([docs](plans/chat/chat-implementation.md))
 8. 📋 Wallet — Financial features ([docs](plans/wallet/wallet-implementation.md))
-9. ⬜ Settings — User preferences
+9. 📋 Settings — User preferences ([docs](plans/settings/settings-implementation.md))
 10. ⬜ Admin — Moderation tools
 11. ⬜ Remaining pages
 
 ---
 
 ## Changelog
+
+### 2026-04-14 (Settings Planning)
+- Settings implementation planning document created
+- Comprehensive documentation of profile editing, credential changes, content preferences
+- Detailed analysis of 7 backend mutations (updateProfileImage, updateBio, updateUsername, updatePassword, updateEmail, updateUserPreferences, deleteAccount)
+- 5-phase implementation plan with Rust component code for all sub-panels
+- Settings marked as "Planning" in tracker
+- Updated summary counts (6 Planning, 11 Not Started)
 
 ### 2026-04-12 (Wallet Planning)
 - Wallet implementation planning document created
