@@ -2,8 +2,9 @@
 
 **Feature:** New Post  
 **Priority:** #6 (after View Post & Profile)  
-**Status:** 📋 Planning  
-**Created:** 2026-04-12
+**Status:** � In Progress  
+**Created:** 2026-04-12  
+**Updated:** 2026-04-14
 
 ---
 
@@ -31,61 +32,61 @@ Implement the post creation page for the Leptos frontend. This is a complex feat
 
 ### In Scope
 
-- [ ] New post page (`/new` or `/create` route)
-- [ ] Content type selector (text, image, audio, video tabs)
-- [ ] **Text Post:**
-  - [ ] Title input (required, 1-63 chars)
-  - [ ] Description textarea (1-500 chars)
-  - [ ] Character count indicators
+- [x] New post page (`/new` or `/create` route)
+- [x] Content type selector (text, image, audio, video tabs)
+- [x] **Text Post:**
+  - [x] Title input (required, 1-63 chars)
+  - [x] Description textarea (1-500 chars)
+  - [x] Character count indicators
 - [ ] **Image Post:**
-  - [ ] Drag & drop / file picker for images
-  - [ ] Multi-image upload (up to 5 images)
-  - [ ] Image slider navigation
-  - [ ] Image cropping modal
-  - [ ] Aspect ratio toggle (1:1 square, 4:5 vertical)
-  - [ ] Cropped image preview
-  - [ ] Remove individual images
+  - [x] Drag & drop / file picker for images
+  - [x] Multi-image upload (up to 5 images)
+  - [x] Image slider navigation
+  - [ ] Image cropping modal _(UI shell exists, canvas draw/crop logic is stubbed)_
+  - [ ] Aspect ratio toggle (1:1 square, 4:5 vertical) _(UI exists, not wired to canvas)_
+  - [ ] Cropped image preview _(output canvas is empty)_
+  - [x] Remove individual images
 - [ ] **Audio Post:**
-  - [ ] Audio file upload (.mp3, .wav, .flac, .aac, .m4a)
-  - [ ] Voice recording with microphone
-  - [ ] Real-time waveform visualization
-  - [ ] Recording timer
-  - [ ] Playback controls (play/pause)
-  - [ ] Record again functionality
-  - [ ] Cover image upload (optional background)
+  - [x] Audio file upload (.mp3, .wav, .flac, .aac, .m4a)
+  - [ ] Voice recording with microphone _(UI shell exists, MediaRecorder calls stubbed)_
+  - [ ] Real-time waveform visualization _(static SVG placeholder only)_
+  - [ ] Recording timer _(signal exists, not incremented)_
+  - [ ] Playback controls (play/pause) _(button exists, handler is empty)_
+  - [ ] Record again functionality _(resets state, but no actual recording)_
+  - [x] Cover image upload (optional background)
 - [ ] **Video Post:**
-  - [ ] Video file upload
-  - [ ] Dual video support (up to 2 videos)
-  - [ ] Video trimming interface
-  - [ ] Timeline with thumbnail frames
-  - [ ] Start/end handle dragging
-  - [ ] Minimum trim duration (3 seconds)
-  - [ ] FFmpeg WASM encoding
-  - [ ] Cover image generation/upload
-  - [ ] Progress indicator during processing
+  - [x] Video file upload
+  - [x] Dual video support (up to 2 videos)
+  - [ ] Video trimming interface _(UI shell exists, drag handlers are empty)_
+  - [ ] Timeline with thumbnail frames _(no frame extraction)_
+  - [ ] Start/end handle dragging _(handlers are empty stubs)_
+  - [x] Minimum trim duration (3 seconds) _(validation in place)_
+  - [ ] FFmpeg WASM encoding _(not integrated)_
+  - [x] Cover image generation/upload
+  - [x] Progress indicator during processing _(UI exists)_
 - [ ] **Tag System:**
-  - [ ] Tag input with autocomplete
-  - [ ] Tag search via API
-  - [ ] Selected tags display with remove
-  - [ ] Tag history (localStorage)
-  - [ ] Max 10 tags per post
-  - [ ] Tag validation (alphanumeric/underscores, 2-53 chars)
-- [ ] **Live Preview:**
-  - [ ] Full view preview (modal-style)
-  - [ ] Collapsed card preview
-  - [ ] Toggle between preview modes
-  - [ ] Back to edit functionality
-- [ ] **Submit Flow:**
-  - [ ] Pre-submission validation
-  - [ ] Eligibility token fetch (`postEligibility`)
-  - [ ] Multipart file upload (`/upload-post`)
-  - [ ] Post creation (`createPost` mutation)
-  - [ ] Success/error feedback
-  - [ ] Redirect to profile on success
-- [ ] Loading states and progress indicators
-- [ ] Form validation with error messages
-- [ ] Token cost indicator (20 tokens or free daily)
-- [ ] Responsive layout
+  - [x] Tag input with autocomplete
+  - [x] Tag search via API
+  - [x] Selected tags display with remove
+  - [ ] Tag history (localStorage) _(not implemented)_
+  - [x] Max 10 tags per post
+  - [x] Tag validation (alphanumeric/underscores, 2-53 chars)
+- [x] **Live Preview:**
+  - [x] Full view preview (modal-style)
+  - [x] Collapsed card preview
+  - [x] Toggle between preview modes
+  - [x] Back to edit functionality
+- [x] **Submit Flow:**
+  - [x] Pre-submission validation
+  - [x] Eligibility token fetch (`postEligibility`)
+  - [x] Multipart file upload (`/upload-post`)
+  - [x] Post creation (`createPost` mutation)
+  - [x] Success/error feedback
+  - [x] Redirect to profile on success
+- [x] Loading states and progress indicators
+- [x] Form validation with error messages
+- [x] Token cost indicator (20 tokens or free daily)
+- [ ] Responsive layout _(desktop layout done, no mobile breakpoints)_
 
 ### Out of Scope (Future Work)
 
@@ -994,37 +995,37 @@ Port styles from:
 
 ## Migration Checklist
 
-- [ ] Create models for post creation types
-- [ ] Implement `postEligibility` API call
-- [ ] Implement `/upload-post` multipart endpoint
-- [ ] Implement `createPost` mutation
-- [ ] Implement `searchTags` query
-- [ ] Build new post page layout
-- [ ] Build content type tabs sidebar
-- [ ] Build text post form
-- [ ] Build image upload + slider
-- [ ] Build image cropper modal (canvas)
-- [ ] Build audio upload dropzone
-- [ ] Build voice recorder with visualization
+- [x] Create models for post creation types
+- [x] Implement `postEligibility` API call
+- [x] Implement `/upload-post` multipart endpoint
+- [x] Implement `createPost` mutation
+- [x] Implement `searchTags` query
+- [x] Build new post page layout
+- [x] Build content type tabs sidebar
+- [x] Build text post form
+- [x] Build image upload + slider
+- [ ] Build image cropper modal (canvas) _(UI shell only, draw/crop logic stubbed)_
+- [x] Build audio upload dropzone
+- [ ] Build voice recorder with visualization _(UI shell only, MediaRecorder stubbed)_
 - [ ] Integrate WAV conversion for Chrome/Safari
-- [ ] Build video upload section
-- [ ] Build video trimmer with timeline
+- [x] Build video upload section
+- [ ] Build video trimmer with timeline _(UI shell only, drag handlers empty)_
 - [ ] Integrate FFmpeg WASM for video encoding
-- [ ] Build tag input with autocomplete
-- [ ] Build tag suggestions dropdown
-- [ ] Build tag list with remove
+- [x] Build tag input with autocomplete
+- [x] Build tag suggestions dropdown
+- [x] Build tag list with remove
 - [ ] Implement tag history (localStorage)
-- [ ] Build full view preview
-- [ ] Build collapsed card preview
-- [ ] Implement form validation
-- [ ] Implement submit flow
-- [ ] Add loading states and progress
-- [ ] Add error feedback
-- [ ] Add success redirect
-- [ ] Port styles from legacy CSS
+- [x] Build full view preview
+- [x] Build collapsed card preview
+- [x] Implement form validation
+- [x] Implement submit flow
+- [x] Add loading states and progress
+- [x] Add error feedback
+- [x] Add success redirect
+- [x] Port styles from legacy CSS
 - [ ] Test all content types
 - [ ] Add E2E tests
-- [ ] Update feature-convergence.md
+- [x] Update feature-convergence.md
 
 ---
 
@@ -1059,3 +1060,15 @@ The legacy implementation uses `js/ffmpeg/ffmpeg/package/dist/umd/ffmpeg.js`. In
 - For audio posts: Background cover is optional
 - For video posts: First frame can be extracted as cover
 - Cover is sent as base64 while media uses multipart upload
+
+### Implementation Status (2026-04-14)
+
+**~70% structurally complete.** All scaffolding, state management, API calls, routing, models, and styles are in place. Compiler warnings are all unused-variable/import issues from stub implementations.
+
+**Remaining work (browser-side media processing):**
+1. **Image Cropper** — Canvas draw logic, image rendering with dark overlay, crop region extraction (currently outputs empty canvas)
+2. **Voice Recorder** — MediaRecorder API integration, real-time waveform animation, timer increment, WAV conversion for Chrome/Safari
+3. **Video Trimmer** — Timeline handle drag logic, FFmpeg WASM loading/encoding, thumbnail frame generation
+4. **Tag History** — localStorage persistence for recently used tags
+5. **Drag & Drop** — `dragover`/`drop` event handlers on drop zones (currently click-only)
+6. **Responsive Layout** — Mobile breakpoints and tablet adaptations

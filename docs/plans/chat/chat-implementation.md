@@ -2,10 +2,11 @@
 
 **Feature:** Chat  
 **Priority:** #7 (after New Post)  
-**Status:** 📋 Planning  
+**Status:** ✅ Core Implemented  
 **Created:** 2026-04-12  
 **Plan Quality:** ⭐⭐⭐⭐ (4/5)  
-**Reviewed:** 2026-04-14
+**Reviewed:** 2026-04-14  
+**Implementation Verified:** 2026-04-14
 
 ---
 
@@ -29,23 +30,23 @@ Implement the real-time chat system for the Leptos frontend. This is a complex f
 
 ### In Scope
 
-- [ ] Chat page UI (`/chat`)
-- [ ] Chat list component (sidebar)
-- [ ] Private/Group tab switching
-- [ ] Chat container with message display
-- [ ] Message input with send functionality
-- [ ] Friends list for starting new chats
-- [ ] Create private chat
-- [ ] Create group chat (multi-select, name, image)
-- [ ] Real-time message updates (Firebase listener)
-- [ ] Message timestamp formatting (relative: Xm, Xh, Xd)
+- [x] Chat page UI (`/chat`)
+- [x] Chat list component (sidebar)
+- [x] Private/Group tab switching
+- [x] Chat container with message display
+- [x] Message input with send functionality
+- [x] Friends list for starting new chats
+- [x] Create private chat
+- [x] Create group chat (multi-select, name, image)
+- [ ] Real-time message updates (Firebase listener) — *polling fallback not yet implemented*
+- [x] Message timestamp formatting (relative: Xm, Xh, Xd)
 - [ ] Unread message indicators
-- [ ] Chat search/filter
+- [ ] Chat search/filter — *UI present, logic not connected*
 - [ ] User presence indicators
-- [ ] Loading states and skeletons
-- [ ] Error handling (connection lost, send failed)
-- [ ] Mobile-responsive layout
-- [ ] Message character limit (500)
+- [x] Loading states and skeletons
+- [x] Error handling (connection lost, send failed)
+- [x] Mobile-responsive layout
+- [x] Message character limit (500)
 
 ### Out of Scope (Future Work)
 
@@ -1236,23 +1237,25 @@ test('can create group chat', async ({ page }) => {
 
 ---
 
-## Files to Create
+## Files Created
 
-| File | Purpose |
-|------|---------|
-| `src/pages/chat.rs` | Chat page component |
-| `src/models/chat.rs` | Chat data models |
-| `src/api/chat.rs` | GraphQL queries/mutations |
-| `src/state/chat.rs` | Chat context/state |
-| `src/components/chat/mod.rs` | Chat components module |
-| `src/components/chat/chat_list.rs` | Chat sidebar |
-| `src/components/chat/chat_item.rs` | Single chat card |
-| `src/components/chat/chat_container.rs` | Message display |
-| `src/components/chat/chat_input.rs` | Message input |
-| `src/components/chat/contacts_overlay.rs` | Friends list |
-| `src/components/chat/group_review.rs` | Group creation |
-| `style/pages/_chat.scss` | Chat page styles |
-| `tests/chat_test.rs` | Unit tests |
+| File | Purpose | Status |
+|------|---------|--------|
+| `src/pages/chat.rs` | Chat page component | ✅ |
+| `src/models/chat.rs` | Chat data models | ✅ |
+| `src/api/chat.rs` | GraphQL queries/mutations | ✅ |
+| `src/state/chat.rs` | Chat context/state | ✅ |
+| `src/components/chat/mod.rs` | Chat components module | ✅ |
+| `src/components/chat/chat_list.rs` | Chat sidebar | ✅ |
+| `src/components/chat/chat_item.rs` | Single chat card | ✅ |
+| `src/components/chat/chat_container.rs` | Message display | ✅ |
+| `src/components/chat/chat_input.rs` | Message input | ✅ |
+| `src/components/chat/chat_messages.rs` | Message bubbles + scroll | ✅ |
+| `src/components/chat/contacts_overlay.rs` | Friends list | ✅ |
+| `src/components/chat/group_review.rs` | Group creation | ✅ |
+| `style/chat.scss` | Chat page styles | ✅ |
+| `src/models/chat.rs` (tests) | Unit tests | ✅ |
+| `end2end/tests/chat.spec.ts` | E2E tests | ❌ |
 
 ---
 
@@ -1292,6 +1295,18 @@ test('can create group chat', async ({ page }) => {
 ---
 
 ## Changelog
+
+### 2026-04-14 (Implementation Verified)
+- Core implementation complete and compiles successfully
+- All planned components created except E2E tests
+- Unit tests present in `src/models/chat.rs` for chat type detection, display names, message truncation
+- GraphQL queries/mutations integrated with auth tokens
+- Known gaps:
+  - Real-time updates not implemented (no Firebase or polling)
+  - Chat search UI present but not functional
+  - Sender avatars hardcoded in messages (uses `/svg/noname.svg`)
+  - Group image upload UI placeholder only
+  - No unread indicators or presence
 
 ### 2026-04-14 (Quality Review)
 - Plan rated ⭐⭐⭐⭐ (4/5)

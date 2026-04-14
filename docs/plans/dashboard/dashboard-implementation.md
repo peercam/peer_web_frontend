@@ -2,8 +2,9 @@
 
 **Feature:** Dashboard  
 **Priority:** #3 (after Login/Auth)  
-**Status:** 📋 Planning  
-**Created:** 2026-04-10
+**Status:** � Mostly Implemented (minor gaps)  
+**Created:** 2026-04-10  
+**Updated:** 2026-04-14
 
 ---
 
@@ -28,24 +29,24 @@ Implement the main dashboard page for the Leptos frontend — the core user expe
 
 ### In Scope
 
-- [ ] Dashboard page UI (`/dashboard`)
-- [ ] Post list component with infinite scroll
-- [ ] Post card component (image, video, audio, text variants)
-- [ ] Content type filter sidebar
-- [ ] Feed filter (all/followers/following)
-- [ ] Sort options (newest, trending, likes, views, comments)
-- [ ] Title/tag search bar
-- [ ] User search with dropdown
-- [ ] Profile widget (sidebar)
-- [ ] Main navigation menu
-- [ ] Quick actions (new post link)
-- [ ] Post click → view post modal/overlay
-- [ ] Like/dislike/save interactions
-- [ ] View tracking (mark posts as viewed)
-- [ ] Advertisement post integration
-- [ ] Filter persistence (localStorage)
-- [ ] Loading states and skeletons
-- [ ] Empty state ("No posts found")
+- [x] Dashboard page UI (`/dashboard`)
+- [x] Post list component with infinite scroll
+- [x] Post card component (image, video, audio, text variants)
+- [x] Content type filter sidebar
+- [x] Feed filter (all/followers/following)
+- [x] Sort options (newest, trending, likes, views, comments)
+- [x] Title/tag search bar
+- [x] User search with dropdown
+- [x] Profile widget (sidebar) — ⚠️ placeholder only, not wired to auth context
+- [x] Main navigation menu
+- [x] Quick actions (new post link)
+- [ ] Post click → view post modal/overlay — ⚠️ click handler is a TODO stub
+- [x] Like/dislike/save interactions
+- [x] View tracking (mark posts as viewed)
+- [x] Advertisement post integration
+- [x] Filter persistence (localStorage)
+- [x] Loading states and skeletons
+- [x] Empty state ("No posts found")
 
 ### Out of Scope (Future Work)
 
@@ -1431,28 +1432,15 @@ Already in use:
 - `reqwest` — HTTP client (SSR)
 - `web-sys` — DOM APIs (already in Cargo.toml)
 
-**Required `web-sys` features to add in `Cargo.toml`:**
-```toml
-web-sys = { 
-    version = "0.3", 
-    features = [
-        "Window", "Location", "Storage", "Document", 
-        "HtmlDocument", "HtmlElement", "Element", 
-        "History", "Event", "EventTarget",
-        # New features needed for dashboard:
-        "IntersectionObserver",
-        "IntersectionObserverInit", 
-        "IntersectionObserverEntry",
-    ], 
-    optional = true 
-}
-```
+**`web-sys` features in `Cargo.toml`:** ✅ Already added — includes `IntersectionObserver`,
+`IntersectionObserverInit`, `IntersectionObserverEntry`, and additional features for file
+uploads and input handling.
 
 ### Shared Resources
 
 From legacy:
-- `css/dashboard.css` → `style/dashboard.scss`
-- `css/all-post.css` → `style/posts.scss`
+- `css/dashboard.css` → `style/dashboard.scss` ✅
+- `css/all-post.css` → merged into `style/dashboard.scss` (no separate `posts.scss`)
 - `svg/` icons (Home, filter icons, content icons, etc.)
 - `img/` placeholders
 
@@ -1477,17 +1465,17 @@ From legacy:
 
 ## Open Questions
 
-1. **View Post Overlay vs Page**
-   - Should clicking a post open a modal overlay (like legacy) or navigate to `/post/:id`?
-   - **Recommendation:** Start with overlay for parity, add dedicated page later for SEO/sharing
+1. ~~**View Post Overlay vs Page**~~
+   - ~~Should clicking a post open a modal overlay (like legacy) or navigate to `/post/:id`?~~
+   - **Status:** Post click handler exists but is a TODO stub (logs to console). Needs implementation.
 
-2. **Real-time Updates**
-   - Should post interactions (likes) update in real-time for other users?
-   - **Recommendation:** Phase 2 — start with optimistic local state updates only
+2. ~~**Real-time Updates**~~
+   - ~~Should post interactions (likes) update in real-time for other users?~~
+   - **Resolved:** Optimistic local state updates implemented. Real-time sync is future work.
 
-3. **Ad Frequency**
-   - How often should ads appear in feed?
-   - **Current behavior:** Ads fetched first, mixed with regular posts at intervals
+3. ~~**Ad Frequency**~~
+   - ~~How often should ads appear in feed?~~
+   - **Resolved:** Ads inserted every 5 posts (`AD_INTERVAL = 5` in `post_list.rs`). Ads fetched once on mount (up to 50), cycled through.
 
 4. ~~**Content Filtering**~~
    - ~~How to handle `MYGRANDMALIKES` vs `MYGRANDMAHATES` severity levels?~~
@@ -1496,7 +1484,37 @@ From legacy:
 
 ---
 
+## Known Issues
+
+1. **Missing imports in `user_search.rs` under `hydrate` feature**
+   - `search_users` (from `crate::api::posts`) and `spawn_local` (from `leptos::task`) are used
+     inside a `#[cfg(feature = "hydrate")]` block but not imported. Default `cargo check` passes
+     because it compiles without `hydrate`, but the client build will fail.
+
+2. **ProfileWidget returns placeholder data**
+   - `profile_widget.rs` has a `Resource` that always returns `None::<UserInfo>` with a TODO
+     comment. It needs to read the user ID from the auth context and call `get_user_info`.
+
+3. **Post click handler is a stub**
+   - `post_card.rs` `on_click` just logs the post ID. The view-post overlay or navigation
+     has not been wired up yet.
+
+4. **GraphQL query omits some `Post` model fields**
+   - `LIST_POSTS_QUERY` does not request `isreported`, `amounttrending`, `hasActiveReports`,
+     `visibilityStatus`, or `isHiddenForUsers`. The `Post` struct has `#[serde(default)]` on
+     these fields so deserialization won't break, but the values will always be defaults.
+
+---
+
 ## Changelog
+
+### 2026-04-14
+- Updated status to 🟡 Mostly Implemented
+- Marked completed scope items (16/18 done)
+- Documented 4 known issues found during code review
+- Resolved open questions #1–#3
+- Noted `posts.scss` was merged into `dashboard.scss`
+- Confirmed `web-sys` Cargo features are in place
 
 ### 2026-04-10 (v2)
 - Fixed API response models to use `meta: DefaultResponse` envelope matching actual backend

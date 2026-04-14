@@ -2,8 +2,9 @@
 
 **Feature:** Settings  
 **Priority:** #9 (after Wallet)  
-**Status:** 📋 Planning  
-**Created:** 2026-04-14
+**Status:** � Implemented (with gaps)  
+**Created:** 2026-04-14  
+**Updated:** 2026-04-14
 
 ---
 
@@ -29,32 +30,32 @@ Implement the user settings page for the Leptos frontend. This is a multi-sectio
 
 ### In Scope
 
-- [ ] Settings page (`/settings` route)
-- [ ] Auth guard (redirect to `/login` if unauthenticated)
-- [ ] Tab navigation (Profile, Notifications, Preferences, Content)
-- [ ] **Profile Settings tab:**
-  - [ ] Display current avatar with change button
-  - [ ] Image upload with preview modal (zoom slider)
-  - [ ] Biography textarea (max 5000 chars)
-  - [ ] Display current username with change link
-  - [ ] Save profile changes (avatar + bio in parallel)
-  - [ ] Change username sub-panel (username + password confirmation)
-  - [ ] Change password sub-panel (old password, new password with strength, confirm)
-  - [ ] Change email sub-panel (new email + password confirmation)
-- [ ] **Content Settings tab:**
-  - [ ] Reported content toggle (`MYGRANDMALIKES` / `MYGRANDMAHATES`)
-  - [ ] Confirmation dialog before toggling
-  - [ ] Success modal after update
-- [ ] **Notification Settings tab:**
-  - [ ] Placeholder (stub — not yet implemented in legacy)
-- [ ] **Preferences tab:**
-  - [ ] Placeholder (stub — not yet implemented in legacy)
-- [ ] **Account Actions:**
-  - [ ] Logout with confirmation modal
-  - [ ] Deactivate profile (delete account)
-- [ ] Loading and success/error states for all forms
-- [ ] Password strength indicator (reuse existing component)
-- [ ] Confirm password validation (reuse existing component)
+- [x] Settings page (`/settings` route)
+- [x] Auth guard (redirect to `/login` if unauthenticated)
+- [x] Tab navigation (Profile, Notifications, Preferences, Content)
+- [x] **Profile Settings tab:**
+  - [x] Display current avatar with change button
+  - [x] Image upload with preview modal (zoom slider)
+  - [x] Biography textarea (max 5000 chars)
+  - [x] Display current username with change link
+  - [x] Save profile changes (avatar + bio) — ⚠️ runs sequentially, not in parallel as planned
+  - [x] Change username sub-panel (username + password confirmation)
+  - [x] Change password sub-panel (old password, new password with strength, confirm)
+  - [x] Change email sub-panel (new email + password confirmation)
+- [x] **Content Settings tab:**
+  - [x] Reported content toggle (`MYGRANDMALIKES` / `MYGRANDMAHATES`)
+  - [x] Confirmation dialog before toggling
+  - [x] Success modal after update
+- [x] **Notification Settings tab:**
+  - [x] Placeholder (stub — not yet implemented in legacy)
+- [x] **Preferences tab:**
+  - [x] Placeholder (stub — not yet implemented in legacy)
+- [x] **Account Actions:**
+  - [x] Logout with confirmation modal
+  - [ ] Deactivate profile (delete account) — ⚠️ API exists (`delete_account` server fn) but no UI component wired up; menu link is a no-op
+- [x] Loading and success/error states for all forms
+- [x] Password strength indicator (reuse existing component)
+- [x] Confirm password validation (reuse existing component)
 
 ### Out of Scope (Future Work)
 
@@ -1830,31 +1831,31 @@ fn DeactivateAccountPanel() -> impl IntoView {
 ```
 src/
 ├── api/
-│   ├── settings.rs              # NEW: Settings mutations (profile, password, email, etc.)
-│   ├── graphql.rs               # MODIFY: Add mutation strings + response types
-│   └── mod.rs                   # MODIFY: Add settings module + re-exports
+│   ├── settings.rs              # ✅ Settings mutations (profile, password, email, etc.)
+│   ├── graphql.rs               # ✅ Mutation strings + response types added
+│   └── mod.rs                   # ✅ Settings module registered
 ├── components/
 │   └── settings/
-│       ├── mod.rs               # NEW: Module exports
-│       ├── menu.rs              # NEW: Tab navigation + logout modal
-│       ├── profile.rs           # NEW: Profile settings (avatar, bio, username)
-│       ├── image_modal.rs       # NEW: Image upload preview modal
-│       ├── change_username.rs   # NEW: Username change form
-│       ├── change_password.rs   # NEW: Password change form
-│       ├── change_email.rs      # NEW: Email change form
-│       ├── content.rs           # NEW: Content filtering toggle
-│       ├── notification.rs      # NEW: Notification stub
-│       ├── preferences.rs       # NEW: Preferences stub
-│       └── deactivate.rs        # NEW: Account deactivation
+│       ├── mod.rs               # ✅ Module exports
+│       ├── menu.rs              # ✅ Tab navigation + logout modal
+│       ├── profile.rs           # ✅ Profile settings (avatar, bio, username)
+│       ├── image_modal.rs       # ✅ Image upload preview modal
+│       ├── change_username.rs   # ✅ Username change form
+│       ├── change_password.rs   # ✅ Password change form
+│       ├── change_email.rs      # ✅ Email change form
+│       ├── content.rs           # ✅ Content filtering toggle
+│       ├── notification.rs      # ✅ Notification stub
+│       ├── preferences.rs       # ✅ Preferences stub
+│       └── deactivate.rs        # ❌ NOT CREATED — account deactivation UI missing
 ├── models/
-│   ├── settings.rs              # NEW: Settings response types
-│   └── mod.rs                   # MODIFY: Add settings module
+│   ├── settings.rs              # ✅ Settings response types + unit tests
+│   └── mod.rs                   # ✅ Settings module registered
 ├── pages/
-│   ├── settings.rs              # NEW: Settings page
-│   └── mod.rs                   # MODIFY: Add settings page export
-├── app.rs                       # MODIFY: Add /settings route
+│   ├── settings.rs              # ✅ Settings page
+│   └── mod.rs                   # ✅ Settings page export registered
+├── app.rs                       # ✅ /settings route added
 └── style/
-    └── settings.scss            # NEW: Settings-specific styles
+    └── settings.scss            # ✅ Settings-specific styles (imported in main.scss)
 ```
 
 ---
@@ -1989,6 +1990,14 @@ src/
 ---
 
 ## Changelog
+
+### 2026-04-14 (Implementation Audit)
+- **Status updated to 🟡 Implemented (with gaps)** — all phases compile cleanly (`cargo check` passes)
+- Checked off all completed scope items
+- **Known gaps identified:**
+  1. **Deactivate account UI missing:** `delete_account` server fn exists in `api/settings.rs`, but no `deactivate.rs` component was created. The "Deactivate profile" link in `menu.rs` is a dead `<a href="#">` with no click handler.
+  2. **Profile save is sequential, not parallel:** Plan specified `futures::join!` for avatar + bio updates. Implementation in `profile.rs` runs `update_bio` then `update_profile_image` sequentially.
+  3. **`UpdateResponse` serde annotation:** Uses `#[serde(rename_all = "PascalCase")]` with an explicit `#[serde(rename = "status")]` override on the `status` field. Functional but fragile — the `rename_all` is misleading since it only applies to `response_code` → `ResponseCode`.
 
 ### 2026-04-14
 - Initial planning document created

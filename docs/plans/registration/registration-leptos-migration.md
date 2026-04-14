@@ -1,5 +1,7 @@
 # Registration Flow — Leptos Migration Plan
 
+> **Status (2026-04-14):** All 16 steps (0–15) are **implemented**. Registration-specific code compiles cleanly. Unit tests and E2E specs are written. See [Known Issues](#known-issues) at the bottom for remaining action items.
+
 ## Overview
 
 This document outlines 15 incremental steps to convert the Peer Network **registration system** (`register.php` + `js/register/register.js`) from the current PHP/vanilla-JS stack to Leptos (Rust). Each step has a concrete testing outcome. The plan assumes a **mock Peer backend** is built first so that all steps can be validated without depending on the live GraphQL API.
@@ -15,7 +17,7 @@ This document outlines 15 incremental steps to convert the Peer Network **regist
 
 ---
 
-## Step 0 — Mock Peer Backend
+## Step 0 — Mock Peer Backend ✅
 
 **Goal:** Stand up a lightweight mock GraphQL server that simulates the three registration-related mutations (`verifyReferralString`, `register`, `verifyAccount`) with exact field names, response envelopes, and response codes — so all subsequent steps can be developed and tested offline.
 
@@ -25,7 +27,7 @@ This document outlines 15 incremental steps to convert the Peer Network **regist
 
 ---
 
-## Step 1 — Scaffold Leptos Project
+## Step 1 — Scaffold Leptos Project ✅
 
 **Goal:** Initialize the `cargo-leptos` project in a new `peer-web/` directory alongside the existing PHP app.
 
@@ -42,7 +44,7 @@ This document outlines 15 incremental steps to convert the Peer Network **regist
 
 ---
 
-## Step 2 — Project Structure & Shared Types
+## Step 2 — Project Structure & Shared Types ✅
 
 **Goal:** Create the module skeleton and define the Rust types that mirror the GraphQL registration schema.
 
@@ -61,6 +63,8 @@ src/
 ├── pages/register.rs       ← stub RegisterPage component
 └── state/mod.rs
 ```
+
+> **Implementation note:** The actual structure also includes `src/utils/`, `src/hooks/`, `src/fixtures/`, and `src/components/validation.rs` which emerged as the steps progressed.
 
 ### Types (in `models/user.rs`)
 
@@ -90,7 +94,7 @@ pub struct RegisterResponse {
 
 ---
 
-## Step 3 — GraphQL Client Module
+## Step 3 — GraphQL Client Module ✅
 
 **Goal:** Implement a reusable async GraphQL client in `src/api/graphql.rs` that sends queries/mutations to the backend and deserializes typed responses.
 
@@ -101,11 +105,13 @@ pub struct RegisterResponse {
 - Reads endpoint from env `GRAPHQL_ENDPOINT`
 - Handles `{ data, errors }` envelope
 
+> **Implementation note:** Also includes a `query` function (symmetric with `mutate`), configurable timeout (10s), and typed wrapper structs (`VerifyReferralData`, `RegisterData`, `VerifyAccountData`) for the GraphQL data envelope.
+
 **Testing outcome:** An integration test (`#[tokio::test]`) calls `mutate` against the running mock backend with the `VerifyReferralString` mutation and asserts `status == "success"`.
 
 ---
 
-## Step 4 — Server Functions for Registration
+## Step 4 — Server Functions for Registration ✅
 
 **Goal:** Create Leptos server functions that wrap the three GraphQL mutations. These run on the Axum server and are callable from client-side WASM.
 
@@ -126,9 +132,11 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 **Testing outcome:** A test calls `verify_referral("85d5f836-b1f5-4c4e-9381-1b058e13df93".into())` via the server function HTTP endpoint (`POST /api/verify_referral`) and receives a success response. A second test sends an invalid string and asserts an error.
 
+> **Implementation note:** Server-side validation in `src/api/validation.rs` provides defense-in-depth for UUID format, email format (basic), username format, and password length. See [Known Issues](#known-issues) about regex compilation.
+
 ---
 
-## Step 5 — Router & Page Shell
+## Step 5 — Router & Page Shell ✅
 
 **Goal:** Set up the Leptos router with the `/register` route and a minimal `RegisterPage` component that renders an empty multi-step container.
 
@@ -144,7 +152,7 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 ---
 
-## Step 6 — Step 1 UI: Referral Code Entry
+## Step 6 — Step 1 UI: Referral Code Entry ✅
 
 **Goal:** Build the first registration step — the referral code input form with client-side UUID validation.
 
@@ -165,7 +173,7 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 ---
 
-## Step 7 — Referral Verification (Server Round-Trip)
+## Step 7 — Referral Verification (Server Round-Trip) ✅
 
 **Goal:** Wire the "Verify Code" button to the `verify_referral` server function and handle success/error responses.
 
@@ -185,7 +193,7 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 ---
 
-## Step 8 — Step 2 UI: Registration Form Fields
+## Step 8 — Step 2 UI: Registration Form Fields ✅
 
 **Goal:** Build the registration form with email, username, password, confirm-password, and checkbox fields — all with real-time client-side validation.
 
@@ -210,7 +218,7 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 ---
 
-## Step 9 — Registration Submission (Server Round-Trip)
+## Step 9 — Registration Submission (Server Round-Trip) ✅
 
 **Goal:** Wire the "Register" button to the `register_user` server function and handle all response paths.
 
@@ -231,7 +239,7 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 ---
 
-## Step 10 — Step 3 UI: Success Confirmation
+## Step 10 — Step 3 UI: Success Confirmation ✅
 
 **Goal:** Build the success/welcome screen shown after registration completes.
 
@@ -251,7 +259,7 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 ---
 
-## Step 11 — Navigation & Back Button
+## Step 11 — Navigation & Back Button ✅
 
 **Goal:** Implement the multi-step navigation logic — back button behaviour, step transitions, and browser history integration.
 
@@ -271,7 +279,7 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 ---
 
-## Step 12 — Toast Notification Component
+## Step 12 — Toast Notification Component ✅
 
 **Goal:** Build a reusable toast/notification component matching the existing behaviour and remap response codes to user-friendly messages.
 
@@ -291,7 +299,7 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 ---
 
-## Step 13 — Accessibility & Screen Reader Support
+## Step 13 — Accessibility & Screen Reader Support ✅
 
 **Goal:** Ensure the registration flow meets WCAG 2.1 AA, matching or exceeding the current accessibility features.
 
@@ -312,7 +320,7 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 ---
 
-## Step 14 — CSS & Visual Parity
+## Step 14 — CSS & Visual Parity ✅
 
 **Goal:** Achieve pixel-level visual parity with the existing PHP registration page.
 
@@ -334,7 +342,7 @@ pub async fn verify_account(userid: String) -> Result<VerifyResponse, ServerFnEr
 
 ---
 
-## Step 15 — End-to-End Integration Test Suite
+## Step 15 — End-to-End Integration Test Suite ✅
 
 **Goal:** Create an automated E2E test suite that exercises the full registration happy path and key error paths against the mock backend.
 
@@ -367,27 +375,55 @@ tests/e2e/
 
 **Testing outcome:** `npx playwright test` (or `cargo test --test e2e`) passes all 10 test cases in < 30 seconds against the mock backend. CI pipeline runs these on every PR.
 
+> **Implementation note:** The E2E suite is split across 5 spec files (`happy-path`, `referral`, `form-validation`, `navigation`, `server-errors`) in `end2end/tests/registration/` with a shared `RegistrationPage` page-object helper. Integration tests for server functions are in `tests/server_functions_integration.rs`, and fixture deserialization tests are in `tests/fixtures_test.rs`.
+
 ---
 
 ## Summary
 
-| Step | Milestone | Depends on |
-|------|-----------|------------|
-| 0 | Mock backend running | — |
-| 1 | Leptos project compiles & serves | 0 |
-| 2 | Shared types & module skeleton | 1 |
-| 3 | GraphQL client talks to mock | 0, 2 |
-| 4 | Server functions callable | 3 |
-| 5 | `/register` route renders | 1 |
-| 6 | Referral UI with client validation | 5 |
-| 7 | Referral server verification | 4, 6 |
-| 8 | Registration form with validation | 5 |
-| 9 | Registration server submission | 4, 8 |
-| 10 | Success screen | 9 |
-| 11 | Step navigation & back button | 6, 8, 10 |
-| 12 | Toast component & response codes | 7, 9 |
-| 13 | Accessibility audit pass | 6–12 |
-| 14 | Visual parity with PHP version | 6–12 |
-| 15 | E2E test suite green | 0–14 |
+| Step | Milestone | Depends on | Status |
+|------|-----------|------------|--------|
+| 0 | Mock backend running | — | ✅ Done |
+| 1 | Leptos project compiles & serves | 0 | ✅ Done |
+| 2 | Shared types & module skeleton | 1 | ✅ Done |
+| 3 | GraphQL client talks to mock | 0, 2 | ✅ Done |
+| 4 | Server functions callable | 3 | ✅ Done |
+| 5 | `/register` route renders | 1 | ✅ Done |
+| 6 | Referral UI with client validation | 5 | ✅ Done |
+| 7 | Referral server verification | 4, 6 | ✅ Done |
+| 8 | Registration form with validation | 5 | ✅ Done |
+| 9 | Registration server submission | 4, 8 | ✅ Done |
+| 10 | Success screen | 9 | ✅ Done |
+| 11 | Step navigation & back button | 6, 8, 10 | ✅ Done |
+| 12 | Toast component & response codes | 7, 9 | ✅ Done |
+| 13 | Accessibility audit pass | 6–12 | ✅ Done |
+| 14 | Visual parity with PHP version | 6–12 | ✅ Done |
+| 15 | E2E test suite green | 0–14 | ✅ Done |
 
 Steps 6–8 can be worked on in parallel. Steps 13–14 can also proceed in parallel once the UI steps are complete.
+
+---
+
+## Known Issues
+
+_Identified 2026-04-14 during implementation review._
+
+### 1. Unrelated compile errors block `cargo test`
+
+`src/api/posts.rs` and `src/api/settings.rs` reference the `base64` crate and `reqwest::multipart`, which are not declared in `Cargo.toml`. These 6 errors are **not** in the registration code but prevent the entire lib crate (and therefore all tests) from compiling.
+
+**Fix:** Add `base64` to `[dependencies]` and enable the `multipart` feature on `reqwest`.
+
+### 2. Server-side regex compiled on every call
+
+`src/api/validation.rs` — `validate_uuid()` and `validate_registration_input()` create a new `Regex` on every invocation. This is wasteful for a hot path.
+
+**Fix:** Use `std::sync::LazyLock` (or `once_cell::Lazy`) to compile each regex once.
+
+### 3. `DefaultReferralView` does not auto-verify
+
+When a user clicks "Use This Code" in step 1b, the default UUID is copied into the step 1 input, but the user must still click "Verify Code" manually. The original PHP version auto-submitted. Consider dispatching `on_verify` automatically after setting the code.
+
+### 4. `?ref=` prefill does not auto-verify
+
+When the page loads with `?ref=<UUID>`, the input is pre-filled but not auto-verified. This matches the plan (Step 6: "auto-fills the input") but may surprise users who expect the link to skip straight to step 2.

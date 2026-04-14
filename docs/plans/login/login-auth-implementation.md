@@ -456,22 +456,25 @@ pub async fn auth_fetch<T>(
 | `src/components/login_form.rs` | Login form component |
 | `src/components/left_panel.rs` | Extracted shared layout |
 | `src/utils/cookies.rs` | Cookie manipulation |
-| `src/hooks/use_auto_login.rs` | Auto-login logic |
-| `src/hooks/use_proactive_refresh.rs` | Token refresh before expiry |
+| `src/hooks/proactive_refresh.rs` | Token refresh before expiry |
 | `src/components/auth_guard.rs` | Protected route wrapper |
-| `src/utils/auth_fetch.rs` | 401 interceptor for API calls |
+| `src/api/auth_fetch.rs` | 401 interceptor for API calls |
+| `src/utils/token.rs` | JWT token decoding utilities |
 
 ### Modified Files
 
 | File | Changes |
 |------|---------|
-| `src/app.rs` | Add `/login` route, wrap with AuthProvider |
+| `src/app.rs` | Add `/login` route, provide auth context, proactive refresh |
 | `src/models/mod.rs` | Export auth module |
-| `src/api/mod.rs` | Export auth module |
-| `src/api/graphql.rs` | Add login/refresh mutations |
+| `src/api/mod.rs` | Export auth + auth_fetch modules |
+| `src/api/graphql.rs` | Add login/refresh/logout mutations + wrapper types |
 | `src/components/mod.rs` | Export new components |
 | `src/pages/mod.rs` | Export login page |
-| `src/pages/register.rs` | Extract LeftPanel to shared component |
+| `src/utils/mod.rs` | Export cookies + token modules |
+| `src/hooks/mod.rs` | Export proactive_refresh hook |
+| `src/state/mod.rs` | Export auth state module |
+| `src/models/common.rs` | Add `Unauthorized` variant to `ApiError` |
 
 ---
 
@@ -712,7 +715,23 @@ May need:
 
 ---
 
+## Known Gaps
+
+1. **AuthGuard not applied to protected routes in `app.rs`.** The `AuthGuard` component exists but `/dashboard`, `/profile`, `/wallet`, `/settings`, `/chat`, and `/newpost` routes are not wrapped with it. Each page can add its own guard, or a parent `<Route>` with `AuthGuard` can be introduced later.
+2. **Auto-login logic lives in `LoginPage` directly** rather than a separate `use_auto_login` hook as originally planned. Functionally equivalent — the hook was inlined.
+3. **No login-specific SCSS file yet.** The plan mentions converting `css/login-register.css` to `style/login.scss`, but the shared registration styles are reused as-is.
+
+---
+
 ## Changelog
+
+### 2026-04-14 (Implementation Review)
+- Verified all files compile cleanly (`cargo check` — 0 errors)
+- Corrected file paths in plan: `use_auto_login.rs` was inlined into `login.rs`, `use_proactive_refresh.rs` → `proactive_refresh.rs`, `utils/auth_fetch.rs` → `api/auth_fetch.rs`
+- Added `src/utils/token.rs` to new files table (was missing)
+- Updated modified files table with `utils/mod.rs`, `hooks/mod.rs`, `state/mod.rs`, `models/common.rs`
+- Documented known gap: `AuthGuard` not wrapping protected routes in `app.rs`
+- Documented known gap: no login-specific SCSS file
 
 ### 2026-04-10 (Implementation Complete)
 - Implemented all 5 phases

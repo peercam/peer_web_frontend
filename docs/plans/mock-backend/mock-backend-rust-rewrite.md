@@ -432,6 +432,7 @@ pub struct MockState {
 
 **Depends on:** Phase 2 (requires user profiles)
 **Driven by:** `peer-web/src/pages/new_post.rs`, `peer-web/src/pages/view_post.rs`, `peer-web/src/pages/dashboard.rs`, `peer-web/src/api/posts.rs`
+**Detailed plan:** [phase-3-posts-content.md](./phase-3-posts-content.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
 
 ### New files
 
@@ -490,6 +491,7 @@ pub struct MockState {
 
 **Depends on:** Phase 3 (requires posts)
 **Driven by:** `peer-web/src/api/comments.rs`, `peer-web/src/api/chat.rs`, `peer-web/src/pages/chat.rs`
+**Detailed plan:** [phase-4-social-comments-chat.md](./phase-4-social-comments-chat.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
 
 ### New files
 
@@ -543,6 +545,7 @@ pub struct MockState {
 
 **Depends on:** Phase 3 (requires posts for ads)
 **Driven by:** `peer-web/src/pages/wallet.rs`, `peer-web/src/api/wallet.rs`
+**Detailed plan:** [phase-5-economy-wallet-tokenomics-shop-ads.md](./phase-5-economy-wallet-tokenomics-shop-ads.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
 
 ### New files
 
@@ -616,6 +619,7 @@ pub struct MockState {
 
 **Depends on:** Phase 3 (requires posts/users to moderate)
 **Driven by:** `admin/` PHP admin panel (future Leptos admin, if planned)
+**Detailed plan:** [phase-6-admin-moderation.md](./phase-6-admin-moderation.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
 
 ### New files
 
@@ -666,6 +670,10 @@ Seeded test users should include one admin and one moderator account.
 
 ## 9. CI Integration
 
+**Depends on:** Phase 0 (minimum), ideally all phases
+**Driven by:** Replacing Node.js CI steps, schema drift detection, in-process E2E testing
+**Detailed plan:** [phase-ci-integration.md](./phase-ci-integration.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
+
 ### Step 9.1 — Add to workspace (if using Cargo workspace)
 
 If a root `Cargo.toml` workspace exists, add `tests/mock_backend` as a member. Otherwise the crate is standalone.
@@ -715,6 +723,8 @@ Periodically diff against the real backend schemas documented in `docs/backend_a
 ---
 
 ## 10. Acceptance Criteria
+
+**Detailed plan:** [acceptance-criteria.md](./acceptance-criteria.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
 
 ### Per-phase gates
 

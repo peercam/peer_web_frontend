@@ -2,8 +2,9 @@
 
 **Feature:** View Post  
 **Priority:** #4 (after Dashboard)  
-**Status:** 📋 Planning  
-**Created:** 2026-04-12
+**Status:** � ~95% Implemented — polish & testing remain  
+**Created:** 2026-04-12  
+**Updated:** 2026-04-14
 
 ---
 

@@ -7,15 +7,61 @@ use leptos::prelude::*;
 use crate::models::post::Post;
 
 /// Format a timestamp into a relative time string.
-/// Simplified implementation that extracts date from ISO timestamp.
+///
+/// Parses an ISO 8601 timestamp and returns a human-readable relative time
+/// such as "just now", "5 min ago", "2 h ago", "3 d ago", or the date for older posts.
 pub fn format_time_ago(timestamp: &str) -> String {
-    // Simple implementation - just show the date portion
-    // In production, could use chrono or a wasm-friendly time library
-    if timestamp.len() >= 10 {
-        timestamp[..10].to_string()
-    } else {
-        timestamp.to_string()
+    use chrono::{NaiveDateTime, Utc};
+
+    // Parse various ISO 8601 formats
+    let dt = timestamp
+        .replace('T', " ")
+        .replace('Z', "");
+
+    // Try parsing with optional fractional seconds
+    let parsed = NaiveDateTime::parse_from_str(&dt, "%Y-%m-%d %H:%M:%S%.f")
+        .or_else(|_| NaiveDateTime::parse_from_str(&dt, "%Y-%m-%d %H:%M:%S"));
+
+    let Ok(parsed_dt) = parsed else {
+        // Fallback to just showing the date portion
+        return timestamp.get(..10).unwrap_or(timestamp).to_string();
+    };
+
+    let now = Utc::now().naive_utc();
+    let diff = now.signed_duration_since(parsed_dt);
+
+    let seconds = diff.num_seconds();
+    if seconds < 0 {
+        // Future timestamp - just show date
+        return timestamp.get(..10).unwrap_or(timestamp).to_string();
     }
+
+    if seconds < 60 {
+        return "just now".to_string();
+    }
+
+    let minutes = diff.num_minutes();
+    if minutes < 60 {
+        return format!("{} min ago", minutes);
+    }
+
+    let hours = diff.num_hours();
+    if hours < 24 {
+        return format!("{} h ago", hours);
+    }
+
+    let days = diff.num_days();
+    if days < 7 {
+        return format!("{} d ago", days);
+    }
+
+    let weeks = days / 7;
+    if weeks < 5 {
+        return format!("{} w ago", weeks);
+    }
+
+    // For older posts, show the date
+    timestamp.get(..10).unwrap_or(timestamp).to_string()
 }
 
 /// Post content section: title, description, tags, timestamp.

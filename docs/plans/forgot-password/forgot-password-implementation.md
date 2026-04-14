@@ -2,8 +2,9 @@
 
 **Feature:** Forgot Password  
 **Priority:** #3b (auth flow completion, parallel to Dashboard)  
-**Status:** 📋 Planning  
-**Created:** 2026-04-14
+**Status:** � In Progress  
+**Created:** 2026-04-14  
+**Last Reviewed:** 2026-04-14
 
 ---
 
@@ -28,44 +29,51 @@ Implement the password reset flow for the Leptos frontend. This completes the au
 
 ### In Scope
 
-- [ ] Forgot password page (`/forgotpassword` route)
-- [ ] Auto-redirect to `/dashboard` if already authenticated
-- [ ] **Step 1 — Enter Email:**
-  - [ ] Email input with real-time validation
-  - [ ] Submit triggers `requestPasswordReset` mutation
-  - [ ] Rate-limit error handling (31901, 31903)
-  - [ ] On success, advance to Step 2
-- [ ] **Step 2 — Verify Code:**
-  - [ ] Code input field
-  - [ ] Masked email display (`ca****@domain.com`)
-  - [ ] Submit triggers `resetPasswordTokenVerify` mutation
-  - [ ] Resend code button with countdown timer
-  - [ ] Escalating cooldowns: 1st → 60s, 2nd → 10min, 3rd+ → locked with support message
-  - [ ] Counter stored in cookie (2-hour expiry)
-  - [ ] Invalid/expired token error handling (31904)
-- [ ] **Step 3 — New Password:**
-  - [ ] Password input with visibility toggle
-  - [ ] `PasswordStrengthMeter` component (reuse existing)
-  - [ ] Confirm password input with visibility toggle
-  - [ ] Match validation
-  - [ ] Submit triggers `resetPassword` mutation
-  - [ ] Error display for failed update
-- [ ] **Step 4 — Success:**
-  - [ ] Success icon and message
-  - [ ] "Continue to Login" link
-- [ ] Back button navigation between steps
-- [ ] `StepAnnouncer` for screen reader accessibility
-- [ ] `Toast` notifications for API responses
-- [ ] Loading states on submit buttons
-- [ ] Add response codes to `response_codes.rs`
-- [ ] 3 new server functions in API layer
-- [ ] Route registration in `app.rs`
+- [x] Forgot password page (`/forgotpassword` route)
+- [ ] Auto-redirect to `/dashboard` if already authenticated ⚠️
+- [x] **Step 1 — Enter Email:**
+  - [x] Email input with real-time validation
+  - [x] Submit triggers `requestPasswordReset` mutation
+  - [x] Rate-limit error handling (31901, 31903)
+  - [x] On success, advance to Step 2
+- [x] **Step 2 — Verify Code:**
+  - [x] Code input field
+  - [x] Masked email display (`ca****@domain.com`)
+  - [x] Submit triggers `resetPasswordTokenVerify` mutation
+  - [x] Resend code button with countdown timer
+  - [x] Escalating cooldowns: 1st → 60s, 2nd → 10min, 3rd+ → locked with support message
+  - [ ] Counter stored in cookie (2-hour expiry) ⚠️
+  - [x] Invalid/expired token error handling (31904)
+- [x] **Step 3 — New Password:**
+  - [x] Password input with visibility toggle
+  - [x] `PasswordStrengthMeter` component (reuse existing)
+  - [x] Confirm password input with visibility toggle
+  - [x] Match validation
+  - [x] Submit triggers `resetPassword` mutation
+  - [x] Error display for failed update
+- [x] **Step 4 — Success:**
+  - [x] Success icon and message
+  - [x] "Continue to Login" link
+- [x] Back button navigation between steps
+- [x] `StepAnnouncer` for screen reader accessibility
+- [x] `Toast` notifications for API responses
+- [x] Loading states on submit buttons
+- [x] Add response codes to `response_codes.rs`
+- [x] 3 new server functions in API layer
+- [x] Route registration in `app.rs`
 
 ### Out of Scope (Future Work)
 
 - Two-factor authentication
 - Email change with verification code (handled in Settings)
 - Account lockout after too many failed password attempts
+
+### Known Gaps (To Address)
+
+1. **No auto-redirect for authenticated users** — Plan requires redirecting to `/dashboard` if already logged in (check `AuthContext.is_authenticated` on mount). Not yet implemented.
+2. **Resend counter not persisted in cookie** — `resend_count` is stored in a plain `RwSignal` and resets on page reload, allowing cooldown bypass. Should be stored in a cookie (`reset_code_sent_counter`, 2-hour expiry) per the legacy implementation.
+3. **Countdown timer interval stacking** — Each `start_countdown` call creates a new `Interval` via `on_cleanup`, but multiple resends can stack intervals. The previous interval should be explicitly dropped before starting a new one.
+4. **`BackButton` component not reused** — The page inlines a custom `<a>` back-button instead of using the existing `BackButton` component from `src/components/back_button.rs`. Functionally equivalent but diverges from the plan's reuse goal.
 
 ---
 
@@ -881,40 +889,41 @@ Additional styles needed (may already exist in `style/`):
 
 ## Implementation Phases
 
-### Phase 1: API Layer + Route Shell
+### Phase 1: API Layer + Route Shell ✅
 - Create `src/api/forgot_password.rs` with 3 server functions
 - Register module in `src/api/mod.rs`
 - Add response codes to `src/utils/response_codes.rs`
 - Create `src/pages/forgot_password.rs` with page shell + step enum
 - Register in `src/pages/mod.rs` and `src/app.rs`
 
-### Phase 2: Step 1 — Email Submission
+### Phase 2: Step 1 — Email Submission ✅
 - Email input with real-time validation (reuse `is_valid_email`)
 - Form submit → `request_password_reset` server function
 - Success/error handling with toast
 - Rate-limit error display (31901, 31903)
 
-### Phase 3: Step 2 — Code Verification + Resend
+### Phase 3: Step 2 — Code Verification + Resend ⚠️ (partially complete)
 - Code input field
 - Masked email display
 - Submit → `verify_reset_token` server function
 - Resend button with countdown timer
 - Escalating cooldown logic
-- Counter persistence (cookie or localStorage)
+- ~~Counter persistence (cookie or localStorage)~~ — **not yet implemented**
+- **Fix:** countdown interval stacking on multiple resends
 
-### Phase 4: Step 3 — New Password
+### Phase 4: Step 3 — New Password ✅
 - Password + confirm password inputs with toggles
 - `PasswordStrengthMeter` integration (reuse component)
 - Submit → `reset_password` server function
 - Error display for expired tokens
 
-### Phase 5: Step 4 + Polish
+### Phase 5: Step 4 + Polish ⚠️ (partially complete)
 - Success screen with "Continue to Login" link
-- Auto-redirect check (already authenticated → dashboard)
-- Back button navigation
+- ~~Auto-redirect check (already authenticated → dashboard)~~ — **not yet implemented**
+- Back button navigation (inline, not using `BackButton` component)
 - StepAnnouncer integration
 - Loading states on all buttons
-- E2E test coverage
+- E2E test coverage — **not yet written**
 
 ---
 

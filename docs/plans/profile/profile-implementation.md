@@ -2,7 +2,7 @@
 
 **Feature:** Profile (My Profile + View Profile)  
 **Priority:** #5 (after View Post)  
-**Status:** 📋 Planning  
+**Status:** � Mostly Implemented (core complete, incremental gaps remain)  
 **Created:** 2026-04-12
 
 ---
@@ -33,34 +33,40 @@ Both pages display the user's posts, social statistics, and allow interactions b
 
 ### In Scope
 
-- [ ] My Profile page (`/profile` route)
-- [ ] View Profile page (`/profile/:slug` or `/u/:slug` route)
-- [ ] Profile header component:
-  - [ ] Avatar with online status indicator
-  - [ ] Username and slug display
-  - [ ] Biography (fetched from media server)
-  - [ ] Social statistics (posts, followers, following, peers)
+- [x] My Profile page (`/profile` route)
+- [x] View Profile page (`/profile/:slug` or `/u/:slug` route)
+- [x] Profile header component:
+  - [x] Avatar with online status indicator
+  - [x] Username and slug display
+  - [x] Biography (fetched from media server)
+  - [x] Social statistics (posts, followers, following, peers)
 - [ ] Post feed with filters and infinite scroll
-- [ ] My Profile features:
-  - [ ] Edit profile button (→ settings)
-  - [ ] Ads dropdown (Boost post, My Ads)
-  - [ ] Post selection mode for boosting
-- [ ] View Profile features:
-  - [ ] Follow/unfollow button with state management
-  - [ ] More actions dropdown (report, block)
-  - [ ] Mutual follow indicator
-- [ ] Relations modal:
-  - [ ] Followers tab with infinite scroll
-  - [ ] Following tab with infinite scroll
-  - [ ] Peers tab (mutual follows, own profile only)
-  - [ ] Follow button in user list items
-- [ ] Content visibility handling:
-  - [ ] Hidden content overlay with "View anyway" option
-  - [ ] Illegal content badge (profile removed)
-  - [ ] Reported content badge
-- [ ] Loading states and skeletons
-- [ ] Error states (profile not found, blocked)
-- [ ] Responsive layout (desktop/tablet/mobile)
+  - [x] Post feed (basic, fixed page)
+  - [ ] Infinite scroll pagination
+  - [ ] Filter and sort controls
+- [x] My Profile features:
+  - [x] Edit profile button (→ settings)
+  - [x] Ads dropdown (Boost post, My Ads)
+  - [ ] Post selection mode for boosting (dropdown present, callback not wired)
+- [x] View Profile features:
+  - [x] Follow/unfollow button with state management
+  - [x] More actions dropdown (report, block)
+  - [x] Mutual follow indicator ("Follow Back" state)
+- [x] Relations modal:
+  - [x] Followers tab (batch load, no infinite scroll yet)
+  - [x] Following tab (batch load, no infinite scroll yet)
+  - [x] Peers tab (mutual follows, own profile only)
+  - [x] Follow button in user list items
+  - [ ] Infinite scroll within modal tabs
+- [x] Content visibility handling:
+  - [x] Hidden content overlay with "View anyway" option
+  - [x] Illegal content badge (profile removed)
+  - [x] Reported content badge
+- [x] Loading states and skeletons
+- [x] Error states (profile not found, other errors)
+- [x] Responsive layout (desktop/tablet/mobile)
+- [ ] Left sidebar filters (placeholder only, `FiltersSidebar` not wired)
+- [ ] Legacy `?user=<uuid>` query param support
 
 ### Out of Scope (Future Work)
 
@@ -1588,6 +1594,18 @@ Consider feature flags for:
 ---
 
 ## Changelog
+
+### 2026-04-14
+
+- Implementation review: core feature marked mostly complete
+- Updated scope checklist to reflect implemented items
+- Remaining gaps identified:
+  - Infinite scroll on profile posts and relations modal
+  - Post filter/sort controls not wired
+  - Left sidebar `FiltersSidebar` not integrated (empty placeholder)
+  - Boost post selection mode callback not connected
+  - Legacy `?user=<uuid>` query param not supported
+  - No unit/integration/E2E tests yet
 
 ### 2026-04-12
 

@@ -4,12 +4,15 @@
 //! Supports both guest mode (unauthenticated) and authenticated viewing.
 
 use leptos::prelude::*;
+use leptos::task::spawn_local;
 use leptos_meta::{Meta, Title};
 use leptos_router::hooks::use_params_map;
 
 use crate::api::comments::{get_post, guest_get_post};
+use crate::api::posts::post_action;
 use crate::components::view_post::{Comments, PostActions, PostContent, PostHeader, PostMedia};
-use crate::models::post::Post;
+use crate::hooks::use_mobile_redirect;
+use crate::models::post::{Post, PostActionType};
 use crate::state::auth::use_auth;
 
 /// Get the base URL for sharing.
@@ -35,6 +38,11 @@ pub fn ViewPostPage() -> impl IntoView {
     let auth = use_auth();
 
     let post_id = move || params.get().get("id").map(|s| s.to_string()).unwrap_or_default();
+    let post_id_signal = Signal::derive(post_id);
+    let is_guest = Signal::derive(move || !auth.is_authenticated.get());
+
+    // Mobile deep-link redirect for guest users
+    use_mobile_redirect(post_id_signal, is_guest.get_untracked());
 
     // Fetch post based on auth state
     let post_resource = Resource::new(
@@ -50,6 +58,28 @@ pub fn ViewPostPage() -> impl IntoView {
             }
         },
     );
+
+    // Track post view for authenticated users (fire-and-forget)
+    Effect::new(move |prev_tracked: Option<bool>| {
+        // Only track once per mount
+        if prev_tracked.is_some() {
+            return true;
+        }
+
+        if !auth.is_authenticated.get() {
+            return true;
+        }
+
+        if let Some(Ok(_)) = post_resource.get() {
+            let id = post_id();
+            if !id.is_empty() {
+                spawn_local(async move {
+                    let _ = post_action(id, PostActionType::View).await;
+                });
+            }
+        }
+        true
+    });
 
     view! {
         <Suspense fallback=move || view! { <PostSkeleton/> }>

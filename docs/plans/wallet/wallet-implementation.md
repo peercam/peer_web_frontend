@@ -2,8 +2,9 @@
 
 **Feature:** Wallet  
 **Priority:** #8 (after Chat)  
-**Status:** 📋 Planning  
-**Created:** 2026-04-12
+**Status:** ✅ Implemented (tests pending)  
+**Created:** 2026-04-12  
+**Updated:** 2026-04-14
 
 ---
 
@@ -28,29 +29,31 @@ Implement the wallet page for the Leptos frontend. The wallet provides users wit
 
 ### In Scope
 
-- [ ] Wallet page (`/wallet` route)
-- [ ] Balance display with animated logo
-- [ ] Reload balance button
-- [ ] Token transfer button → transfer modal
-- [ ] Transaction history list with infinite scroll
-- [ ] Transaction categories (P2P, Mint, Like, Dislike, Shop, etc.)
-- [ ] Transaction detail expansion (click to expand)
-- [ ] Fee breakdown display (burn, peer, inviter)
-- [ ] Transfer modal:
-  - [ ] Friend list display
-  - [ ] User search by username
-  - [ ] Amount input with validation
-  - [ ] Fee calculation preview
-  - [ ] Message input (500 char max, no URLs)
-  - [ ] Summary/confirmation screen
-  - [ ] Success/error feedback
-- [ ] Shop purchase order details (delivery info)
-- [ ] Protected route (authentication required)
-- [ ] Loading states and skeletons
-- [ ] Error states
+- [x] Wallet page (`/wallet` route)
+- [x] Balance display with animated logo
+- [x] Reload balance button
+- [x] Token transfer button → transfer modal
+- [x] Transaction history list with infinite scroll
+- [x] Transaction categories (P2P, Mint, Like, Dislike, Shop, etc.)
+- [x] Transaction detail expansion (click to expand)
+- [x] Fee breakdown display (burn, peer, inviter)
+- [x] Transfer modal:
+  - [x] Friend list display
+  - [x] User search by username (with debounced input)
+  - [x] Amount input with validation
+  - [x] Fee calculation preview
+  - [x] Message input (500 char max, no URLs)
+  - [x] Summary/confirmation screen
+  - [x] Success/error feedback (with timed auto-close)
+- [ ] Shop purchase order details (delivery info) — model + query exist, UI not wired up
+- [x] Protected route (authentication required via `AuthGuard`)
+- [x] Loading states and skeletons
+- [x] Error states
 
 ### Out of Scope (Future Work)
 
+- Shop order delivery detail view (model exists, needs UI wiring)
+- Thousand-separator formatting for balance display
 - Win logs / Payment logs detail views
 - Today's interactions summary
 - Tokenomics info modal
@@ -1550,44 +1553,50 @@ Port the existing CSS from `css/wallet.css` with SCSS improvements:
 ```
 src/
 ├── api/
-│   └── wallet.rs           # Wallet API server functions
+│   ├── graphql.rs           # GraphQL queries (BALANCE_QUERY, TRANSACTION_HISTORY_QUERY,
+│   │                        #   TRANSFER_MUTATION, SHOP_ORDER_DETAILS_QUERY)
+│   └── wallet.rs            # Wallet API server functions
 ├── components/
 │   └── wallet/
-│       ├── mod.rs
-│       ├── balance_header.rs
-│       ├── transaction_history.rs
-│       ├── transaction_item.rs
-│       ├── transfer_modal.rs
-│       ├── user_selector.rs
-│       ├── amount_form.rs
-│       └── confirm_transfer.rs
+│       ├── mod.rs               # Module exports
+│       ├── balance_header.rs    # Balance display + skeleton
+│       ├── transaction_history.rs # Infinite scroll list
+│       ├── transaction_item.rs  # Single tx + detail expansion
+│       └── transfer_modal.rs    # Multi-step modal (UserSelector,
+│                                #   AmountForm, ConfirmTransfer,
+│                                #   SuccessScreen all inline)
 ├── models/
-│   └── transaction.rs      # Transaction types
+│   └── transaction.rs      # Transaction types + utility fns
 ├── pages/
-│   └── wallet.rs           # Wallet page
+│   └── wallet.rs           # Wallet page + WalletHeader,
+│                            #   NewPostButton, MobileFooter
 └── style/
-    └── wallet.scss         # Wallet styles
+    └── wallet.scss         # Wallet styles (1092 lines)
 ```
+
+> **Note:** The plan originally proposed separate files for `user_selector.rs`,
+> `amount_form.rs`, and `confirm_transfer.rs`, but these were implemented as
+> private sub-components within `transfer_modal.rs` for cohesion.
 
 ---
 
 ## Migration Checklist
 
-- [ ] Create transaction models
-- [ ] Implement wallet API module
-- [ ] Add GraphQL queries/mutations
-- [ ] Create wallet page component
-- [ ] Create balance header component
-- [ ] Create transaction history with infinite scroll
-- [ ] Create transaction item with expand/collapse
-- [ ] Create transfer modal (user selection)
-- [ ] Create transfer modal (amount/message form)
-- [ ] Create transfer modal (confirmation)
-- [ ] Implement fee calculation
-- [ ] Add message validation
-- [ ] Port wallet CSS to SCSS
-- [ ] Add loading states
-- [ ] Add error handling
+- [x] Create transaction models
+- [x] Implement wallet API module
+- [x] Add GraphQL queries/mutations
+- [x] Create wallet page component
+- [x] Create balance header component
+- [x] Create transaction history with infinite scroll
+- [x] Create transaction item with expand/collapse
+- [x] Create transfer modal (user selection)
+- [x] Create transfer modal (amount/message form)
+- [x] Create transfer modal (confirmation)
+- [x] Implement fee calculation
+- [x] Add message validation
+- [x] Port wallet CSS to SCSS
+- [x] Add loading states
+- [x] Add error handling
 - [ ] Write unit tests
 - [ ] Write integration tests
 - [ ] Write E2E tests
@@ -1598,8 +1607,13 @@ src/
 ## Dependencies
 
 - rust_decimal (token amount precision)
-- regex (URL detection in messages)
 - web-sys (IntersectionObserver)
+- gloo-timers (debounced search, success screen auto-close)
+- chrono (transaction date formatting)
+
+> **Note:** The plan originally proposed using `regex` for URL detection, but
+> the implementation uses simple substring matching against known patterns
+> (`://`, `www.`, `.com`, `.net`, `.org`, `.io`) instead.
 
 ---
 
@@ -1619,12 +1633,20 @@ src/
 
 ## Notes
 
-1. **Decimal precision**: Use `rust_decimal` crate for token amounts to match backend precision (8 decimal places).
+1. **Decimal precision**: Use `rust_decimal` crate for token amounts to match backend precision (8 decimal places). ✅ Done.
 
-2. **Fee visibility**: Show fee breakdown proactively before transfer to avoid user surprise.
+2. **Fee visibility**: Show fee breakdown proactively before transfer to avoid user surprise. ✅ Done — expandable fee section in AmountForm.
 
-3. **Real-time validation**: Validate amount and message as user types, not just on submit.
+3. **Real-time validation**: Validate amount and message as user types, not just on submit. ✅ Partially — validation runs on "Continue" click, not on every keystroke.
 
-4. **Optimistic UI**: Consider optimistic updates for balance after transfer (with rollback on error).
+4. **Optimistic UI**: Consider optimistic updates for balance after transfer (with rollback on error). ❌ Not implemented — balance is re-fetched via `refresh_trigger` after success.
 
-5. **Shop orders**: Lazy-load delivery details only when expanding shop purchase transactions.
+5. **Shop orders**: Lazy-load delivery details only when expanding shop purchase transactions. ❌ Not implemented — model and query exist but no UI wiring.
+
+## Known Issues
+
+1. **Unused `balance` prop** — `AmountForm` accepts a `balance: Decimal` parameter that is never used in the component body (compiler warning). Should either be removed or used for a "max available" indicator.
+
+2. **`format_balance` passthrough** — `format_balance()` just delegates to `format_decimal()` without adding thousand separators as originally intended.
+
+3. **Route protection** — Uses `<Route>` + `<AuthGuard>` wrapper instead of `<ProtectedRoute>`. This works but the page component briefly renders before redirect for unauthenticated users.

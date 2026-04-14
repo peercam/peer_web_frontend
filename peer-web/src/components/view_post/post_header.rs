@@ -3,7 +3,9 @@
 //! Displays author information and follow button.
 
 use leptos::prelude::*;
+use leptos::task::spawn_local;
 
+use crate::api::profile::toggle_follow;
 use crate::models::post::PostUser;
 
 /// Post author header with avatar, username, and follow button.
@@ -16,22 +18,22 @@ pub fn PostHeader(user: PostUser, is_guest: bool) -> impl IntoView {
         .clone()
         .unwrap_or_else(|| "/svg/noname.svg".to_string());
 
+    let user_id_for_follow = StoredValue::new(user.id.clone());
+
     let on_follow = move |_| {
         if is_guest {
             return;
         }
 
         let currently_followed = is_followed.get();
-        is_followed.set(!currently_followed);
+        is_followed.set(!currently_followed); // Optimistic update
 
-        // TODO: Call follow/unfollow API
-        // spawn_local(async move {
-        //     if currently_followed {
-        //         let _ = unfollow_user(user_id.clone()).await;
-        //     } else {
-        //         let _ = follow_user(user_id.clone()).await;
-        //     }
-        // });
+        let id = user_id_for_follow.get_value();
+        spawn_local(async move {
+            if toggle_follow(id).await.is_err() {
+                is_followed.set(currently_followed); // Revert on failure
+            }
+        });
     };
 
     view! {
