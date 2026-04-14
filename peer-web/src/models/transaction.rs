@@ -263,7 +263,7 @@ impl TransferResponse {
 }
 
 /// Shop order details for shop purchase transactions.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShopOrderDetails {
     pub shop_order_id: String,
@@ -275,14 +275,14 @@ pub struct ShopOrderDetails {
 }
 
 /// Shop item specifications.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ShopItemSpecs {
     #[serde(default)]
     pub size: Option<String>,
 }
 
 /// Delivery details for shop orders.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct DeliveryDetails {
     #[serde(default)]
     pub name: Option<String>,
@@ -301,7 +301,7 @@ pub struct DeliveryDetails {
 }
 
 /// Shop order details response.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShopOrderDetailsResponse {
     #[serde(default)]

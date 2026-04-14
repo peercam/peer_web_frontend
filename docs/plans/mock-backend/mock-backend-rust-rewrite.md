@@ -484,61 +484,58 @@ The Phase 0 `register` mutation was updated to also create a `User` record and s
 
 ---
 
-## 4. Phase 2 — Users & Profiles
+## 4. Phase 2 — Users & Profiles ✅
+
+> **Status:** Complete (14 April 2026) — [Detailed plan](./phase-2-users-and-profiles.md) | [Implementation notes](./phase-2-implementation.md)
 
 **Depends on:** Phase 1 (requires auth)
 **Driven by:** `peer-web/src/pages/profile.rs`, `peer-web/src/pages/view_profile.rs`, `peer-web/src/api/profile.rs`
+
+**Outcome:** 10 user queries, 8 profile mutations, content filtering, 6 seeded users, 40 new integration tests (73 total).
 
 ### New files
 
 | File | Contents |
 |------|----------|
-| `src/schema/query/users.rs` | `listUsersV2`, `getProfile`, `listFollowRelations`, `listFriends`, `getUserPreferences` |
-| `src/schema/mutation/profile.rs` | `editProfile`, `followUser`/`unfollowUser` (toggleFollow), `blockUser`/`unblockUser` (toggleBlock), `reportUser` |
-| `src/types/user.rs` | `User`, `UserListResponse`, `Profile`, `UserPreferences`, `FollowRelation`, `Friend` |
+| `src/types/user.rs` | 26+ GraphQL types/enums: `ProfileGql`, `ProfileUserGql`, `BasicUserInfoGql`, `SearchUserResult`, `FollowRelationsGql`, `BlockedUsersGql`, `UserInfoGql`, `UserPreferencesGql`, etc. |
+| `src/schema/query/mod.rs` | Refactored `QueryRoot` using `MergedObject`: `QueryRoot(HealthQuery, UserQuery)` |
+| `src/schema/query/health.rs` | Extracted `_health` query from old `query.rs` |
+| `src/schema/query/users.rs` | `getProfile`, `searchUser`, `listUsersV2`, `getUser`, `listFollowRelations`, `listFriends`, `listBlockedUsers`, `getUserInfo`, `getReferralInfo`, `referralList` |
+| `src/schema/mutation/profile.rs` | `toggleUserFollowStatus`, `toggleBlockUserStatus`, `reportUser`, `updateProfileImage`, `updateBio`, `updateUsername`, `updateEmail`, `updateUserPreferences` |
+| `src/filters.rs` | `filter_users()` pipeline (illegal, system, deleted, blocked) + `paginate()` helper |
 
-### State extensions
+### State extensions (actual)
 
 ```rust
 pub struct MockState {
-    // ... existing fields ...
-    pub profiles: HashMap<Uuid, Profile>,
-    pub follows: HashSet<(Uuid, Uuid)>,       // (follower, followed)
-    pub blocks: HashSet<(Uuid, Uuid)>,         // (blocker, blocked)
+    // ... Phase 0 + Phase 1 fields ...
+    pub follows: HashSet<(Uuid, Uuid)>,              // (follower, followed)
+    pub blocks: HashSet<(Uuid, Uuid)>,               // (blocker, blocked)
     pub reports: Vec<UserReport>,
-    pub preferences: HashMap<Uuid, UserPreferences>,
+    pub preferences: HashMap<Uuid, UserPreferencesState>,
+    pub referral_invitations: HashMap<Uuid, Uuid>,   // invitee → inviter
 }
 ```
 
-### Seed data additions
+`User` struct extended with: `slug_num`, `img`, `biography`, `visibility_status`, `created_at`, `updated_at`.
 
-- 3–5 pre-populated user profiles with varying fields (biography, avatar, etc.)
-- 2 pre-existing follow relationships
-- 1 pre-existing block relationship
-- Default preferences for each seeded user
+### Seed data (actual)
 
-### Resolvers to implement
+- 6 users total: `test@peer.com` (verified), `unverified@peer.com`, alice, bob, carol, dave
+- 3 follow edges: alice ↔ bob (mutual), carol → alice
+- 1 block edge: carol blocks dave
+- 1 referral: alice invited by seed_verified
+- Default preferences for all seeded users
 
-| Operation | Type | Key response codes |
-|-----------|------|--------------------|
-| `listUsersV2(userid?, username?, offset, limit)` | Query | `11101` found, `21101` empty |
-| `getProfile(userid)` | Query | `11301` found, `31007` not found |
-| `listFollowRelations(userid, type, offset, limit)` | Query | `11101` success |
-| `listFriends(offset, limit)` | Query | `11101` success |
-| `getUserPreferences` | Query | `11401` success |
-| `editProfile(input)` | Mutation | `11301` success |
-| `followUser(userid)` / `unfollowUser(userid)` | Mutation | `11101` follow, `11102` unfollow |
-| `blockUser(userid)` / `unblockUser(userid)` | Mutation | `11103` block, `11104` unblock |
-| `reportUser(userid, reason)` | Mutation | `11105` reported |
+### Phase 2 definition of done
 
-### Tests (≥10 new)
-
-- Search user by username, by ID, pagination
-- Get profile of self, of another user
-- Follow → check follower list → unfollow
-- Block → verify blocked user excluded from search
-- Edit profile → verify changes persisted
-- Report user
+- [x] 10 queries resolve correctly with proper response codes
+- [x] 8 mutations resolve correctly with proper response codes and side effects
+- [x] Content filtering excludes illegal, system, deleted, and blocked users
+- [x] 40 new integration tests pass (73 total, exceeds ≥42 target)
+- [x] `cargo clippy -- -D warnings` passes
+- [x] `cargo fmt --check` passes
+- [x] All Phase 0 + Phase 1 tests still pass
 
 ---
 

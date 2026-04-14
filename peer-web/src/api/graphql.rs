@@ -1459,6 +1459,53 @@ pub struct ShopOrderDetailsData {
 }
 
 // ============================================================================
+// Shop mutations
+// ============================================================================
+
+/// Mutation: Place a shop order (purchase with tokens).
+pub const PERFORM_SHOP_ORDER_MUTATION: &str = r#"
+mutation PerformShopOrder(
+    $tokenAmount: String!
+    $shopItemId: String!
+    $name: String!
+    $email: String!
+    $addressline1: String!
+    $addressline2: String
+    $city: String!
+    $zipcode: String!
+    $country: Country!
+    $size: String
+) {
+    performShopOrder(
+        tokenAmount: $tokenAmount
+        shopItemId: $shopItemId
+        orderDetails: {
+            name: $name
+            email: $email
+            addressline1: $addressline1
+            addressline2: $addressline2
+            city: $city
+            zipcode: $zipcode
+            country: $country
+            shopItemSpecs: { size: $size }
+        }
+    ) {
+        status
+        RequestId
+        ResponseCode
+        ResponseMessage
+    }
+}
+"#;
+
+/// Wrapper for the `performShopOrder` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PerformShopOrderData {
+    pub perform_shop_order: crate::models::shop::PerformShopOrderResponse,
+}
+
+// ============================================================================
 // Settings mutations
 // ============================================================================
 

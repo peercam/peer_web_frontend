@@ -43,7 +43,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Referral Board | `referralBoard.php` | ✅ Implemented | Referral link + copy, invited/inviter tabs, user cards, auth guard ([docs](plans/referral-board/referral-board-implementation.md)) |
 | **Economy** ||||
 | Wallet | `wallet.php` | 🟡 Implemented (tests pending) | 146-line page + transfer_modal (760L), balance_header, transaction_history, transaction_item, API layer (246L), SCSS (1092L) ([docs](plans/wallet/wallet-implementation.md)). **Gaps:** shop purchase order details UI not wired (model + query exist), thousand-separator formatting missing |
-| Peer Shop | `viewPeerShop.php` | ❌ Not Started | Shop view |
+| Peer Shop | `viewPeerShop.php` | 🟡 Core Implemented | `/shop` route, profile header, product feed with price badges, checkout popup (multi-step), FAQ popup, `performShopOrder` API, SCSS ([docs](plans/peer-shop/peer-shop-implementation.md)) — **Gaps:** Firebase product data (sizes/stock), infinite scroll, View Post overlay integration, functional filters |
 | My Ads | `myAds.php` | ❌ Not Started | Ad management |
 | **Admin** ||||
 | Admin Dashboard | `admin/index.php` | ❌ Not Started | Content moderation |
@@ -128,7 +128,7 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 |-------|-------|------|---------|--------|
 | 0 — Skeleton & Parity | 3 registration mutations, health check, 9 integration tests | [phase-0](plans/mock-backend/phase-0-mock-backend-skeleton.md) | ⭐⭐⭐⭐ (4/5) | ✅ Done — Node.js replaced, async-graphql v7 + axum 0.8 |
 | 1 — Login & Session | login, refreshToken, logout, deleteAccount, updatePassword, password reset, contactus — 9 mutations, auth middleware, 24 tests | [phase-1](plans/mock-backend/phase-1-login-session-flows.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 33 total tests, 2 seeded users, `CurrentUser` context |
-| 2 — Users & Profiles | getProfile, searchUser, follow/block/report, preferences, profile edits | [phase-2](plans/mock-backend/phase-2-users-and-profiles.md) | — | ❌ Not Started |
+| 2 — Users & Profiles | 10 queries + 8 mutations: getProfile, searchUser, listUsersV2, getUser, follow/block/report, preferences, profile edits, referrals — 40 new tests (73 total), 6 seeded users, content filtering pipeline | [phase-2](plans/mock-backend/phase-2-users-and-profiles.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — [implementation notes](plans/mock-backend/phase-2-implementation.md) |
 | 3 — Posts & Content | listPosts, guestListPost, postAction, createPost, searchTags, ads | [phase-3](plans/mock-backend/phase-3-posts-content.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
 | 4 — Social (Comments, Chat) | listComments, createComment, like/unlike, listChats, sendMessage, createChat | [phase-4](plans/mock-backend/phase-4-social-comments-chat.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
 | 5 — Economy (Wallet, Shop, Ads) | balance, transferTokens, transactionHistory, shopOrderDetails, ads | [phase-5](plans/mock-backend/phase-5-economy-wallet-tokenomics-shop-ads.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
@@ -151,11 +151,46 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 10. ✅ ~~Referral Board~~ — Complete, full UI + API, pending mock backend endpoints ([docs](plans/referral-board/referral-board-implementation.md))
 11. ⬜ Admin — Moderation tools (no plan yet)
 12. ✅ ~~Invite~~ — Complete, deep-link relay page ([docs](plans/invite/invite-implementation.md))
-13. ⬜ Remaining pages — Peer Shop, My Ads, Download, Version History (no plans yet)
+13. 🟡 Peer Shop — Core implemented (Phases 1–4), Firebase integration + polish remaining ([docs](plans/peer-shop/peer-shop-implementation.md))
+14. ⬜ Remaining pages — My Ads, Download, Version History (no plans yet)
 
 ---
 
 ## Changelog
+
+### 2026-04-14 (Mock Backend Phase 2 Complete)
+- **Phase 2 implemented and reviewed** — 73 tests pass (33 existing + 40 new), cargo clippy/fmt clean
+- **10 user queries:** getProfile, searchUser, listUsersV2, getUser, listFollowRelations, listFriends, listBlockedUsers, getUserInfo, getReferralInfo, referralList
+- **8 profile mutations:** toggleUserFollowStatus, toggleBlockUserStatus, reportUser, updateProfileImage, updateBio, updateUsername, updateEmail, updateUserPreferences
+- **6 new files:** `types/user.rs` (~400L), `schema/query/users.rs` (~620L), `schema/mutation/profile.rs` (~320L), `filters.rs` (~50L), `schema/query/health.rs` (extracted), `schema/query/mod.rs` (MergedObject refactor)
+- **State extensions:** follows, blocks, reports, preferences, referral_invitations; 15 helper methods on MockState
+- **Seed data:** 6 users (test, unverified, alice, bob, carol, dave), 3 follow edges, 1 block edge, 1 referral
+- **Content filtering pipeline:** IllegalContentFilterSpec, SystemUserSpec, DeletedUserSpec, UserIsBlockedByMeSpec, CurrentUserIsBlockedUserSpec
+- **Review findings (minor):** referral link domain uses `peer.com` (plan says `getpeer.eu`, frontend tests use `peer.network`); `listFollowRelations`/`listBlockedUsers` ignore offset/limit params; regex recompiled per `updateUsername` call; `updateBio`/`updateProfileImage` reject empty strings (undocumented validation)
+- Mock backend tracker updated: Phase 2 → ✅ Done
+
+### 2026-04-14 (Mock Backend Phase 2 Plan Updated)
+- **All review gaps resolved** — plan doc updated to be fully self-contained and copy-paste ready
+- **9 missing query resolvers added:** `listUsersV2`, `getUser`, `listFollowRelations`, `listFriends`, `listBlockedUsers`, `getUserInfo`, `getReferralInfo`, `referralList` — all fully coded with response construction, error handling, and content filtering
+- **`require_auth()` helper:** added §4.5a documenting promotion of existing Phase 1 `fn require_auth` in `auth.rs` to `pub`, with `lib.rs` re-export
+- **`convert_visibility()` helper:** added §4.5b for state enum → GraphQL enum conversion (fixes `/* convert from state enum */` placeholder)
+- **`filter_users` module:** resolved ambiguity — now concretely `src/filters.rs` with `pub mod filters;` in `lib.rs`
+- **Schema assembly (§4.8):** expanded from 1 snippet to 5 concrete steps: split `query.rs` into `query/mod.rs` + `query/health.rs` + `query/users.rs`, update `schema/mod.rs`, update `mutation/mod.rs`, update `lib.rs`
+- **Builder pattern helpers:** added `build_profile_user()` and `build_basic_user_info()` helper fns to reduce duplication across query resolvers
+- **Test helper signatures fixed:** all tests now correctly use `&state` (reference) pattern matching actual `graphql_stateful`/`graphql_with_auth` signatures; removed all redundant `app_with_state()` calls
+- **4 new tests added:** `test_list_users_v2_by_username`, `test_list_users_v2_excludes_blocked`, `test_get_user_by_id`, `test_referral_list` — total now 46 (was 42)
+- **Test table (§3 G):** expanded from G1–G42 to G1–G46
+- **Definition of Done:** test count updated ≥42 → ≥46
+- **Prerequisites (§2):** checkboxes updated to match actual Phase 1 state (8/9 checked, QueryRoot refactoring flagged)
+- **`BasicUserInfoGql.updatedat`:** annotated with rationale (backend schema returns it; frontend ignores extra fields via serde)
+- **`ProfileMutation`:** added `#[derive(Default)]` and `use crate::require_auth;` import
+
+### 2026-04-14 (Mock Backend Phase 2 Plan Quality Review)
+- Phase 2 plan reviewed and rated ⭐⭐⭐⭐⭐ (5/5)
+- **Strong:** Exhaustive 75+ task breakdown across 8 sub-phases (A–H); full Rust code for all types (26 structs/enums), state extensions, 2 query resolvers (getProfile, searchUser) + 9 mutation resolvers; seed data with 4 new users, pre-existing follow/block/referral relationships; content filtering module with 5 filter specs + pagination helper; 42 integration tests covering success, error, auth, pagination, and multi-step interaction flows; comprehensive Definition of Done (50+ checklist items) with build gates, response shape compatibility checks, and state isolation requirements
+- **Perfect model alignment** — `ProfileGql`, `ProfileUserGql`, `BasicUserInfoGql`, `FollowStatusResponseGql`, `UpdateResponseGql`, `UserPreferencesResponseGql` all verified field-by-field against `peer-web/src/models/profile.rs` and `peer-web/src/models/settings.rs`; GraphQL query shapes match `SEARCH_USERS_QUERY` and `GET_USER_QUERY` exactly
+- **Correctly identifies** QueryRoot `#[Object]` → `MergedObject` refactoring needed for schema assembly
+- **Minor gaps (now resolved above):** 9 of 11 query resolvers left as "follows the same pattern"; `require_auth()` helper referenced but not defined; `filter_users()` module location ambiguous; test helper signatures inconsistent with codebase; `referralList` query missing from test section
 
 ### 2026-04-14 (Invite Page Review & Doc Update)
 - **Summary table fixed:** 🟡 count corrected 6→7, 🚧 count corrected 3→2 (stale after Invite moved to ✅)

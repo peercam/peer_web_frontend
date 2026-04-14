@@ -114,24 +114,26 @@ Each phase has a self-contained gate. A phase is **not complete** until every it
 | 1.14 | Auth middleware extracts `Authorization: Bearer <token>` and injects current user | Verified via `test_delete_account_success` + `test_update_password_success` | ✅ |
 | 1.15 | ≥12 integration tests pass for Phase 1 | 24 Phase 1 tests pass (33 total) | ✅ |
 
-### Gate 2 — Users & Profiles
+### Gate 2 — Users & Profiles ✅
 
-| # | Criterion | Verification method |
-|---|-----------|---------------------|
-| 2.1 | `listUsersV2` returns seeded users with pagination (offset/limit) | Integration test |
-| 2.2 | `listUsersV2` by username substring returns matches | Integration test |
-| 2.3 | `listUsersV2` with no matches returns empty `affectedRows` | Integration test |
-| 2.4 | `getProfile` returns full profile for valid user ID | Integration test |
-| 2.5 | `getProfile` for nonexistent user returns `31007` | Integration test |
-| 2.6 | `editProfile` updates bio, username, avatar | Integration test |
-| 2.7 | `followUser` → `listFollowRelations(type: FOLLOWING)` includes target | Integration test |
-| 2.8 | `unfollowUser` → target removed from following list | Integration test |
-| 2.9 | `blockUser` → blocked user excluded from relevant queries | Integration test |
-| 2.10 | `unblockUser` reverses block | Integration test |
-| 2.11 | `reportUser` stores report and returns success | Integration test |
-| 2.12 | `listFriends` returns mutual follows | Integration test |
-| 2.13 | `getUserPreferences` returns default preferences for seeded users | Integration test |
-| 2.14 | ≥10 integration tests pass for Phase 2 | `cargo test` count |
+> **Status:** All criteria verified (14 April 2026) — 40 Phase 2 tests, 73 total.
+
+| # | Criterion | Verification method | Status |
+|---|-----------|---------------------|--------|
+| 2.1 | `listUsersV2` returns seeded users with pagination (offset/limit) | `test_list_users_v2_by_username` | ✅ |
+| 2.2 | `listUsersV2` by username substring returns matches | `test_list_users_v2_by_username` | ✅ |
+| 2.3 | `listUsersV2` with no matches returns empty `affectedRows` | `test_list_users_v2_empty_results` | ✅ |
+| 2.4 | `getProfile` returns full profile for valid user ID | `test_get_other_user_profile` | ✅ |
+| 2.5 | `getProfile` for nonexistent user returns `21001` | `test_get_profile_not_found` | ✅ |
+| 2.6 | `updateBio`, `updateUsername`, `updateProfileImage` update profile | `test_update_bio`, `test_update_username_success`, `test_update_profile_image` | ✅ |
+| 2.7 | `toggleUserFollowStatus` (follow) → follow relations include target | `test_toggle_follow`, `test_list_follow_relations` | ✅ |
+| 2.8 | `toggleUserFollowStatus` (unfollow) → target removed | `test_toggle_follow` (toggle back) | ✅ |
+| 2.9 | `toggleBlockUserStatus` → blocked user excluded from search | `test_blocked_user_excluded_from_search`, `test_list_users_v2_excludes_blocked` | ✅ |
+| 2.10 | `toggleBlockUserStatus` (unblock) reverses block | `test_toggle_block_unblock` | ✅ |
+| 2.11 | `reportUser` stores report and returns `11012` | `test_report_user_success` | ✅ |
+| 2.12 | `listFriends` returns mutual follows only | `test_list_friends_mutual_only` | ✅ |
+| 2.13 | `getUserInfo` returns preferences for seeded users | `test_get_user_info` | ✅ |
+| 2.14 | ≥10 integration tests pass for Phase 2 | 40 Phase 2 tests pass (73 total) | ✅ |
 
 ### Gate 3 — Posts & Content
 

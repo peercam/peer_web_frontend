@@ -101,15 +101,15 @@ tests/mock_backend/src/
 
 ### Phase 1 Completion
 
-- [ ] All auth mutations work (`login`, `refreshToken`, `logout`, `deleteAccount`, etc.)
-- [ ] Auth middleware injects `CurrentUser(Option<Uuid>)` into async-graphql context
-- [ ] `require_auth()` helper returns `60501` for unauthenticated calls
-- [ ] `MockState` has `users: HashMap<Uuid, User>`, `user_passwords`, `access_tokens`, `refresh_tokens`
-- [ ] `MutationRoot` uses `MergedObject` and can accept additional mutation structs
-- [ ] `QueryRoot` supports merging via `MergedObject` (may need refactoring if currently a single struct)
-- [ ] `app()` and `app_with_state()` router builders exist
-- [ ] `/reset` endpoint resets state to defaults
-- [ ] Seeded verified user (`test@peer.com` / `TestPass123`) can log in
+- [x] All auth mutations work (`login`, `refreshToken`, `logout`, `deleteAccount`, etc.)
+- [x] Auth middleware injects `CurrentUser(Option<Uuid>)` into async-graphql context
+- [x] `require_auth()` helper returns `60501` for unauthenticated calls (currently `fn` in `auth.rs`, needs `pub` promotion — see §4.5a)
+- [x] `MockState` has `users: HashMap<Uuid, User>`, `user_passwords`, `access_tokens`, `refresh_tokens`
+- [x] `MutationRoot` uses `MergedObject` and can accept additional mutation structs
+- [x] `QueryRoot` supports merging via `MergedObject` — refactored to `MergedObject` pattern (§4.8 Step 1–2)
+- [x] `app()` and `app_with_state()` router builders exist
+- [x] `/reset` endpoint resets state to defaults
+- [x] Seeded verified user (`test@peer.com` / `TestPass123`) can log in
 
 ### API Reference
 
@@ -270,8 +270,12 @@ All response codes and field names in this plan come from:
 | G38 | `updateUserPreferences` — update severity level | `11014`, returns updated preferences |
 | G39 | `getUserInfo` — returns own account info with preferences | `11009` |
 | G40 | `getReferralInfo` — returns referral UUID | `11011` |
-| G41 | Follow → then block → verify follow removed | Full interaction flow |
-| G42 | Block → verify blocked user excluded from search | Content filtering integration |
+| G41 | `referralList` — returns inviter and invitees | `11011`, invitedBy populated for alice |
+| G42 | Follow → then block → verify follow removed | Full interaction flow |
+| G43 | Block → verify blocked user excluded from search | Content filtering integration |
+| G44 | `listUsersV2` — excludes blocked users (integration) | Carol's search omits dave |
+| G45 | `getUser` — by ID returns preferences | Returns `userPreferences.contentFilteringSeverityLevel` |
+| G46 | `listUsersV2` — search by username | `11001`, matching users returned |
 
 ### Phase 2.H — Cleanup & Validation
 
@@ -441,6 +445,8 @@ pub struct FollowRelationsResponseGql {
 /// Basic user info for friends/peers list.
 ///
 /// Must match frontend's `peer-web/src/models/profile.rs::BasicUserInfo` deserialization.
+/// Note: `updatedat` is included because the backend schema returns it; the frontend
+/// struct doesn't deserialize it (serde ignores unknown fields by default).
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 #[graphql(rename_fields = "camelCase")]
 pub struct BasicUserInfoGql {
@@ -991,7 +997,8 @@ for uid in [SEED_USER_VERIFIED, SEED_USER_ALICE, SEED_USER_BOB, SEED_USER_CAROL,
 ### 4.5 Content Filtering Logic
 
 ```rust
-// In a new module: src/filters.rs (or inline in query resolvers)
+// New file: src/filters.rs
+// Register in lib.rs: pub mod filters;
 
 use uuid::Uuid;
 use crate::state::{MockState, User, ContentVisibilityState};
@@ -1044,18 +1051,96 @@ pub fn paginate<T>(items: &[T], offset: usize, limit: usize) -> &[T] {
 }
 ```
 
+### 4.5a Auth Helpers (shared)
+
+Phase 1 defines `require_auth()` and `get_current_user()` as private functions in
+`schema/mutation/auth.rs`. Phase 2 resolvers (both queries and mutations) need
+these helpers too. **Promote them to `pub` and re-export from `lib.rs`:**
+
+```rust
+// In schema/mutation/auth.rs — change visibility:
+pub fn get_current_user(ctx: &Context<'_>) -> Option<Uuid> {
+    ctx.data_opt::<CurrentUser>().and_then(|cu| cu.0)
+}
+
+pub fn require_auth(ctx: &Context<'_>) -> Result<Uuid, DefaultResponse> {
+    get_current_user(ctx).ok_or_else(|| DefaultResponse::error("60501", "Authentication required"))
+}
+```
+
+```rust
+// In lib.rs — add re-export for convenient cross-module use:
+pub use schema::mutation::auth::{get_current_user, require_auth};
+```
+
+### 4.5b Visibility Status Conversion Helper
+
+Add to `types/user.rs` (or `filters.rs`):
+
+```rust
+use crate::state::ContentVisibilityState;
+
+/// Convert state-level visibility status to GraphQL enum.
+pub fn convert_visibility(state: ContentVisibilityState) -> ContentVisibilityStatus {
+    match state {
+        ContentVisibilityState::Normal => ContentVisibilityStatus::Normal,
+        ContentVisibilityState::Hidden => ContentVisibilityStatus::Hidden,
+        ContentVisibilityState::Illegal => ContentVisibilityStatus::Illegal,
+    }
+}
+```
+
 ### 4.6 User Query Resolvers (`schema/query/users.rs`)
 
 ```rust
 use async_graphql::{Context, Object, ID};
 use uuid::Uuid;
 
+use crate::filters::{filter_users, paginate};
+use crate::require_auth;
 use crate::state::SharedState;
 use crate::types::registration::DefaultResponse;
 use crate::types::user::*;
 use crate::CurrentUser;
 
 pub struct UserQuery;
+
+/// Build a ProfileUserGql from a User, annotated relative to the current user.
+fn build_profile_user(
+    user: &crate::state::User,
+    me: &Uuid,
+    state: &crate::state::MockState,
+) -> ProfileUserGql {
+    ProfileUserGql {
+        userid: ID::from(user.uid.to_string()),
+        username: user.username.clone(),
+        slug: user.slug_num,
+        img: user.img.clone(),
+        visibility_status: convert_visibility(user.visibility_status),
+        is_hidden_for_users: false,
+        has_active_reports: state.has_active_reports(&user.uid),
+        isfollowed: state.is_following(me, &user.uid),
+        isfollowing: state.is_following(&user.uid, me),
+    }
+}
+
+/// Build a BasicUserInfoGql from a User.
+fn build_basic_user_info(
+    user: &crate::state::User,
+    state: &crate::state::MockState,
+) -> BasicUserInfoGql {
+    BasicUserInfoGql {
+        userid: ID::from(user.uid.to_string()),
+        img: user.img.clone(),
+        username: user.username.clone(),
+        slug: user.slug_num,
+        biography: user.biography.clone(),
+        visibility_status: convert_visibility(user.visibility_status),
+        is_hidden_for_users: false,
+        has_active_reports: state.has_active_reports(&user.uid),
+        updatedat: Some(user.updated_at.clone()),
+    }
+}
 
 #[Object]
 impl UserQuery {
@@ -1077,12 +1162,7 @@ impl UserQuery {
         userid: Option<ID>,
         content_filter_by: Option<ContentFilterType>,
     ) -> ProfileInfoResponse {
-        let current_user = match ctx.data_opt::<CurrentUser>() {
-            Some(cu) => cu.0,
-            None => None,
-        };
-
-        let me = match current_user {
+        let me = match ctx.data_opt::<CurrentUser>().and_then(|cu| cu.0) {
             Some(uid) => uid,
             None => return ProfileInfoResponse {
                 meta: DefaultResponse::error("60501", "Authentication required"),
@@ -1113,7 +1193,6 @@ impl UserQuery {
             },
         };
 
-        // Compute social stats
         let profile = ProfileGql {
             id: ID::from(user.uid.to_string()),
             username: user.username.clone(),
@@ -1121,7 +1200,7 @@ impl UserQuery {
             slug: user.slug_num,
             img: user.img.clone(),
             biography: user.biography.clone(),
-            visibility_status: /* convert from state enum */ ContentVisibilityStatus::Normal,
+            visibility_status: convert_visibility(user.visibility_status),
             is_hidden_for_users: false,
             has_active_reports: state_read.has_active_reports(&target_uid),
             i_follow_this_user: state_read.is_following(&me, &target_uid),
@@ -1192,9 +1271,486 @@ impl UserQuery {
         }
     }
 
-    // ... (listUsersV2, getUser, listFollowRelations, listFriends,
-    //      listBlockedUsers, getUserInfo, getReferralInfo, referralList
-    //      follow the same pattern)
+    // ========================================================================
+    // listUsersV2
+    // ========================================================================
+
+    /// Search and list users with optional filters and pagination.
+    ///
+    /// Response codes:
+    /// - 11001: Users found
+    /// - 21001: No users found
+    async fn list_users_v2(
+        &self,
+        ctx: &Context<'_>,
+        content_filter_by: Option<ContentFilterType>,
+        userid: Option<ID>,
+        username: Option<String>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> UserListResponse {
+        let current_user = ctx.data_opt::<CurrentUser>().and_then(|cu| cu.0);
+        let state = ctx.data_unchecked::<SharedState>();
+        let state_read = state.read().await;
+
+        // Collect candidates: search by userid, username, or all users
+        let candidates: Vec<&crate::state::User> = if let Some(ref id) = userid {
+            match Uuid::parse_str(id.as_str()) {
+                Ok(uid) => state_read.users.get(&uid).into_iter().collect(),
+                Err(_) => vec![],
+            }
+        } else if let Some(ref name) = username {
+            state_read.search_users_by_username(name)
+        } else {
+            state_read.users.values().collect()
+        };
+
+        let filtered = filter_users(candidates.into_iter(), current_user.as_ref(), &state_read);
+
+        let off = offset.unwrap_or(0).max(0) as usize;
+        let lim = limit.unwrap_or(10).clamp(1, 20) as usize;
+        let total = filtered.len() as i32;
+        let page = paginate(&filtered, off, lim);
+
+        if page.is_empty() {
+            return UserListResponse {
+                meta: DefaultResponse::success("21001", "No users found"),
+                counter: 0,
+                affected_rows: None,
+            };
+        }
+
+        let items: Vec<UserListItem> = page.iter().map(|u| UserListItem {
+            id: ID::from(u.uid.to_string()),
+            username: u.username.clone(),
+            status: u.status as i32,
+            slug: u.slug_num,
+            img: u.img.clone(),
+            biography: u.biography.clone(),
+            visibility_status: convert_visibility(u.visibility_status),
+            is_hidden_for_users: false,
+            has_active_reports: state_read.has_active_reports(&u.uid),
+            createdat: Some(u.created_at.clone()),
+            updatedat: Some(u.updated_at.clone()),
+        }).collect();
+
+        UserListResponse {
+            meta: DefaultResponse::success("11001", "Users retrieved successfully"),
+            counter: total,
+            affected_rows: Some(items),
+        }
+    }
+
+    // ========================================================================
+    // getUser
+    // ========================================================================
+
+    /// Get user info by ID with preferences.
+    ///
+    /// Response codes:
+    /// - 11001: User found
+    /// - 21001: User not found
+    async fn get_user(
+        &self,
+        ctx: &Context<'_>,
+        id: ID,
+    ) -> GetUserResponseGql {
+        let state = ctx.data_unchecked::<SharedState>();
+        let state_read = state.read().await;
+
+        let uid = match Uuid::parse_str(id.as_str()) {
+            Ok(uid) => uid,
+            Err(_) => return GetUserResponseGql {
+                meta: DefaultResponse::error("21001", "User not found"),
+                affected_rows: None,
+            },
+        };
+
+        let user = match state_read.users.get(&uid) {
+            Some(u) => u,
+            None => return GetUserResponseGql {
+                meta: DefaultResponse::error("21001", "User not found"),
+                affected_rows: None,
+            },
+        };
+
+        let prefs = state_read.preferences.get(&uid);
+        let user_prefs = prefs.map(|p| UserPreferencesGql {
+            content_filtering_severity_level: Some(match p.content_filtering_severity_level {
+                crate::state::ContentFilterState::Mygrandmalikes => ContentFilterType::Mygrandmalikes,
+                crate::state::ContentFilterState::Mygrandmahates => ContentFilterType::Mygrandmahates,
+            }),
+            onboardings_were_shown: p.onboardings_were_shown.iter().filter_map(|s| {
+                match s.as_str() {
+                    "INTROONBOARDING" => Some(OnboardingType::IntroOnboarding),
+                    _ => None,
+                }
+            }).collect(),
+        });
+
+        GetUserResponseGql {
+            meta: DefaultResponse::success("11001", "User found"),
+            affected_rows: Some(GetUserResult {
+                id: ID::from(user.uid.to_string()),
+                username: user.username.clone(),
+                slug: user.slug_num,
+                img: user.img.clone(),
+                biography: user.biography.clone(),
+                amount_followers: state_read.count_followers(&uid),
+                amount_following: state_read.count_following(&uid),
+                amount_peers: state_read.count_friends(&uid),
+                user_preferences: user_prefs,
+            }),
+        }
+    }
+
+    // ========================================================================
+    // listFollowRelations
+    // ========================================================================
+
+    /// List followers and following for a user.
+    ///
+    /// Response codes:
+    /// - 11101: Follow relations loaded
+    /// - 60501: Not authenticated
+    async fn list_follow_relations(
+        &self,
+        ctx: &Context<'_>,
+        userid: Option<ID>,
+        content_filter_by: Option<ContentFilterType>,
+        offset: i32,
+        limit: i32,
+    ) -> FollowRelationsResponseGql {
+        let me = match ctx.data_opt::<CurrentUser>().and_then(|cu| cu.0) {
+            Some(uid) => uid,
+            None => return FollowRelationsResponseGql {
+                meta: DefaultResponse::error("60501", "Authentication required"),
+                counter: 0,
+                affected_rows: None,
+            },
+        };
+
+        let state = ctx.data_unchecked::<SharedState>();
+        let state_read = state.read().await;
+
+        let target_uid = match &userid {
+            Some(id) => Uuid::parse_str(id.as_str()).unwrap_or(me),
+            None => me,
+        };
+
+        // Collect followers (users who follow target)
+        let follower_uids: Vec<Uuid> = state_read.follows.iter()
+            .filter(|(_, followed)| *followed == target_uid)
+            .map(|(follower, _)| *follower)
+            .collect();
+
+        let followers: Vec<ProfileUserGql> = follower_uids.iter()
+            .filter_map(|uid| state_read.users.get(uid))
+            .map(|u| build_profile_user(u, &me, &state_read))
+            .collect();
+
+        // Collect following (users target follows)
+        let following_uids: Vec<Uuid> = state_read.follows.iter()
+            .filter(|(follower, _)| *follower == target_uid)
+            .map(|(_, followed)| *followed)
+            .collect();
+
+        let following: Vec<ProfileUserGql> = following_uids.iter()
+            .filter_map(|uid| state_read.users.get(uid))
+            .map(|u| build_profile_user(u, &me, &state_read))
+            .collect();
+
+        let total = followers.len() + following.len();
+
+        FollowRelationsResponseGql {
+            meta: DefaultResponse::success("11101", "Follow relations loaded"),
+            counter: total as i32,
+            affected_rows: Some(FollowRelationsGql { followers, following }),
+        }
+    }
+
+    // ========================================================================
+    // listFriends
+    // ========================================================================
+
+    /// List mutual follows (friends/peers) for a user.
+    ///
+    /// Response codes:
+    /// - 11102: Friends loaded
+    /// - 21101: No friends found
+    /// - 60501: Not authenticated
+    async fn list_friends(
+        &self,
+        ctx: &Context<'_>,
+        userid: Option<ID>,
+        content_filter_by: Option<ContentFilterType>,
+        offset: i32,
+        limit: i32,
+    ) -> FriendsResponseGql {
+        let me = match ctx.data_opt::<CurrentUser>().and_then(|cu| cu.0) {
+            Some(uid) => uid,
+            None => return FriendsResponseGql {
+                meta: DefaultResponse::error("60501", "Authentication required"),
+                counter: 0,
+                affected_rows: vec![],
+            },
+        };
+
+        let state = ctx.data_unchecked::<SharedState>();
+        let state_read = state.read().await;
+
+        let target_uid = match &userid {
+            Some(id) => Uuid::parse_str(id.as_str()).unwrap_or(me),
+            None => me,
+        };
+
+        // Find mutual follows
+        let friends: Vec<BasicUserInfoGql> = state_read.follows.iter()
+            .filter(|(follower, followed)| {
+                *follower == target_uid && state_read.is_following(followed, &target_uid)
+            })
+            .filter_map(|(_, followed)| state_read.users.get(followed))
+            .map(|u| build_basic_user_info(u, &state_read))
+            .collect();
+
+        let total = friends.len() as i32;
+        let off = offset.max(0) as usize;
+        let lim = limit.clamp(1, 20) as usize;
+        let page: Vec<BasicUserInfoGql> = friends.into_iter().skip(off).take(lim).collect();
+
+        if page.is_empty() {
+            return FriendsResponseGql {
+                meta: DefaultResponse::success("21101", "No friends found"),
+                counter: 0,
+                affected_rows: vec![],
+            };
+        }
+
+        FriendsResponseGql {
+            meta: DefaultResponse::success("11102", "Friends loaded"),
+            counter: total,
+            affected_rows: page,
+        }
+    }
+
+    // ========================================================================
+    // listBlockedUsers
+    // ========================================================================
+
+    /// List users blocked by (and blocking) the current user.
+    ///
+    /// Response codes:
+    /// - 11107: Blocked users loaded
+    /// - 60501: Not authenticated
+    async fn list_blocked_users(
+        &self,
+        ctx: &Context<'_>,
+        content_filter_by: Option<ContentFilterType>,
+        offset: i32,
+        limit: i32,
+    ) -> BlockedUsersResponseGql {
+        let me = match ctx.data_opt::<CurrentUser>().and_then(|cu| cu.0) {
+            Some(uid) => uid,
+            None => return BlockedUsersResponseGql {
+                meta: DefaultResponse::error("60501", "Authentication required"),
+                counter: 0,
+                affected_rows: None,
+            },
+        };
+
+        let state = ctx.data_unchecked::<SharedState>();
+        let state_read = state.read().await;
+
+        // Users I blocked
+        let i_blocked: Vec<BlockedUserGql> = state_read.blocks.iter()
+            .filter(|(blocker, _)| *blocker == me)
+            .filter_map(|(_, blocked)| state_read.users.get(blocked))
+            .map(|u| BlockedUserGql {
+                userid: u.uid.to_string(),
+                img: u.img.clone(),
+                username: u.username.clone(),
+                slug: u.slug_num,
+                has_active_reports: state_read.has_active_reports(&u.uid),
+                visibility_status: convert_visibility(u.visibility_status),
+                is_hidden_for_users: false,
+            })
+            .collect();
+
+        // Users who blocked me
+        let blocked_by: Vec<BlockedUserGql> = state_read.blocks.iter()
+            .filter(|(_, blocked)| *blocked == me)
+            .filter_map(|(blocker, _)| state_read.users.get(blocker))
+            .map(|u| BlockedUserGql {
+                userid: u.uid.to_string(),
+                img: u.img.clone(),
+                username: u.username.clone(),
+                slug: u.slug_num,
+                has_active_reports: state_read.has_active_reports(&u.uid),
+                visibility_status: convert_visibility(u.visibility_status),
+                is_hidden_for_users: false,
+            })
+            .collect();
+
+        let total = (i_blocked.len() + blocked_by.len()) as i32;
+
+        BlockedUsersResponseGql {
+            meta: DefaultResponse::success("11107", "Blocked users loaded"),
+            counter: total,
+            affected_rows: Some(BlockedUsersGql { i_blocked, blocked_by }),
+        }
+    }
+
+    // ========================================================================
+    // getUserInfo
+    // ========================================================================
+
+    /// Get the current user's account info and preferences.
+    ///
+    /// Response codes:
+    /// - 11009: User info loaded
+    /// - 60501: Not authenticated
+    async fn get_user_info(
+        &self,
+        ctx: &Context<'_>,
+    ) -> UserInfoResponseGql {
+        let me = match ctx.data_opt::<CurrentUser>().and_then(|cu| cu.0) {
+            Some(uid) => uid,
+            None => return UserInfoResponseGql {
+                meta: DefaultResponse::error("60501", "Authentication required"),
+                affected_rows: None,
+            },
+        };
+
+        let state = ctx.data_unchecked::<SharedState>();
+        let state_read = state.read().await;
+
+        let user = match state_read.users.get(&me) {
+            Some(u) => u,
+            None => return UserInfoResponseGql {
+                meta: DefaultResponse::error("21001", "User not found"),
+                affected_rows: None,
+            },
+        };
+
+        let prefs = state_read.preferences.get(&me);
+        let user_prefs = prefs.map(|p| UserPreferencesGql {
+            content_filtering_severity_level: Some(match p.content_filtering_severity_level {
+                crate::state::ContentFilterState::Mygrandmalikes => ContentFilterType::Mygrandmalikes,
+                crate::state::ContentFilterState::Mygrandmahates => ContentFilterType::Mygrandmahates,
+            }),
+            onboardings_were_shown: p.onboardings_were_shown.iter().filter_map(|s| {
+                match s.as_str() {
+                    "INTROONBOARDING" => Some(OnboardingType::IntroOnboarding),
+                    _ => None,
+                }
+            }).collect(),
+        });
+
+        // Determine who invited this user (if any)
+        let invited_by = state_read.referral_invitations.get(&me).map(|uid| ID::from(uid.to_string()));
+
+        UserInfoResponseGql {
+            meta: DefaultResponse::success("11009", "User info loaded"),
+            affected_rows: Some(UserInfoGql {
+                userid: ID::from(user.uid.to_string()),
+                liquidity: 0.0,  // Phase 5 will populate this
+                amountposts: 0,  // Phase 3 will populate this
+                amountreports: state_read.count_reports(&me),
+                amountblocked: state_read.count_blocked(&me),
+                amountfollower: state_read.count_followers(&me),
+                amountfollowed: state_read.count_following(&me),
+                amountfriends: state_read.count_friends(&me),
+                invited: invited_by,
+                updatedat: Some(user.updated_at.clone()),
+                user_preferences: user_prefs,
+            }),
+        }
+    }
+
+    // ========================================================================
+    // getReferralInfo
+    // ========================================================================
+
+    /// Get the current user's referral UUID and shareable link.
+    ///
+    /// Response codes:
+    /// - 11011: Referral info loaded
+    /// - 60501: Not authenticated
+    async fn get_referral_info(
+        &self,
+        ctx: &Context<'_>,
+    ) -> ReferralInfoResponseGql {
+        let me = match ctx.data_opt::<CurrentUser>().and_then(|cu| cu.0) {
+            Some(uid) => uid,
+            None => return ReferralInfoResponseGql {
+                meta: DefaultResponse::error("60501", "Authentication required"),
+                referral_uuid: None,
+                referral_link: None,
+            },
+        };
+
+        // In the real backend, the referral UUID is a separate field;
+        // in the mock, we use the user's own UUID as their referral code.
+        let referral_uuid = me.to_string();
+        let referral_link = format!("https://peer.com/invite?referralUuid={}", referral_uuid);
+
+        ReferralInfoResponseGql {
+            meta: DefaultResponse::success("11011", "Referral info loaded"),
+            referral_uuid: Some(ID::from(referral_uuid)),
+            referral_link: Some(referral_link),
+        }
+    }
+
+    // ========================================================================
+    // referralList
+    // ========================================================================
+
+    /// List the current user's inviter and invitees.
+    ///
+    /// Response codes:
+    /// - 11011: Referral list loaded
+    /// - 60501: Not authenticated
+    async fn referral_list(
+        &self,
+        ctx: &Context<'_>,
+        offset: i32,
+        limit: i32,
+    ) -> ReferralListResponseGql {
+        let me = match ctx.data_opt::<CurrentUser>().and_then(|cu| cu.0) {
+            Some(uid) => uid,
+            None => return ReferralListResponseGql {
+                meta: DefaultResponse::error("60501", "Authentication required"),
+                counter: 0,
+                affected_rows: ReferralUsersGql {
+                    invited_by: None,
+                    i_invited: vec![],
+                },
+            },
+        };
+
+        let state = ctx.data_unchecked::<SharedState>();
+        let state_read = state.read().await;
+
+        // Who invited me?
+        let invited_by = state_read.referral_invitations.get(&me)
+            .and_then(|inviter_uid| state_read.users.get(inviter_uid))
+            .map(|u| build_profile_user(u, &me, &state_read));
+
+        // Who did I invite?
+        let i_invited: Vec<ProfileUserGql> = state_read.referral_invitations.iter()
+            .filter(|(_, inviter)| **inviter == me)
+            .filter_map(|(invitee, _)| state_read.users.get(invitee))
+            .map(|u| build_profile_user(u, &me, &state_read))
+            .collect();
+
+        let total = i_invited.len() as i32 + if invited_by.is_some() { 1 } else { 0 };
+
+        ReferralListResponseGql {
+            meta: DefaultResponse::success("11011", "Referral list loaded"),
+            counter: total,
+            affected_rows: ReferralUsersGql { invited_by, i_invited },
+        }
+    }
 }
 ```
 
@@ -1204,11 +1760,13 @@ impl UserQuery {
 use async_graphql::{Context, Object, ID};
 use uuid::Uuid;
 
+use crate::require_auth;
 use crate::state::SharedState;
 use crate::types::registration::DefaultResponse;
 use crate::types::user::*;
 use crate::CurrentUser;
 
+#[derive(Default)]
 pub struct ProfileMutation;
 
 #[Object]
@@ -1598,24 +2156,90 @@ fn require_auth_update(ctx: &Context<'_>) -> Result<Uuid, UpdateResponseGql> {
 
 ### 4.8 Schema Assembly
 
+The current `QueryRoot` in `schema/query.rs` is a plain `#[Object]` struct with only
+the `_health` query. To merge `UserQuery`, we need to refactor it into a `MergedObject`.
+
+**Step 1:** Split `schema/query.rs` into a directory `schema/query/mod.rs` + `schema/query/health.rs` + `schema/query/users.rs`:
+
 ```rust
-// schema/mod.rs
+// schema/query/health.rs
+use async_graphql::Object;
 
-use async_graphql::{MergedObject, Schema, EmptySubscription};
+#[derive(Default)]
+pub struct HealthQuery;
 
-// Query root — merge health + user queries
+#[Object]
+impl HealthQuery {
+    #[graphql(name = "_health")]
+    async fn health(&self) -> bool {
+        true
+    }
+}
+```
+
+**Step 2:** Update `schema/query/mod.rs`:
+
+```rust
+pub mod health;
+pub mod users;
+
+use async_graphql::MergedObject;
+use health::HealthQuery;
+use users::UserQuery;
+
+/// Query root — merged from all query modules.
 #[derive(MergedObject, Default)]
 pub struct QueryRoot(HealthQuery, UserQuery);
+```
 
-// Mutation root — extend with ProfileMutation
+**Step 3:** Update `schema/mod.rs`:
+
+```rust
+pub mod mutation;
+pub mod query;
+
+use async_graphql::{EmptySubscription, MergedObject, Schema};
+
+use crate::state::SharedState;
+use mutation::auth::AuthMutation;
+use mutation::profile::ProfileMutation;
+use mutation::registration::RegistrationMutation;
+use query::QueryRoot;
+
+/// Combined mutation root.
 #[derive(MergedObject, Default)]
-pub struct MutationRoot(RegistrationMutation, AuthMutation, ProfileMutation);
+pub struct MutationRoot(pub RegistrationMutation, pub AuthMutation, pub ProfileMutation);
 
-pub fn build_schema(state: SharedState) -> Schema<QueryRoot, MutationRoot, EmptySubscription> {
+/// The full GraphQL schema.
+pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
+
+/// Build the GraphQL schema with injected state.
+pub fn build_schema(state: SharedState) -> AppSchema {
     Schema::build(QueryRoot::default(), MutationRoot::default(), EmptySubscription)
         .data(state)
         .finish()
 }
+```
+
+**Step 4:** Update `schema/mutation/mod.rs`:
+
+```rust
+pub mod auth;
+pub mod profile;
+pub mod registration;
+```
+
+**Step 5:** Update `lib.rs` to re-export auth helpers:
+
+```rust
+pub mod filters;
+pub mod schema;
+pub mod seed;
+pub mod state;
+pub mod types;
+
+// Re-export auth helpers for cross-module use
+pub use schema::mutation::auth::{get_current_user, require_auth};
 ```
 
 ---
@@ -1624,13 +2248,19 @@ pub fn build_schema(state: SharedState) -> Schema<QueryRoot, MutationRoot, Empty
 
 ### Test Helpers
 
-Extend existing test helpers from Phase 1:
+Extend existing test helpers from Phase 1.
+
+**Important:** The existing `graphql_stateful()` and `graphql_with_auth()` helpers take
+`state: &Arc<RwLock<MockState>>` and build the app internally — do NOT pass a `Router`.
 
 ```rust
+use mock_backend::seed::{
+    SEED_USER_ALICE, SEED_USER_BOB, SEED_USER_CAROL, SEED_USER_DAVE, SEED_USER_VERIFIED,
+};
+
 /// Helper: login a seeded user and return the access token.
-async fn login_as(state: SharedState, email: &str, password: &str) -> String {
-    let app = app_with_state(state.clone());
-    let res = graphql_stateful(app, &format!(r#"
+async fn login_as(state: &Arc<RwLock<MockState>>, email: &str, password: &str) -> String {
+    let res = graphql_stateful(state, &format!(r#"
         mutation {{
             login(email: "{email}", password: "{password}") {{
                 accessToken
@@ -1641,28 +2271,28 @@ async fn login_as(state: SharedState, email: &str, password: &str) -> String {
 }
 
 /// Helper: login as the default seeded verified user.
-async fn login_default(state: SharedState) -> String {
+async fn login_default(state: &Arc<RwLock<MockState>>) -> String {
     login_as(state, "test@peer.com", "TestPass123").await
 }
 
 /// Helper: login as alice.
-async fn login_alice(state: SharedState) -> String {
+async fn login_alice(state: &Arc<RwLock<MockState>>) -> String {
     login_as(state, "alice@peer.com", "AlicePass123").await
 }
 ```
 
 ### Test Implementations
 
+Append to existing `tests/integration.rs`:
+
 ```rust
-// tests/integration_phase2.rs  (or appended to existing integration.rs)
 
 #[tokio::test]
 async fn test_get_own_profile() {
     let state = default_shared_state();
-    let token = login_alice(state.clone()).await;
+    let token = login_alice(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         query {
             getProfile {
                 meta { status ResponseCode }
@@ -1685,10 +2315,9 @@ async fn test_get_own_profile() {
 #[tokio::test]
 async fn test_get_other_user_profile() {
     let state = default_shared_state();
-    let token = login_alice(state.clone()).await;
+    let token = login_alice(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, &format!(r#"
+    let res = graphql_with_auth(&state, &format!(r#"
         query {{
             getProfile(userid: "{}") {{
                 meta {{ ResponseCode }}
@@ -1710,10 +2339,9 @@ async fn test_get_other_user_profile() {
 #[tokio::test]
 async fn test_get_profile_not_found() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         query {
             getProfile(userid: "00000000-0000-0000-0000-000000000099") {
                 meta { ResponseCode }
@@ -1740,10 +2368,9 @@ async fn test_get_profile_unauthenticated() {
 #[tokio::test]
 async fn test_search_user_by_username() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         query {
             searchUser(username: "alice", offset: 0, limit: 10) {
                 meta { ResponseCode }
@@ -1762,10 +2389,9 @@ async fn test_search_user_by_username() {
 #[tokio::test]
 async fn test_search_user_no_results() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         query {
             searchUser(username: "nonexistent_user_xyz", offset: 0, limit: 10) {
                 meta { ResponseCode }
@@ -1779,13 +2405,81 @@ async fn test_search_user_no_results() {
 }
 
 #[tokio::test]
+async fn test_list_users_v2_by_username() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(&state, r#"
+        query {
+            listUsersV2(username: "bob", offset: 0, limit: 10) {
+                meta { ResponseCode }
+                counter
+                affectedRows { id username slug }
+            }
+        }
+    "#, &token).await;
+
+    let data = &res["data"]["listUsersV2"];
+    assert_eq!(data["meta"]["ResponseCode"], "11001");
+    assert!(data["counter"].as_i64().unwrap() >= 1);
+}
+
+#[tokio::test]
+async fn test_list_users_v2_excludes_blocked() {
+    let state = default_shared_state();
+    // Carol blocks dave (seeded)
+    let token = login_as(&state, "carol@peer.com", "CarolPass123").await;
+
+    let res = graphql_with_auth(&state, r#"
+        query {
+            listUsersV2(username: "dave", offset: 0, limit: 10) {
+                meta { ResponseCode }
+                counter
+                affectedRows { username }
+            }
+        }
+    "#, &token).await;
+
+    // Dave should be excluded because carol blocks dave
+    let data = &res["data"]["listUsersV2"];
+    if let Some(arr) = data["affectedRows"].as_array() {
+        for user in arr {
+            assert_ne!(user["username"], "dave_peer");
+        }
+    }
+}
+
+#[tokio::test]
+async fn test_get_user_by_id() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(&state, &format!(r#"
+        query {{
+            getUser(id: "{}") {{
+                meta {{ ResponseCode }}
+                affectedRows {{
+                    id username slug img biography
+                    amountFollowers amountFollowing amountPeers
+                    userPreferences {{ contentFilteringSeverityLevel }}
+                }}
+            }}
+        }}
+    "#, SEED_USER_ALICE), &token).await;
+
+    let data = &res["data"]["getUser"];
+    assert_eq!(data["meta"]["ResponseCode"], "11001");
+    assert_eq!(data["affectedRows"]["username"], "alice_peer");
+    assert!(data["affectedRows"]["userPreferences"]["contentFilteringSeverityLevel"].is_string());
+}
+
+#[tokio::test]
 async fn test_toggle_follow() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
     // Follow alice
-    let app1 = app_with_state(state.clone());
-    let res = graphql_with_auth(app1, &format!(r#"
+    let res = graphql_with_auth(&state, &format!(r#"
         mutation {{
             toggleUserFollowStatus(userid: "{}") {{
                 meta {{ ResponseCode }}
@@ -1799,8 +2493,7 @@ async fn test_toggle_follow() {
     assert_eq!(data["isfollowing"], true);
 
     // Unfollow alice
-    let app2 = app_with_state(state.clone());
-    let res = graphql_with_auth(app2, &format!(r#"
+    let res = graphql_with_auth(&state, &format!(r#"
         mutation {{
             toggleUserFollowStatus(userid: "{}") {{
                 meta {{ ResponseCode }}
@@ -1831,10 +2524,9 @@ async fn test_toggle_follow_unauthenticated() {
 #[tokio::test]
 async fn test_list_follow_relations() {
     let state = default_shared_state();
-    let token = login_alice(state.clone()).await;
+    let token = login_alice(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         query {
             listFollowRelations(offset: 0, limit: 20) {
                 meta { ResponseCode }
@@ -1859,10 +2551,9 @@ async fn test_list_follow_relations() {
 #[tokio::test]
 async fn test_list_friends_mutual_only() {
     let state = default_shared_state();
-    let token = login_alice(state.clone()).await;
+    let token = login_alice(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         query {
             listFriends(offset: 0, limit: 20) {
                 meta { ResponseCode }
@@ -1886,11 +2577,10 @@ async fn test_list_friends_mutual_only() {
 #[tokio::test]
 async fn test_toggle_block_removes_follows() {
     let state = default_shared_state();
-    let token = login_alice(state.clone()).await;
+    let token = login_alice(&state).await;
 
     // Alice follows bob (seeded). Block bob.
-    let app1 = app_with_state(state.clone());
-    let res = graphql_with_auth(app1, &format!(r#"
+    let res = graphql_with_auth(&state, &format!(r#"
         mutation {{
             toggleBlockUserStatus(userid: "{}") {{
                 status ResponseCode
@@ -1909,11 +2599,10 @@ async fn test_toggle_block_removes_follows() {
 #[tokio::test]
 async fn test_toggle_block_unblock() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
     // Block alice
-    let app1 = app_with_state(state.clone());
-    let res = graphql_with_auth(app1, &format!(r#"
+    let res = graphql_with_auth(&state, &format!(r#"
         mutation {{
             toggleBlockUserStatus(userid: "{}") {{ ResponseCode }}
         }}
@@ -1921,8 +2610,7 @@ async fn test_toggle_block_unblock() {
     assert_eq!(res["data"]["toggleBlockUserStatus"]["ResponseCode"], "11105");
 
     // Unblock alice
-    let app2 = app_with_state(state.clone());
-    let res = graphql_with_auth(app2, &format!(r#"
+    let res = graphql_with_auth(&state, &format!(r#"
         mutation {{
             toggleBlockUserStatus(userid: "{}") {{ ResponseCode }}
         }}
@@ -1933,10 +2621,9 @@ async fn test_toggle_block_unblock() {
 #[tokio::test]
 async fn test_list_blocked_users() {
     let state = default_shared_state();
-    let token = login_as(state.clone(), "carol@peer.com", "CarolPass123").await;
+    let token = login_as(&state, "carol@peer.com", "CarolPass123").await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         query {
             listBlockedUsers(offset: 0, limit: 20) {
                 meta { ResponseCode }
@@ -1963,10 +2650,9 @@ async fn test_list_blocked_users() {
 #[tokio::test]
 async fn test_report_user_success() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, &format!(r#"
+    let res = graphql_with_auth(&state, &format!(r#"
         mutation {{
             reportUser(userid: "{}") {{
                 status ResponseCode
@@ -1980,10 +2666,9 @@ async fn test_report_user_success() {
 #[tokio::test]
 async fn test_report_user_self() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, &format!(r#"
+    let res = graphql_with_auth(&state, &format!(r#"
         mutation {{
             reportUser(userid: "{}") {{
                 ResponseCode
@@ -1997,17 +2682,15 @@ async fn test_report_user_self() {
 #[tokio::test]
 async fn test_report_user_duplicate() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
     // First report
-    let app1 = app_with_state(state.clone());
-    graphql_with_auth(app1, &format!(r#"
+    graphql_with_auth(&state, &format!(r#"
         mutation {{ reportUser(userid: "{}") {{ ResponseCode }} }}
     "#, SEED_USER_DAVE), &token).await;
 
     // Duplicate report
-    let app2 = app_with_state(state.clone());
-    let res = graphql_with_auth(app2, &format!(r#"
+    let res = graphql_with_auth(&state, &format!(r#"
         mutation {{ reportUser(userid: "{}") {{ ResponseCode }} }}
     "#, SEED_USER_DAVE), &token).await;
 
@@ -2017,10 +2700,9 @@ async fn test_report_user_duplicate() {
 #[tokio::test]
 async fn test_report_user_not_found() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         mutation {
             reportUser(userid: "00000000-0000-0000-0000-000000000099") {
                 ResponseCode
@@ -2034,10 +2716,9 @@ async fn test_report_user_not_found() {
 #[tokio::test]
 async fn test_update_profile_image() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         mutation {
             updateProfileImage(img: "data:image/png;base64,iVBOR...") {
                 status ResponseCode
@@ -2048,8 +2729,7 @@ async fn test_update_profile_image() {
     assert_eq!(res["data"]["updateProfileImage"]["ResponseCode"], "11004");
 
     // Verify image persisted on profile
-    let app2 = app_with_state(state.clone());
-    let res = graphql_with_auth(app2, r#"
+    let res = graphql_with_auth(&state, r#"
         query { getProfile { affectedRows { img } } }
     "#, &token).await;
     assert_eq!(
@@ -2061,10 +2741,9 @@ async fn test_update_profile_image() {
 #[tokio::test]
 async fn test_update_bio() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         mutation {
             updateBio(biography: "data:text/plain;base64,SGVsbG8gV29ybGQ=") {
                 status ResponseCode
@@ -2078,10 +2757,9 @@ async fn test_update_bio() {
 #[tokio::test]
 async fn test_update_username_success() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         mutation {
             updateUsername(username: "newName123", password: "TestPass123") {
                 status ResponseCode
@@ -2095,10 +2773,9 @@ async fn test_update_username_success() {
 #[tokio::test]
 async fn test_update_username_invalid_format() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         mutation {
             updateUsername(username: "ab", password: "TestPass123") {
                 ResponseCode
@@ -2112,10 +2789,9 @@ async fn test_update_username_invalid_format() {
 #[tokio::test]
 async fn test_update_username_wrong_password() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         mutation {
             updateUsername(username: "validName", password: "WrongPass") {
                 ResponseCode
@@ -2129,10 +2805,9 @@ async fn test_update_username_wrong_password() {
 #[tokio::test]
 async fn test_update_email_success() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         mutation {
             updateEmail(email: "newemail@peer.com", password: "TestPass123") {
                 status ResponseCode
@@ -2146,10 +2821,9 @@ async fn test_update_email_success() {
 #[tokio::test]
 async fn test_update_email_wrong_password() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         mutation {
             updateEmail(email: "new@peer.com", password: "WrongPass") {
                 ResponseCode
@@ -2163,10 +2837,9 @@ async fn test_update_email_wrong_password() {
 #[tokio::test]
 async fn test_update_preferences() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         mutation {
             updateUserPreferences(userPreferences: {
                 contentFilteringSeverityLevel: MYGRANDMAHATES
@@ -2185,10 +2858,9 @@ async fn test_update_preferences() {
 #[tokio::test]
 async fn test_get_user_info() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         query {
             getUserInfo {
                 meta { ResponseCode }
@@ -2209,10 +2881,9 @@ async fn test_get_user_info() {
 #[tokio::test]
 async fn test_get_referral_info() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         query {
             getReferralInfo {
                 meta { ResponseCode }
@@ -2227,20 +2898,43 @@ async fn test_get_referral_info() {
 }
 
 #[tokio::test]
+async fn test_referral_list() {
+    let state = default_shared_state();
+    // Alice was invited by SEED_USER_VERIFIED (seeded)
+    let token = login_alice(&state).await;
+
+    let res = graphql_with_auth(&state, r#"
+        query {
+            referralList(offset: 0, limit: 20) {
+                meta { ResponseCode }
+                counter
+                affectedRows {
+                    invitedBy { userid username }
+                    iInvited { userid username }
+                }
+            }
+        }
+    "#, &token).await;
+
+    let data = &res["data"]["referralList"];
+    assert_eq!(data["meta"]["ResponseCode"], "11011");
+    // Alice was invited by the seed verified user
+    assert!(data["affectedRows"]["invitedBy"]["userid"].is_string());
+}
+
+#[tokio::test]
 async fn test_follow_then_block_removes_follow() {
     let state = default_shared_state();
-    let token = login_default(state.clone()).await;
+    let token = login_default(&state).await;
 
     // Follow dave
-    let app1 = app_with_state(state.clone());
-    let res = graphql_with_auth(app1, &format!(r#"
+    let res = graphql_with_auth(&state, &format!(r#"
         mutation {{ toggleUserFollowStatus(userid: "{}") {{ isfollowing }} }}
     "#, SEED_USER_DAVE), &token).await;
     assert_eq!(res["data"]["toggleUserFollowStatus"]["isfollowing"], true);
 
     // Block dave
-    let app2 = app_with_state(state.clone());
-    graphql_with_auth(app2, &format!(r#"
+    graphql_with_auth(&state, &format!(r#"
         mutation {{ toggleBlockUserStatus(userid: "{}") {{ ResponseCode }} }}
     "#, SEED_USER_DAVE), &token).await;
 
@@ -2254,10 +2948,9 @@ async fn test_blocked_user_excluded_from_search() {
     let state = default_shared_state();
 
     // Login as carol (who blocks dave)
-    let token = login_as(state.clone(), "carol@peer.com", "CarolPass123").await;
+    let token = login_as(&state, "carol@peer.com", "CarolPass123").await;
 
-    let app = app_with_state(state.clone());
-    let res = graphql_with_auth(app, r#"
+    let res = graphql_with_auth(&state, r#"
         query {
             searchUser(username: "dave", offset: 0, limit: 10) {
                 meta { ResponseCode }
@@ -2282,91 +2975,93 @@ async fn test_blocked_user_excluded_from_search() {
 
 ## 6. Definition of Done
 
+> **Status:** All items complete (14 April 2026). Final: 73 tests pass, clippy clean, fmt clean.
+
 ### Build & Test Gates
 
-- [ ] `cargo build` succeeds without warnings
-- [ ] `cargo test --all-targets` passes all Phase 0 + Phase 1 + Phase 2 tests (≥42 new)
-- [ ] `cargo clippy -- -D warnings` passes
-- [ ] `cargo fmt --check` passes
+- [x] `cargo build` succeeds without warnings
+- [x] `cargo test --all-targets` passes all Phase 0 + Phase 1 + Phase 2 tests (40 new, 73 total)
+- [x] `cargo clippy -- -D warnings` passes
+- [x] `cargo fmt --check` passes
 
 ### Functional Requirements — Queries
 
-- [ ] `getProfile(userid?)` returns `ProfileInfoResponse` with correct social stats (`11008`)
-- [ ] `getProfile` without userid returns current user's own profile
-- [ ] `getProfile` returns `21001` for non-existent users
-- [ ] `getProfile` returns `60501` when unauthenticated
-- [ ] `getProfile` correctly computes `iFollowThisUser`, `thisUserFollowsMe`, `isreported`
-- [ ] `getProfile` correctly computes `amountfollower`, `amountfollowed`, `amountfriends`, `amountblocked`, `amountreports`
-- [ ] `searchUser(username)` returns matching users with partial match (`11001`)
-- [ ] `searchUser` returns `21001` for no matches
-- [ ] `searchUser` respects offset/limit pagination
-- [ ] `searchUser` excludes blocked users (both directions)
-- [ ] `listUsersV2` supports search by userid, username, pagination
-- [ ] `listUsersV2` applies all content filtering specs (illegal, system, deleted, blocked)
-- [ ] `getUser(id)` returns user info with preferences
-- [ ] `listFollowRelations` returns `{ followers, following }` with correct `isfollowed`/`isfollowing` annotations
-- [ ] `listFollowRelations` supports pagination
-- [ ] `listFriends` returns only mutual follows (`11102`)
-- [ ] `listFriends` returns `21101` when no friends
-- [ ] `listBlockedUsers` returns `{ iBlocked, blockedBy }` (`11107`)
-- [ ] `getUserInfo` returns current user's account info and preferences (`11009`)
-- [ ] `getReferralInfo` returns referral UUID and link (`11011`)
-- [ ] `referralList` returns inviter and invitees
+- [x] `getProfile(userid?)` returns `ProfileInfoResponse` with correct social stats (`11008`)
+- [x] `getProfile` without userid returns current user's own profile
+- [x] `getProfile` returns `21001` for non-existent users
+- [x] `getProfile` returns `60501` when unauthenticated
+- [x] `getProfile` correctly computes `iFollowThisUser`, `thisUserFollowsMe`, `isreported`
+- [x] `getProfile` correctly computes `amountfollower`, `amountfollowed`, `amountfriends`, `amountblocked`, `amountreports`
+- [x] `searchUser(username)` returns matching users with partial match (`11001`)
+- [x] `searchUser` returns `21001` for no matches
+- [x] `searchUser` respects offset/limit pagination
+- [x] `searchUser` excludes blocked users (both directions)
+- [x] `listUsersV2` supports search by userid, username, pagination
+- [x] `listUsersV2` applies all content filtering specs (illegal, system, deleted, blocked)
+- [x] `getUser(id)` returns user info with preferences
+- [x] `listFollowRelations` returns `{ followers, following }` with correct `isfollowed`/`isfollowing` annotations
+- [x] `listFollowRelations` supports pagination
+- [x] `listFriends` returns only mutual follows (`11102`)
+- [x] `listFriends` returns `21101` when no friends
+- [x] `listBlockedUsers` returns `{ iBlocked, blockedBy }` (`11107`)
+- [x] `getUserInfo` returns current user's account info and preferences (`11009`)
+- [x] `getReferralInfo` returns referral UUID and link (`11011`)
+- [x] `referralList` returns inviter and invitees
 
 ### Functional Requirements — Mutations
 
-- [ ] `toggleUserFollowStatus` follows (`11104`, `isfollowing: true`) and unfollows (`11103`, `isfollowing: false`)
-- [ ] `toggleUserFollowStatus` returns `60501` when unauthenticated
-- [ ] `toggleBlockUserStatus` blocks (`11105`) and unblocks (`11106`)
-- [ ] `toggleBlockUserStatus` removes follow relationships in both directions when blocking
-- [ ] `toggleBlockUserStatus` returns `60501` when unauthenticated
-- [ ] `reportUser` records report (`11012`)
-- [ ] `reportUser` rejects self-report (`31009`)
-- [ ] `reportUser` rejects duplicate report (`31008`)
-- [ ] `reportUser` rejects non-existent user (`31007`)
-- [ ] `reportUser` returns `60501` when unauthenticated
-- [ ] `updateProfileImage(img)` updates avatar (`11004`)
-- [ ] `updateBio(biography)` updates bio (`11003`)
-- [ ] `updateUsername(username, password)` updates username (`11007`)
-- [ ] `updateUsername` rejects invalid format (`30202`)
-- [ ] `updateUsername` rejects wrong password (`31001`)
-- [ ] `updateEmail(email, password)` updates email (`11006`)
-- [ ] `updateEmail` rejects wrong password (`31001`)
-- [ ] `updateUserPreferences` updates severity level and onboardings (`11014`)
-- [ ] All settings mutations return `60501` when unauthenticated
+- [x] `toggleUserFollowStatus` follows (`11104`, `isfollowing: true`) and unfollows (`11103`, `isfollowing: false`)
+- [x] `toggleUserFollowStatus` returns `60501` when unauthenticated
+- [x] `toggleBlockUserStatus` blocks (`11105`) and unblocks (`11106`)
+- [x] `toggleBlockUserStatus` removes follow relationships in both directions when blocking
+- [x] `toggleBlockUserStatus` returns `60501` when unauthenticated
+- [x] `reportUser` records report (`11012`)
+- [x] `reportUser` rejects self-report (`31009`)
+- [x] `reportUser` rejects duplicate report (`31008`)
+- [x] `reportUser` rejects non-existent user (`31007`)
+- [x] `reportUser` returns `60501` when unauthenticated
+- [x] `updateProfileImage(img)` updates avatar (`11004`)
+- [x] `updateBio(biography)` updates bio (`11003`)
+- [x] `updateUsername(username, password)` updates username (`11007`)
+- [x] `updateUsername` rejects invalid format (`30202`)
+- [x] `updateUsername` rejects wrong password (`31001`)
+- [x] `updateEmail(email, password)` updates email (`11006`)
+- [x] `updateEmail` rejects wrong password (`31001`)
+- [x] `updateUserPreferences` updates severity level and onboardings (`11014`)
+- [x] All settings mutations return `60501` when unauthenticated
 
 ### Content Filtering
 
-- [ ] Deleted users (`status == 6`) excluded from all list queries
-- [ ] Illegal-visibility users excluded from all list queries
-- [ ] System accounts (role bitmask 1, 2, 4) excluded from user lists
-- [ ] Blocked users excluded from search and list results (both directions)
+- [x] Deleted users (`status == 6`) excluded from all list queries
+- [x] Illegal-visibility users excluded from all list queries
+- [x] System accounts (role bitmask 1, 2, 4) excluded from user lists
+- [x] Blocked users excluded from search and list results (both directions)
 
 ### Response Shape Compatibility
 
-- [ ] `ProfileInfoResponse` shape matches `peer-web/src/models/profile.rs::ProfileResponse`
-- [ ] `ProfileUserGql` fields match `peer-web/src/models/profile.rs::ProfileUser` (including `isfollowed`/`isfollowing`)
-- [ ] `BasicUserInfoGql` fields match `peer-web/src/models/profile.rs::BasicUserInfo`
-- [ ] `FollowRelationsResponseGql` shape matches `peer-web/src/models/profile.rs::FollowRelationsResponse`
-- [ ] `FriendsResponseGql` shape matches `peer-web/src/models/profile.rs::FriendsResponse`
-- [ ] `FollowStatusResponseGql` shape matches `peer-web/src/models/profile.rs::FollowStatusResponse`
-- [ ] `SearchUserResponse` shape matches `SEARCH_USERS_QUERY` response (includes `id`, `username`, `slug`, `img`)
-- [ ] `GetUserResponseGql` shape matches `GET_USER_QUERY` response (includes preferences)
-- [ ] `UpdateResponseGql` fields match `peer-web/src/models/settings.rs::UpdateResponse` (`status` + `ResponseCode` PascalCase)
-- [ ] `UserPreferencesResponseGql` shape matches `peer-web/src/models/settings.rs::UserPreferencesUpdateResponse`
-- [ ] `DefaultResponse` fields: `status`, `RequestId`, `ResponseCode`, `ResponseMessage` (all PascalCase)
+- [x] `ProfileInfoResponse` shape matches `peer-web/src/models/profile.rs::ProfileResponse`
+- [x] `ProfileUserGql` fields match `peer-web/src/models/profile.rs::ProfileUser` (including `isfollowed`/`isfollowing`)
+- [x] `BasicUserInfoGql` fields match `peer-web/src/models/profile.rs::BasicUserInfo`
+- [x] `FollowRelationsResponseGql` shape matches `peer-web/src/models/profile.rs::FollowRelationsResponse`
+- [x] `FriendsResponseGql` shape matches `peer-web/src/models/profile.rs::FriendsResponse`
+- [x] `FollowStatusResponseGql` shape matches `peer-web/src/models/profile.rs::FollowStatusResponse`
+- [x] `SearchUserResponse` shape matches `SEARCH_USERS_QUERY` response (includes `id`, `username`, `slug`, `img`)
+- [x] `GetUserResponseGql` shape matches `GET_USER_QUERY` response (includes preferences)
+- [x] `UpdateResponseGql` fields match `peer-web/src/models/settings.rs::UpdateResponse` (`status` + `ResponseCode` PascalCase)
+- [x] `UserPreferencesResponseGql` shape matches `peer-web/src/models/settings.rs::UserPreferencesUpdateResponse`
+- [x] `DefaultResponse` fields: `status`, `RequestId`, `ResponseCode`, `ResponseMessage` (all PascalCase)
 
 ### State & Isolation
 
-- [ ] `POST /reset` clears all Phase 2 state (follows, blocks, reports, preferences, referrals) back to seed defaults
-- [ ] Seed data includes 3–5 users with profiles, 2 follow relationships (one mutual), 1 block relationship
-- [ ] All seeded users have default preferences
-- [ ] All seeded users can log in (verified + have passwords)
+- [x] `POST /reset` clears all Phase 2 state (follows, blocks, reports, preferences, referrals) back to seed defaults
+- [x] Seed data includes 4 users with profiles (+ 2 from Phase 1 = 6 total), 3 follow relationships (one mutual), 1 block relationship
+- [x] All seeded users have default preferences
+- [x] All seeded users can log in (verified + have passwords)
 
 ### Cross-Cutting (carried from parent plan)
 
-- [ ] No `unwrap()` in resolver paths — all errors return proper GraphQL responses
-- [ ] Every resolver has ≥1 success and ≥1 error integration test
-- [ ] Response codes match values in `docs/backend_api/02-users-and-profiles.md`
-- [ ] Field names exactly match the backend schema casing conventions
-- [ ] No runtime dependencies on Node.js, npm, or non-Rust tooling
+- [x] No `unwrap()` in resolver paths — all errors return proper GraphQL responses
+- [x] Every resolver has ≥1 success and ≥1 error integration test
+- [x] Response codes match values in `docs/backend_api/02-users-and-profiles.md`
+- [x] Field names exactly match the backend schema casing conventions
+- [x] No runtime dependencies on Node.js, npm, or non-Rust tooling

@@ -8,6 +8,7 @@ pub mod post;
 pub mod profile;
 pub mod referral;
 pub mod settings;
+pub mod shop;
 pub mod transaction;
 pub mod user;
 
