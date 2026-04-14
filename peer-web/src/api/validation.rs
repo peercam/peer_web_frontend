@@ -78,6 +78,59 @@ pub fn validate_registration_input(
     Ok(())
 }
 
+/// Validate a username.
+///
+/// Checks: 3-23 chars, alphanumeric with `_` and `-`
+pub fn validate_username(username: &str) -> Result<(), ApiError> {
+    let username_pattern =
+        regex::Regex::new(r"^[a-zA-Z0-9_-]{3,23}$").expect("Username regex is valid");
+
+    if !username_pattern.is_match(username) {
+        return Err(ApiError::Api {
+            code: "30202".to_string(),
+            message: "Invalid username format".to_string(),
+        });
+    }
+
+    Ok(())
+}
+
+/// Validate a password.
+///
+/// Checks: minimum 8 characters
+pub fn validate_password(password: &str) -> Result<(), ApiError> {
+    if password.len() < 8 {
+        return Err(ApiError::Api {
+            code: "30103".to_string(),
+            message: "Password must be at least 8 characters".to_string(),
+        });
+    }
+
+    Ok(())
+}
+
+/// Validate an email address.
+///
+/// Checks: non-empty, contains @ and ., reasonable length
+pub fn validate_email(email: &str) -> Result<(), ApiError> {
+    if email.is_empty() || !email.contains('@') || !email.contains('.') {
+        return Err(ApiError::Api {
+            code: "30103".to_string(),
+            message: "Invalid email format".to_string(),
+        });
+    }
+
+    // Email: length sanity check (RFC 5321 limit is 254)
+    if email.len() > 254 {
+        return Err(ApiError::Api {
+            code: "30103".to_string(),
+            message: "Email address too long".to_string(),
+        });
+    }
+
+    Ok(())
+}
+
 // ============================================================================
 // Tests
 // ============================================================================

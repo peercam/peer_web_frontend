@@ -6,6 +6,7 @@ pub mod comment;
 pub mod common;
 pub mod post;
 pub mod profile;
+pub mod settings;
 pub mod transaction;
 pub mod user;
 
@@ -14,5 +15,6 @@ pub use comment::*;
 pub use common::*;
 pub use post::*;
 pub use profile::*;
+pub use settings::*;
 pub use transaction::*;
 pub use user::*;

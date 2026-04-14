@@ -1459,6 +1459,132 @@ pub struct ShopOrderDetailsData {
 }
 
 // ============================================================================
+// Settings mutations
+// ============================================================================
+
+/// Mutation: Update the user's profile image.
+pub const UPDATE_PROFILE_IMAGE_MUTATION: &str = r#"
+mutation UpdateProfileImage($img: String!) {
+    updateProfileImage(img: $img) {
+        status
+        ResponseCode
+    }
+}
+"#;
+
+/// Mutation: Update the user's biography.
+pub const UPDATE_BIO_MUTATION: &str = r#"
+mutation UpdateBio($biography: String!) {
+    updateBio(biography: $biography) {
+        status
+        ResponseCode
+    }
+}
+"#;
+
+/// Mutation: Update the user's username (requires password confirmation).
+pub const UPDATE_USERNAME_MUTATION: &str = r#"
+mutation UpdateUsername($username: String!, $password: String!) {
+    updateUsername(username: $username, password: $password) {
+        status
+        ResponseCode
+    }
+}
+"#;
+
+/// Mutation: Update the user's password.
+pub const UPDATE_PASSWORD_MUTATION: &str = r#"
+mutation UpdatePassword($password: String!, $expassword: String!) {
+    updatePassword(password: $password, expassword: $expassword) {
+        status
+        ResponseCode
+    }
+}
+"#;
+
+/// Mutation: Update the user's email (requires password confirmation).
+pub const UPDATE_EMAIL_MUTATION: &str = r#"
+mutation UpdateEmail($email: String!, $password: String!) {
+    updateEmail(email: $email, password: $password) {
+        status
+        ResponseCode
+    }
+}
+"#;
+
+/// Mutation: Update user preferences (content filtering, etc.).
+pub const UPDATE_PREFERENCES_MUTATION: &str = r#"
+mutation UpdateUserPreferences($userPreferences: UserPreferencesInput) {
+    updateUserPreferences(userPreferences: $userPreferences) {
+        status
+        ResponseCode
+        affectedRows {
+            contentFilteringSeverityLevel
+        }
+    }
+}
+"#;
+
+/// Mutation: Delete (deactivate) the user's account.
+pub const DELETE_ACCOUNT_MUTATION: &str = r#"
+mutation DeleteAccount($password: String!) {
+    deleteAccount(password: $password) {
+        status
+        ResponseCode
+    }
+}
+"#;
+
+/// Wrapper for the `updateProfileImage` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateProfileImageData {
+    pub update_profile_image: crate::models::settings::UpdateResponse,
+}
+
+/// Wrapper for the `updateBio` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateBioData {
+    pub update_bio: crate::models::settings::UpdateResponse,
+}
+
+/// Wrapper for the `updateUsername` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateUsernameData {
+    pub update_username: crate::models::settings::UpdateResponse,
+}
+
+/// Wrapper for the `updatePassword` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdatePasswordData {
+    pub update_password: crate::models::settings::UpdateResponse,
+}
+
+/// Wrapper for the `updateEmail` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateEmailData {
+    pub update_email: crate::models::settings::UpdateResponse,
+}
+
+/// Wrapper for the `updateUserPreferences` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdatePreferencesData {
+    pub update_user_preferences: crate::models::settings::UserPreferencesUpdateResponse,
+}
+
+/// Wrapper for the `deleteAccount` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteAccountData {
+    pub delete_account: crate::models::settings::UpdateResponse,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 

@@ -8,6 +8,7 @@ pub mod graphql;
 pub mod posts;
 pub mod profile;
 pub mod registration;
+pub mod settings;
 pub mod wallet;
 
 #[cfg(feature = "ssr")]
@@ -23,6 +24,9 @@ pub use graphql::{
     GET_PROFILE_QUERY, LIST_FOLLOW_RELATIONS_QUERY, LIST_FRIENDS_QUERY, LIST_USER_POSTS_QUERY,
     TOGGLE_FOLLOW_MUTATION, TOGGLE_BLOCK_MUTATION, REPORT_USER_MUTATION,
     LIST_CHATS_QUERY, SEND_CHAT_MESSAGE_MUTATION, CREATE_CHAT_MUTATION,
+    UPDATE_PROFILE_IMAGE_MUTATION, UPDATE_BIO_MUTATION, UPDATE_USERNAME_MUTATION,
+    UPDATE_PASSWORD_MUTATION, UPDATE_EMAIL_MUTATION, UPDATE_PREFERENCES_MUTATION,
+    DELETE_ACCOUNT_MUTATION,
 };
 
 #[cfg(feature = "ssr")]
@@ -35,3 +39,7 @@ pub use posts::{list_posts, list_ad_posts, post_action, search_users, get_user_i
 pub use comments::{guest_get_post, get_post, list_comments, list_child_comments, create_comment, like_comment, unlike_comment};
 pub use profile::{get_profile, list_follow_relations, list_friends, list_user_posts, toggle_follow, toggle_block, report_user, fetch_biography};
 pub use chat::{list_chats, send_chat_message, create_chat, refresh_chat_messages};
+pub use settings::{
+    update_profile_image, update_bio, update_username, update_password,
+    update_email, update_content_preferences, delete_account,
+};

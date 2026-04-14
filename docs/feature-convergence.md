@@ -12,8 +12,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 |--------|-------|
 | ✅ Implemented | 2 |
 | 🚧 In Progress | 1 |
-| 📋 Planning | 6 |
-| ❌ Not Started | 11 |
+| 📋 Planning | 7 |
+| ❌ Not Started | 10 |
 | **Total** | **20** |
 
 **Convergence:** ~10%
@@ -27,7 +27,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | **Authentication** ||||
 | Login | `login.php` | ✅ Implemented | Email/password, remember-me, auto-login, redirect handling |
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation |
-| Forgot Password | `forgotpassword.php` | ❌ Not Started | Password reset flow |
+| Forgot Password | `forgotpassword.php` | 📋 Planning | 4-step password reset flow ([docs](plans/forgot-password/forgot-password-implementation.md)) |
 | **Core Features** ||||
 | Dashboard | `dashboard.php` | 🚧 In Progress | Post feed, filters, sort, infinite scroll |
 | View Post | `post.php` | 📋 Planning | Single post view, comments, guest mode |
@@ -123,8 +123,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 1. ✅ ~~Registration~~ — Complete
 2. ✅ ~~Login / Auth~~ — Complete ([docs](plans/login/login-auth-implementation.md))
-3. � Dashboard — In progress ([docs](plans/dashboard/dashboard-implementation.md))
-4. 📋 View Post — Planning ([docs](plans/view-post/view-post-implementation.md))
+3. � Dashboard — In progress ([docs](plans/dashboard/dashboard-implementation.md))3b. 📋 Forgot Password — Planning, auth flow completion ([docs](plans/forgot-password/forgot-password-implementation.md))4. 📋 View Post — Planning ([docs](plans/view-post/view-post-implementation.md))
 5. 📋 Profile — Planning ([docs](plans/profile/profile-implementation.md))
 6. 📋 New Post — Content creation ([docs](plans/new-post/new-post-implementation.md))
 7. 📋 Chat — Real-time, complex ([docs](plans/chat/chat-implementation.md))
@@ -136,6 +135,16 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 ---
 
 ## Changelog
+
+### 2026-04-14 (Forgot Password Planning)
+- Forgot Password implementation planning document created
+- Comprehensive documentation of 4-step password reset flow (Email → Verify Code → New Password → Success)
+- Detailed analysis of 3 backend mutations (requestPasswordReset, resetPasswordTokenVerify, resetPassword)
+- Rate-limited resend with escalating cooldowns (60s → 10min → locked)
+- Identified reusable components: LeftPanel, BackButton, PasswordStrengthMeter, StepAnnouncer, Toast, validation helpers
+- 5-phase implementation plan with Rust component code for all steps
+- Forgot Password marked as "Planning" in tracker
+- Updated summary counts (7 Planning, 10 Not Started)
 
 ### 2026-04-14 (Settings Planning)
 - Settings implementation planning document created

@@ -1,0 +1,819 @@
+// Settings page styles
+// Styles for the user settings page with tabbed navigation
+
+// ============================================================================
+// Variables
+// ============================================================================
+
+$settings-tab-width: 30%;
+$settings-content-width: 65%;
+$transition-speed: 0.3s;
+
+// ============================================================================
+// Layout
+// ============================================================================
+
+.settings-layout {
+  .site-main-edit-profile {
+    padding: 1rem;
+  }
+}
+
+.setting-layout {
+  display: flex;
+  gap: 2rem;
+  width: 100%;
+  min-height: 70vh;
+}
+
+// ============================================================================
+// Settings Menu (Tab Navigation)
+// ============================================================================
+
+.setting-menu {
+  flex: 0 0 $settings-tab-width;
+  min-width: 220px;
+  background-color: var(--card-background);
+  border-radius: 15px;
+  padding: 1.5rem 0;
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  li {
+    position: relative;
+    padding: 0;
+    margin: 0;
+    border-left: 3px solid transparent;
+    transition: all $transition-speed ease;
+
+    &.active {
+      border-left-color: var(--primary-blue);
+      background-color: rgba(var(--primary-blue-rgb), 0.1);
+
+      a {
+        color: var(--primary-blue);
+        font-weight: 600;
+      }
+    }
+
+    &:hover:not(.not-menu-item) {
+      background-color: var(--hover-bg);
+    }
+
+    a {
+      display: block;
+      padding: 1rem 1.5rem;
+      color: var(--text-color);
+      text-decoration: none;
+      cursor: pointer;
+      transition: color $transition-speed ease;
+    }
+
+    &.not-menu-item {
+      border-left: none;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+
+      a {
+        &:hover {
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+
+  .red-btn {
+    color: var(--danger-color, #ff4444);
+  }
+}
+
+// ============================================================================
+// Settings Content Area
+// ============================================================================
+
+.settings-content-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.setting-content {
+  background-color: var(--card-background);
+  border-radius: 15px;
+  padding: 2rem;
+  min-height: 400px;
+}
+
+// ============================================================================
+// Profile Settings
+// ============================================================================
+
+.profile-widget {
+  &.active {
+    display: block;
+  }
+}
+
+.edit-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.profile_picture {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+
+  .cropContainer {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid var(--border-color);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .change-picture {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all $transition-speed ease;
+
+    &:hover {
+      background-color: var(--hover-bg);
+    }
+  }
+}
+
+.profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .input-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+      font-weight: 500;
+      color: var(--text-color);
+    }
+
+    &.transparent {
+      background: transparent;
+    }
+
+    &.username-row {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+
+      label {
+        min-width: 80px;
+      }
+
+      a {
+        margin-left: auto;
+        color: var(--primary-blue);
+        cursor: pointer;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .input-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+  }
+
+  .input-text,
+  .input-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 1rem;
+    transition: border-color $transition-speed ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+    }
+
+    &::placeholder {
+      color: var(--text-muted);
+    }
+  }
+
+  .input-textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+}
+
+// Response messages
+.response_msg {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+
+  &.success {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+    border: 1px solid rgba(76, 175, 80, 0.4);
+  }
+
+  &.error {
+    background-color: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.4);
+  }
+}
+
+// Full-width button
+.full-width-btn {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all $transition-speed ease;
+  border: none;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-white {
+  background-color: var(--card-background);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+
+  &:hover:not(:disabled) {
+    background-color: var(--hover-bg);
+  }
+}
+
+.btn-blue {
+  background-color: var(--primary-blue);
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: var(--primary-blue-hover);
+  }
+}
+
+.btn-transparent {
+  background-color: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+
+  &:hover {
+    background-color: var(--hover-bg);
+  }
+}
+
+.btn-red-transparent {
+  background-color: transparent;
+  color: var(--danger-color, #ff4444);
+  border: 1px solid var(--danger-color, #ff4444);
+
+  &:hover {
+    background-color: rgba(255, 68, 68, 0.1);
+  }
+}
+
+// Profile setting buttons
+.profile-setting-buttons {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+
+  .change-password-email {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+
+    a {
+      flex: 1;
+      min-width: 140px;
+      text-align: center;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+  }
+}
+
+.back-btn {
+  margin-top: 1rem;
+}
+
+// ============================================================================
+// Change Username/Password/Email Panels
+// ============================================================================
+
+.change-username,
+.change-password,
+.change-email {
+  .section_heading {
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+  }
+
+  .form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+.password-component {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.password-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  opacity: 0.5;
+}
+
+.input-field:has(.password-icon) {
+  position: relative;
+
+  .input-text {
+    padding-left: 2.5rem;
+  }
+}
+
+.validationMessage {
+  font-size: 0.85rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+
+  &.notvalid {
+    color: var(--danger-color, #ff4444);
+    background-color: rgba(255, 68, 68, 0.1);
+  }
+
+  &.valid {
+    color: #4caf50;
+    background-color: rgba(76, 175, 80, 0.1);
+  }
+}
+
+// ============================================================================
+// Content Settings
+// ============================================================================
+
+.content-settings-inner {
+  .settings-section-title {
+    margin-bottom: 0.5rem;
+  }
+}
+
+.reported-content-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  background-color: var(--input-bg);
+  border-radius: 12px;
+  margin-top: 1.5rem;
+}
+
+// Toggle switch
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+
+    &:checked + span {
+      background-color: var(--primary-blue);
+
+      &::before {
+        transform: translateX(30px);
+      }
+
+      .label-on {
+        opacity: 1;
+      }
+
+      .label-off {
+        opacity: 0;
+      }
+    }
+  }
+
+  span {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: $transition-speed;
+    border-radius: 30px;
+
+    &::before {
+      position: absolute;
+      content: "";
+      height: 24px;
+      width: 24px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: $transition-speed;
+      border-radius: 50%;
+    }
+
+    .label-on,
+    .label-off {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.7rem;
+      color: white;
+      transition: opacity $transition-speed;
+    }
+
+    .label-on {
+      left: 8px;
+      opacity: 0;
+    }
+
+    .label-off {
+      right: 8px;
+      opacity: 1;
+    }
+  }
+}
+
+// ============================================================================
+// Settings Stubs (Notifications, Preferences)
+// ============================================================================
+
+.settings-stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem;
+  min-height: 300px;
+
+  .peer-icon {
+    font-size: 3rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    max-width: 400px;
+  }
+}
+
+// ============================================================================
+// Modal Overlay
+// ============================================================================
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.logOut-pop {
+  background-color: var(--card-background);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+
+  img,
+  svg {
+    margin-bottom: 1rem;
+  }
+
+  .peer-icon {
+    font-size: 3rem;
+    color: var(--warning-color, #ff9800);
+    margin-bottom: 1rem;
+  }
+
+  p {
+    margin-bottom: 1.5rem;
+  }
+
+  h3 {
+    margin-bottom: 0.5rem;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.button-row {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+
+  button {
+    min-width: 100px;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all $transition-speed ease;
+    border: none;
+  }
+}
+
+// ============================================================================
+// Image Upload Modal
+// ============================================================================
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+
+  .modal-content {
+    background-color: var(--card-background);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+  }
+
+  .closeBtn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity $transition-speed;
+
+    &:hover {
+      opacity: 1;
+    }
+
+    img {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .modal-content-heading {
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+  }
+}
+
+.select-image-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.image-preview-wrapper {
+  width: 100%;
+  height: 300px;
+  overflow: hidden;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--input-bg);
+  margin-bottom: 1rem;
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform $transition-speed ease;
+  }
+}
+
+.img-zoom {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  label {
+    min-width: 50px;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    appearance: none;
+    background: var(--border-color);
+    cursor: pointer;
+
+    &::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--primary-blue);
+      cursor: pointer;
+    }
+  }
+}
+
+.change-image-btn {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.modal-buttons {
+  margin-top: 1.5rem;
+}
+
+// ============================================================================
+// Skeleton Loaders
+// ============================================================================
+
+.skeleton-circle {
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 50%;
+}
+
+.skeleton-block {
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// ============================================================================
+// Responsive Design
+// ============================================================================
+
+@media (max-width: 1024px) {
+  .setting-layout {
+    flex-direction: column;
+  }
+
+  .setting-menu {
+    flex: none;
+    width: 100%;
+
+    ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 0.5rem;
+    }
+
+    li {
+      border-left: none;
+      border-bottom: 3px solid transparent;
+
+      &.active {
+        border-left-color: transparent;
+        border-bottom-color: var(--primary-blue);
+      }
+
+      a {
+        padding: 0.75rem 1rem;
+        white-space: nowrap;
+      }
+
+      &.not-menu-item {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: none;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .setting-content {
+    padding: 1rem;
+  }
+
+  .profile_picture .cropContainer {
+    width: 120px;
+    height: 120px;
+  }
+
+  .profile-setting-buttons .change-password-email {
+    flex-direction: column;
+
+    a {
+      width: 100%;
+    }
+  }
+
+  .balance_transfer {
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .logOut-pop {
+    padding: 1.5rem;
+
+    button {
+      min-width: 80px;
+    }
+  }
+}

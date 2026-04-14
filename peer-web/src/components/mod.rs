@@ -14,6 +14,7 @@ pub mod profile;
 pub mod referral;
 pub mod registration_form;
 pub mod search;
+pub mod settings;
 pub mod step_announcer;
 pub mod success_step;
 pub mod toast;
