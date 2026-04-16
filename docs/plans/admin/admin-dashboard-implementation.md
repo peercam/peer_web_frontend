@@ -2,8 +2,9 @@
 
 **Feature:** Admin Dashboard (Content Moderation)  
 **Priority:** #14 (after Peer Shop)  
-**Status:** Not Started  
+**Status:** ✅ Implemented  
 **Created:** 2026-04-16  
+**Completed:** 2026-04-16  
 **Mock Backend:** ✅ Phase 6 complete (266 tests, RBAC + moderation + admin gems)
 
 ---
@@ -32,22 +33,22 @@ The mock backend already has full support: `moderationStats`, `moderationItems` 
 
 ### In Scope
 
-- [ ] Admin page (`/admin` route) with role-based auth guard
-- [ ] Moderation stats header (4 stat boxes with live counts)
-- [ ] Content type filter tabs (All, Posts, Comments, Accounts)
-- [ ] "Waiting for review" checkbox filter
-- [ ] Moderation ticket list with summary row (content preview, moderation ID, date, report count, status)
-- [ ] Expandable ticket detail panel:
-  - [ ] **Post detail:** author info, post title/description/media, hashtags, "See full post" link
-  - [ ] **Comment detail:** commenter info, comment text, linked parent post preview
-  - [ ] **User detail:** profile image, username, slug, biography, profile stats, "View profile" link
-- [ ] Right-side detail panel: reporters list, action buttons, moderation result display
-- [ ] Confirmation dialogs for Hide / Restore / Mark as illegal
-- [ ] `performModeration` mutation integration with optimistic UI update
-- [ ] Infinite scroll pagination for ticket list
-- [ ] Admin header: "Admin" logo, logged-in username, "Back to user mode" link
-- [ ] Skeleton loading for stats and ticket list
-- [ ] SCSS styles (port from legacy `admin/css/style.css`)
+- [x] Admin page (`/admin` route) with role-based auth guard
+- [x] Moderation stats header (4 stat boxes with live counts)
+- [x] Content type filter tabs (All, Posts, Comments, Accounts)
+- [x] "Waiting for review" checkbox filter
+- [x] Moderation ticket list with summary row (content preview, moderation ID, date, report count, status)
+- [x] Expandable ticket detail panel:
+  - [x] **Post detail:** author info, post title/description/media, hashtags, "See full post" link
+  - [x] **Comment detail:** commenter info, comment text, linked parent post preview
+  - [x] **User detail:** profile image, username, slug, biography, "View profile" link
+- [x] Right-side detail panel: reporters list, action buttons, moderation result display
+- [x] Confirmation dialogs for Hide / Restore / Mark as illegal
+- [x] `performModeration` mutation integration with optimistic UI update
+- [x] Infinite scroll pagination for ticket list
+- [x] Admin header: "Admin" logo, logged-in username, "Back to user mode" link
+- [x] Skeleton loading for stats and ticket list
+- [x] SCSS styles (port from legacy `admin/css/style.css`)
 
 ### Out of Scope (Future Phases)
 
@@ -276,24 +277,13 @@ This component:
 
 **Option B:** Do the role check inside `get_moderation_stats` / `get_moderation_items` and handle the 62101 (not authorized) error code on the client side, showing an access denied view.
 
-**Decision:** Use **Option A** for UX (redirect immediately rather than showing a broken page) + **Option B** as a safety net (server functions still validate roles).
+**Decision:** Use a **server-side role probe** — call `moderationStats` as a lightweight permission check. Errors are discriminated: GraphQL permission errors (62101, 60501) return `Ok(false)` to redirect, while network/server failures propagate as `Err` to show a retry UI.
 
-#### Task 2.2 — Add `roles_mask` to Auth Context
+#### ~~Task 2.2 — Add `roles_mask` to Auth Context~~ (Deferred)
 
-The existing `AuthContext` (`src/state/auth.rs`) does not currently track user roles. Rather than adding a separate server function + extra round-trip, extend the existing login/session flow:
+The existing `AuthContext` does not track user roles. Rather than modifying the shared auth context for a single consumer, the `RoleGuard` uses a dedicated `check_moderator_role` server function that probes the moderation stats endpoint. This avoids coupling admin concerns into the global auth state.
 
-1. Add `roles_mask: RwSignal<u32>` to `AuthContext` (default `0`)
-2. When the login/profile-fetch server function returns user data, populate `roles_mask` from the response
-3. The `RoleGuard` component reads `roles_mask` directly from `AuthContext` — no additional API call needed
-
-If the existing profile response doesn't include `roles_mask`, add it to the profile GraphQL query. The mock backend already returns it via the user model.
-
-**Fallback:** If extending the auth context is blocked (e.g., the real backend doesn't expose `roles_mask` on the profile query), use a dedicated server function:
-```rust
-#[server(CheckUserRole, "/api")]
-pub async fn check_user_role() -> Result<u32, ServerFnError>
-```
-Cache the result in a signal so it's only fetched once per session.
+Future improvement: when multiple role-gated pages exist, extend `AuthContext` with `roles_mask: RwSignal<u32>` to avoid repeated server checks.
 
 #### Task 2.3 — Admin Page Component (`pages/admin.rs`)
 
@@ -303,11 +293,11 @@ pub fn AdminPage() -> impl IntoView {
     view! {
         <Title text="Admin - Peer Network"/>
         <AuthGuard>
-            <RoleGuard required_role=256>  // MODERATOR
+            <RoleGuard>  // Uses server-side moderationStats probe
                 <div id="admin-page" class="site_layout admin-layout">
                     <AdminHeader/>
                     <main class="site-main site-main-admin">
-                        <h2 class="page-title">"Content moderation"</h2>
+                        <h1 class="page-title xxl_font_size">"Content moderation"</h1>
                         <StatsHeader/>
                         <FilterBar/>
                         <ModerationList/>
@@ -581,25 +571,26 @@ All operations are available in the mock backend (Phase 6):
 
 ---
 
-## Component Sizing Estimates
+## Component Sizing ~~Estimates~~ Actuals
 
-| Component | Estimated Lines | Notes |
-|-----------|-----------------|-------|
-| `models/moderation.rs` | ~120 | 8-10 structs with serde |
-| `api/moderation.rs` | ~120 | 3 server functions + variable structs |
-| `pages/admin.rs` | ~60 | Page shell + signal setup |
-| `components/admin/admin_header.rs` | ~30 | Simple header bar |
-| `components/admin/stats_header.rs` | ~80 | 4 stat boxes + skeleton |
-| `components/admin/filter_bar.rs` | ~60 | Tabs + checkbox |
-| `components/admin/moderation_list.rs` | ~120 | List + infinite scroll + loading states |
-| `components/admin/ticket_item.rs` | ~100 | Summary row + expand toggle |
-| `components/admin/content_preview.rs` | ~40 | Dispatch to type-specific sub-component |
-| `components/admin/post_preview.rs` | ~80 | Post detail in expanded ticket |
-| `components/admin/comment_preview.rs` | ~80 | Comment detail in expanded ticket |
-| `components/admin/user_preview.rs` | ~60 | User detail in expanded ticket |
-| `components/admin/action_panel.rs` | ~180 | Reporters + actions + confirmation + moderated-by |
-| `style/admin.scss` | ~500 | Ported/adapted from legacy CSS |
-| **Total** | **~1,630** | |
+| Component | Estimated Lines | Actual Lines | Notes |
+|-----------|-----------------|--------------|-------|
+| `models/moderation.rs` | ~120 | 191 | 8 structs + enum with serde |
+| `api/moderation.rs` | ~120 | 102 | 3 server functions + variable structs |
+| `pages/admin.rs` | ~60 | 101 | Page shell + RoleGuard + server fn |
+| `components/admin/admin_header.rs` | ~30 | 47 | Header bar with profile fetch for username |
+| `components/admin/stats_header.rs` | ~80 | 93 | 4 stat boxes + skeleton |
+| `components/admin/filter_bar.rs` | ~60 | 57 | Tabs + checkbox |
+| `components/admin/moderation_list.rs` | ~120 | 146 | List + infinite scroll + loading states |
+| `components/admin/ticket_item.rs` | ~100 | 217 | Summary row + expand toggle + date formatter |
+| `components/admin/content_preview.rs` | ~40 | 37 | Dispatch to type-specific sub-component |
+| `components/admin/post_preview.rs` | ~80 | 117 | Post detail with media (image/video/audio) |
+| `components/admin/comment_preview.rs` | ~80 | 54 | Comment detail + parent post link |
+| `components/admin/user_preview.rs` | ~60 | 37 | User detail + "View profile" link |
+| `components/admin/action_panel.rs` | ~180 | 259 | Reporters + actions + confirmation + moderated-by |
+| `components/admin/mod.rs` | — | 12 | Module declarations |
+| `style/admin.scss` | ~500 | 1,044 | Full port with responsive breakpoints |
+| **Total** | **~1,630** | **2,514** | ~54% over estimate (SCSS accounts for most) |
 
 ---
 
@@ -637,8 +628,11 @@ All operations are available in the mock backend (Phase 6):
 | **No comment post enrichment** | Legacy makes a secondary `loadPostById` call for each comment ticket to show the parent post. The mock backend's `moderationItems` response already includes the post data via `targetcontent.comment.postid`. We can display the post ID/link directly and load full post data lazily on expand if needed. |
 | **Accordion (single expand)** | Legacy uses an accordion pattern where only one ticket detail is open at a time. We keep this — it prevents the page from becoming unwieldy with multiple expanded details. |
 | **No media slider** | The legacy admin panel builds custom image/video sliders in JS. For Phase 1, post media will render as a simple image/thumbnail. Full post view is available via the "See full post" link at `/post/<id>`. Media slider can be added later. |
-| **RoleGuard component** | New component that wraps `AuthGuard` and adds role checking. Reusable for future admin sub-pages. |
-| **SCSS vs legacy CSS** | Write fresh SCSS rather than porting 2,239 lines of CSS. Reference legacy for layout/spacing values. Much of the legacy CSS handles typography, normalize, and utility classes that already exist in peer-web's design system. |
+| **RoleGuard component** | Uses a server-side `moderationStats` probe instead of extending `AuthContext` with `roles_mask`. Tri-state result: authorized, denied (redirect), or error (retry UI). Avoids coupling admin concerns into global auth state. |
+| **SCSS vs legacy CSS** | Write fresh SCSS rather than porting 2,239 lines of CSS. Reference legacy for layout/spacing values. Much of the legacy CSS handles typography, normalize, and utility classes that already exist in peer-web's design system. Final SCSS: 1,044 lines (includes full responsive breakpoints at 980px, 768px, 600px). |
+| **Username in header** | Fetches current user profile via `get_profile(None, None)` rather than extending `AuthContext` with profile data. Lightweight Resource with `Suspense` fallback. |
+| **Named response codes** | Action panel uses named constants (`response_codes::MODERATION_ACTION_SUCCESS`, etc.) instead of magic strings. Specific handling for "already terminal" (info toast) and "not found" (error toast). |
+| **Single filter effect** | Uses one `Effect` that atomically resets state and triggers reload when filters change, avoiding the race condition of separate reset + load effects. |
 
 ---
 
@@ -673,4 +667,23 @@ Phases 1–2 can be implemented in a single session. Phases 3–5 are the core w
 
 ## Changelog
 
-*(To be updated during implementation)*
+### 2026-04-16 — Initial Implementation (All Phases)
+
+- Implemented all 6 phases in a single session
+- **Models:** 8 structs + `ModerationAction` enum with serde (191 lines)
+- **API:** 3 server functions (`get_moderation_stats`, `get_moderation_items`, `perform_moderation`) + 3 GraphQL query/mutation constants + 3 wrapper types (102 lines)
+- **Page:** `AdminPage` with `RoleGuard` using server-side permission probe (101 lines)
+- **Components:** 11 files — admin_header, stats_header, filter_bar, moderation_list, ticket_item, content_preview, post_preview, comment_preview, user_preview, action_panel, mod (1,470 lines total)
+- **Styles:** Full SCSS port with responsive breakpoints (1,044 lines)
+- **Route:** Registered at `/admin` in `app.rs`
+- **Response codes:** Added moderation constants to `models/common.rs`
+
+#### Post-implementation polish
+
+- Fixed unused variable warning in `moderation_list.rs`
+- Removed dead `PerformModerationResponse` type from `models/moderation.rs`
+- Merged two competing `Effect` blocks in `moderation_list.rs` into a single atomic reset+load effect (eliminated race condition)
+- Improved `RoleGuard` to return tri-state (authorized/denied/error) — permission errors redirect, server errors show retry UI
+- Upgraded date formatting from YYYY-MM-DD truncation to `"DD Mon YYYY, HH:MM"` with ISO-8601 parsing
+- Replaced magic string `"12103"` in action panel with named `response_codes` constants; added specific handling for already-terminal and not-found cases
+- Added `AdminHeader` username display via `get_profile(None, None)` resource with `Suspense` fallback

@@ -5,6 +5,7 @@ pub mod auth;
 pub mod chat;
 pub mod comment;
 pub mod common;
+pub mod moderation;
 pub mod post;
 pub mod profile;
 pub mod referral;

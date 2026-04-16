@@ -1,5 +1,6 @@
 //! Page components (one per route).
 
+pub mod admin;
 pub mod chat;
 pub mod dashboard;
 pub mod forgot_password;
@@ -17,6 +18,7 @@ pub mod view_post;
 pub mod view_profile;
 pub mod wallet;
 
+pub use admin::AdminPage;
 pub use chat::ChatPage;
 pub use dashboard::DashboardPage;
 pub use forgot_password::ForgotPasswordPage;

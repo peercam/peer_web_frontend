@@ -436,7 +436,7 @@ A big-bang rewrite is risky. Instead, use a **strangler fig pattern**:
 - [ ] `MyAdsPage`
 
 #### Phase 5 — Admin & Polish (Weeks 14–16)
-- [ ] `AdminPage` — content moderation dashboard
+- [x] `AdminPage` — content moderation dashboard
 - [ ] Onboarding popup flow
 - [ ] PWA manifest + service worker
 - [ ] Performance optimization (code splitting, lazy loading)

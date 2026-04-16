@@ -1786,6 +1786,185 @@ pub struct AdvertisePostPinnedData {
 }
 
 // ============================================================================
+// Moderation (Admin Dashboard)
+// ============================================================================
+
+/// Query: Get moderation dashboard stats (ticket counts by status).
+pub const MODERATION_STATS_QUERY: &str = r#"
+query ModerationStats {
+    moderationStats {
+        status
+        ResponseCode
+        affectedRows {
+            AmountAwaitingReview
+            AmountHidden
+            AmountRestored
+            AmountIllegal
+        }
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+    }
+}
+"#;
+
+/// Query: List moderation tickets with optional filters.
+pub const MODERATION_ITEMS_QUERY: &str = r#"
+query ModerationItems($offset: Int!, $limit: Int!, $contentType: ModerationContentType, $status: ModerationStatus) {
+    moderationItems(offset: $offset, limit: $limit, contentType: $contentType, status: $status) {
+        status
+        ResponseCode
+        affectedRows {
+            moderationTicketId
+            targetContentId
+            targettype
+            reportscount
+            status
+            createdat
+            targetcontent {
+                user {
+                    userid
+                    img
+                    username
+                    slug
+                    biography
+                    visibilityStatus
+                    hasActiveReports
+                    updatedat
+                }
+                comment {
+                    commentid
+                    userid
+                    postid
+                    parentid
+                    content
+                    createdat
+                    visibilityStatus
+                    hasActiveReports
+                    amountlikes
+                    amountreplies
+                    amountreports
+                    isreported
+                    isliked
+                    user {
+                        id
+                        username
+                        slug
+                        img
+                        visibilityStatus
+                        hasActiveReports
+                        isfollowed
+                        isfollowing
+                        isreported
+                        isfriend
+                    }
+                }
+                post {
+                    id
+                    contenttype
+                    title
+                    media
+                    cover
+                    mediadescription
+                    createdat
+                    visibilityStatus
+                    hasActiveReports
+                    amountreports
+                    amountlikes
+                    amountviews
+                    amountcomments
+                    amountdislikes
+                    amounttrending
+                    isliked
+                    isviewed
+                    isreported
+                    isdisliked
+                    issaved
+                    tags
+                    url
+                    user {
+                        id
+                        username
+                        slug
+                        img
+                        visibilityStatus
+                        hasActiveReports
+                        isfollowed
+                        isfollowing
+                        isreported
+                        isfriend
+                    }
+                }
+            }
+            reporters {
+                userid
+                img
+                username
+                slug
+                biography
+                visibilityStatus
+                hasActiveReports
+                updatedat
+            }
+            moderatedBy {
+                userid
+                img
+                username
+                slug
+                biography
+                visibilityStatus
+                isHiddenForUsers
+                hasActiveReports
+                updatedat
+            }
+        }
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+    }
+}
+"#;
+
+/// Mutation: Perform a moderation action on a ticket.
+pub const PERFORM_MODERATION_MUTATION: &str = r#"
+mutation PerformModeration($moderationTicketId: ID!, $moderationAction: ModerationStatus!) {
+    performModeration(moderationTicketId: $moderationTicketId, moderationAction: $moderationAction) {
+        status
+        RequestId
+        ResponseCode
+        ResponseMessage
+    }
+}
+"#;
+
+/// Wrapper for the `moderationStats` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModerationStatsData {
+    pub moderation_stats: crate::models::moderation::ModerationStatsResponse,
+}
+
+/// Wrapper for the `moderationItems` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModerationItemsData {
+    pub moderation_items: crate::models::moderation::ModerationItemListResponse,
+}
+
+/// Wrapper for the `performModeration` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PerformModerationData {
+    pub perform_moderation: crate::models::common::DefaultResponse,
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 

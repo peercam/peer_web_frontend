@@ -10,13 +10,13 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 | Status | Count |
 |--------|-------|
-| ✅ Implemented | 9 |
+| ✅ Implemented | 10 |
 | 🟡 Near-Complete | 6 |
 | 🚧 In Progress | 2 |
-| ❌ Not Started | 3 |
+| ❌ Not Started | 2 |
 | **Total** | **20** |
 
-**Convergence:** ~79%
+**Convergence:** ~82%
 
 ---
 
@@ -46,7 +46,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Peer Shop | `viewPeerShop.php` | 🟡 Core Implemented | `/shop` route, profile header, product feed with price badges, checkout popup (multi-step), FAQ popup, `performShopOrder` API, SCSS ([docs](plans/peer-shop/peer-shop-implementation.md)) — **Gaps:** Firebase product data (sizes/stock), infinite scroll, View Post overlay integration, functional filters |
 | My Ads | `myAds.php` | 🟡 In Progress | 144-line page + stats header, ad listing with infinite scroll, boost post modal (multi-step), `advertisementHistory` query, `advertisePostPinned` mutation, skeleton loading, staggered animations ([docs](plans/my-ads/my-ads-implementation.md)). **Gaps:** Boost modal not wired to Profile page button, success/error toast not wired on error path, Basic (time-based) ad flow not started |
 | **Admin** ||||
-| Admin Dashboard | `admin/index.php` | ❌ Not Started | Content moderation |
+| Admin Dashboard | `admin/index.php` | ✅ Implemented | Content moderation — role-gated, stats header, filterable ticket list, expandable detail, moderation actions, infinite scroll, 1,044L SCSS ([docs](plans/admin/admin-dashboard-implementation.md)) |
 | **Misc** ||||
 | Download | `download.php` | ❌ Not Started | App download page |
 | Version History | `version_history.php` | ✅ Implemented | Release notes ([docs](plans/version-history/version-history-implementation.md)) |
@@ -154,13 +154,23 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 11. 🟡 My Ads — In progress (Phases 1–4 done), boost modal wiring + basic ad flow remaining ([docs](plans/my-ads/my-ads-implementation.md))
 12. ✅ ~~Invite~~ — Complete, deep-link relay page ([docs](plans/invite/invite-implementation.md))
 13. 🟡 Peer Shop — Core implemented (Phases 1–4), Firebase integration + polish remaining ([docs](plans/peer-shop/peer-shop-implementation.md))
-14. 🟡 Admin — Mock backend Phases 5+6 complete (RBAC, moderation, gem/mint ops); Leptos admin page not started ([docs](plans/mock-backend/phase-6-admin-moderation.md))
+14. ✅ ~~Admin~~ — Implemented, role-gated moderation dashboard: stats header, filterable ticket list (All/Posts/Comments/Accounts), expandable detail with content previews, moderation actions (hide/restore/illegal) with confirmations, infinite scroll, 2,514 lines across 15 files + 1,044L SCSS ([docs](plans/admin/admin-dashboard-implementation.md))
 15. ✅ ~~Version History~~ — Complete, auth-guarded two-panel layout, static JSON fetch, responsive styles ([docs](plans/version-history/version-history-implementation.md))
 16. ⬜ Download — App download page (no plan yet)
 
 ---
 
 ## Changelog
+
+### 2026-04-16 (Admin Dashboard Implemented)
+- **Admin Dashboard fully implemented** — all 6 phases complete, promoted 🟡 → ✅ ([docs](plans/admin/admin-dashboard-implementation.md))
+- **New files (15):** `src/models/moderation.rs` (191L), `src/api/moderation.rs` (102L), `src/pages/admin.rs` (101L), `src/components/admin/` (11 files, 1,470L), `style/admin.scss` (1,044L)
+- **GraphQL constants:** `MODERATION_STATS_QUERY`, `MODERATION_ITEMS_QUERY`, `PERFORM_MODERATION_MUTATION` + 3 wrapper types in `api/graphql.rs`
+- **Response codes:** Added moderation constants (`12101`–`12103`, `22103`, `32101`, `32103`, `62101`, `60501`) to `models/common.rs`
+- **Route:** `/admin` registered in `app.rs` with `AuthGuard` + `RoleGuard`
+- **Architecture:** `RoleGuard` uses server-side `moderationStats` probe (tri-state: authorized/denied/error); `AdminHeader` fetches username via `get_profile`; single atomic `Effect` for filter reset + reload; named response code constants in action panel
+- **SCSS:** 1,044 lines with responsive breakpoints at 980px, 768px, 600px; dark theme using CSS custom properties + admin-specific color palette
+- **Total: 2,514 lines** (54% over initial estimate of 1,630, mostly from comprehensive SCSS)
 
 ### 2026-04-16 (Mock Backend Phases 5 & 6 Complete)
 - **Phase 5 — Economy (Wallet, Tokenomics, Shop, Ads)** marked ✅ Done — 219 total tests (49 new for Phase 5), 0 clippy warnings

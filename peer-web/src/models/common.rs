@@ -119,6 +119,16 @@ pub mod response_codes {
     // Logout
     pub const LOGOUT_SUCCESS: &str = "11001";
     pub const LOGOUT_SERVER_ERROR: &str = "41001";
+
+    // Moderation
+    pub const MODERATION_STATS_SUCCESS: &str = "12101";
+    pub const MODERATION_ITEMS_SUCCESS: &str = "12102";
+    pub const MODERATION_ACTION_SUCCESS: &str = "12103";
+    pub const MODERATION_TICKET_NOT_FOUND: &str = "22103";
+    pub const MODERATION_INVALID_ACTION: &str = "32101";
+    pub const MODERATION_ALREADY_TERMINAL: &str = "32103";
+    pub const NOT_AUTHORIZED: &str = "62101";
+    pub const NOT_AUTHENTICATED: &str = "60501";
 }
 
 /// Map response codes to user-friendly messages.

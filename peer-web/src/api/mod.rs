@@ -7,6 +7,7 @@ pub mod chat;
 pub mod comments;
 pub mod forgot_password;
 pub mod graphql;
+pub mod moderation;
 pub mod posts;
 pub mod profile;
 pub mod referral;
@@ -49,3 +50,4 @@ pub use settings::{
     update_profile_image, update_bio, update_username, update_password,
     update_email, update_content_preferences, delete_account,
 };
+pub use moderation::{get_moderation_stats, get_moderation_items, perform_moderation};

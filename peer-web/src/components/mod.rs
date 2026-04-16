@@ -1,5 +1,6 @@
 //! Reusable UI components.
 
+pub mod admin;
 pub mod auth_guard;
 pub mod back_button;
 pub mod chat;
