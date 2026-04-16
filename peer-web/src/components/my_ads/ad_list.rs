@@ -10,6 +10,7 @@ use crate::api::ads::get_ad_history;
 use crate::components::my_ads::ad_card::AdCard;
 use crate::components::my_ads::empty_state::EmptyState;
 use crate::components::my_ads::stats_header::{StatsHeader, StatsHeaderSkeleton};
+use crate::hooks::use_infinite_scroll;
 use crate::models::advertisement::{AdHistoryStats, Advertisement};
 
 /// Number of ads to load per batch.
@@ -24,9 +25,6 @@ pub fn AdList() -> impl IntoView {
     let is_loading = RwSignal::new(false);
     let has_more = RwSignal::new(true);
     let initial_loaded = RwSignal::new(false);
-
-    // Loader element ref for intersection observer
-    let loader_ref = NodeRef::<leptos::html::Div>::new();
 
     // Load ads function
     let load_ads = move || {
@@ -76,47 +74,8 @@ pub fn AdList() -> impl IntoView {
         });
     };
 
-    // Set up intersection observer for infinite scroll
-    #[cfg(feature = "hydrate")]
-    Effect::new(move |_| {
-        use wasm_bindgen::prelude::*;
-        use wasm_bindgen::JsCast;
-        use std::sync::{Arc, Mutex};
-
-        let Some(el) = loader_ref.get() else {
-            return;
-        };
-
-        let callback = Closure::<dyn Fn(js_sys::Array)>::new(move |entries: js_sys::Array| {
-            for entry in entries.iter() {
-                let entry: web_sys::IntersectionObserverEntry = entry.unchecked_into();
-                if entry.is_intersecting() && !is_loading.get() && has_more.get() {
-                    load_ads();
-                }
-            }
-        });
-
-        let options = web_sys::IntersectionObserverInit::new();
-        options.set_root_margin("0px 0px 200px 0px");
-        options.set_threshold(&JsValue::from_f64(0.1));
-
-        if let Ok(observer) = web_sys::IntersectionObserver::new_with_options(
-            callback.as_ref().unchecked_ref(),
-            &options,
-        ) {
-            observer.observe(&el);
-            callback.forget();
-
-            let observer = Arc::new(Mutex::new(Some(observer)));
-            on_cleanup(move || {
-                if let Ok(mut guard) = observer.lock() {
-                    if let Some(obs) = guard.take() {
-                        obs.disconnect();
-                    }
-                }
-            });
-        }
-    });
+    // Set up infinite scroll via shared hook
+    let scroll = use_infinite_scroll(is_loading, has_more, load_ads);
 
     // Initial load
     Effect::new(move |_| {
@@ -177,7 +136,7 @@ pub fn AdList() -> impl IntoView {
         </div>
 
         // Infinite scroll sentinel
-        <div node_ref=loader_ref class="ad-loader">
+        <div node_ref=scroll.loader_ref class="ad-loader">
             <Show when=move || is_loading.get()>
                 <div class="loading-indicator">
                     <img src="/svg/logo_farbe.svg" alt="Loading..." class="loading-spinner"/>

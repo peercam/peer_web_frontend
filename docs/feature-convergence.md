@@ -2,7 +2,7 @@
 
 This document tracks the progress of migrating features from the legacy PHP/JS frontend to the new Leptos (Rust/WASM) rewrite.
 
-**Last Updated:** 2026-04-14
+**Last Updated:** 2026-04-16
 
 ---
 
@@ -10,13 +10,13 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 | Status | Count |
 |--------|-------|
-| ✅ Implemented | 5 |
-| 🟡 Near-Complete | 7 |
+| ✅ Implemented | 9 |
+| 🟡 Near-Complete | 6 |
 | 🚧 In Progress | 2 |
-| ❌ Not Started | 6 |
+| ❌ Not Started | 3 |
 | **Total** | **20** |
 
-**Convergence:** ~57%
+**Convergence:** ~79%
 
 ---
 
@@ -27,16 +27,16 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | **Authentication** ||||
 | Login | `login.php` | ✅ Implemented | Email/password, remember-me, auto-login, redirect handling ([docs](plans/login/login-auth-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation |
-| Forgot Password | `forgotpassword.php` | 🚧 In Progress | 990-line page, full 4-step flow (email → verify → reset → success), rate-limited resend, API fns implemented ([docs](plans/forgot-password/forgot-password-implementation.md)). **Gaps:** no auto-redirect for authenticated users, resend counter not cookie-persisted (cooldown bypass on reload), countdown interval stacking bug, `BackButton` not reused |
+| Forgot Password | `forgotpassword.php` | 🚧 In Progress | 990-line page, full 4-step flow (email → verify → reset → success), rate-limited resend, API fns implemented ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md)). **Gaps:** no auto-redirect for authenticated users, resend counter not cookie-persisted (cooldown bypass on reload), countdown interval stacking bug, `BackButton` not reused |
 | **Core Features** ||||
-| Dashboard | `dashboard.php` | � Mostly Implemented | Post feed, filters, sort, infinite scroll ([docs](plans/dashboard/dashboard-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5). **Gaps:** post click → view post overlay is a TODO stub, profile widget not wired to auth context |
+| Dashboard | `dashboard.php` | 🟡 Mostly Implemented | Post feed, filters, sort, infinite scroll ([docs](plans/dashboard/dashboard-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5). **Gaps:** post click → view post overlay is a TODO stub |
 | View Post | `post.php` | 🟡 ~95% Implemented | Single post view, comments, guest mode ([docs](plans/view-post/view-post-implementation.md), [sprint](plans/view-post/view-post-completion-sprint.md)) |
 | New Post | `newpost.php` | 🚧 In Progress | Text/media creation, image cropping, video encoding ([docs](plans/new-post/new-post-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | **Profile** ||||
-| My Profile | `profile.php` | 🟡 Mostly Implemented | 238-line page, profile header, post list, skeleton loading, API integration ([docs](plans/profile/profile-implementation.md)). **Gaps:** infinite scroll not wired (fixed page), filter sidebar placeholder, legacy `?user=` query param unsupported |
-| View Profile | `view-profile.php` | 🟡 Mostly Implemented | 274-line page, follow/block/report actions, profile fetch, post list ([docs](plans/profile/profile-implementation.md)). **Gaps:** infinite scroll not wired, filter sidebar placeholder |
-| Edit Profile | `edit_profile.php` | ❌ Not Started | Profile editing (covered partially by Settings) |
-| Settings | `profileSettings.php` | � Implemented (with gaps) | 142-line page + 7 sub-components (profile, passwords, email, username, content, notifications, preferences), API layer (282L) ([docs](plans/settings/settings-implementation.md)). **Gaps:** deactivate/delete account UI not wired (API exists, menu is a no-op), profile save runs sequentially instead of in parallel |
+| My Profile | `profile.php` | ✅ Implemented | Profile header, post list with infinite scroll, filter sidebar, auth guard, `?user=` redirect, `use_infinite_scroll` hook ([docs](plans/profile/profile-implementation.md), [sprint](plans/profile/profile-completion-sprint.md)) |
+| View Profile | `view-profile.php` | ✅ Implemented | Slug route, follow/block/report actions, infinite scroll, filter sidebar, relations modal with pagination ([docs](plans/profile/profile-implementation.md)) |
+| Edit Profile | `edit_profile.php` | ✅ Implemented | Redirect routes (`/edit-profile`, `/edit_profile`) → `/settings` ([sprint](plans/profile/profile-completion-sprint.md)) |
+| Settings | `profileSettings.php` | ✅ Implemented | 142-line page + 8 sub-components (profile, passwords, email, username, content, notifications, preferences, deactivate), race-free bio+image save, API layer (282L) ([docs](plans/settings/settings-implementation.md)) |
 | **Social** ||||
 | Chat | `chat.php` | 🟡 Core Implemented | 141-line page + 7 components (chat_list, contacts_overlay, group_review, chat_input, chat_messages, chat_container, chat_item), API layer (151L), state module, SCSS (851L) ([docs](plans/chat/chat-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5). **Gaps:** Firebase real-time listener missing (no polling fallback), unread indicators missing, chat search logic not connected |
 | Invite | `invite.php` | ✅ Implemented | Deep-link relay page: platform detection, `peer://invite/{uuid}` deep link, app store / registration fallback, localStorage persistence, clipboard copy ([docs](plans/invite/invite-implementation.md)) |
@@ -44,7 +44,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | **Economy** ||||
 | Wallet | `wallet.php` | 🟡 Implemented (tests pending) | 146-line page + transfer_modal (760L), balance_header, transaction_history, transaction_item, API layer (246L), SCSS (1092L) ([docs](plans/wallet/wallet-implementation.md)). **Gaps:** shop purchase order details UI not wired (model + query exist), thousand-separator formatting missing |
 | Peer Shop | `viewPeerShop.php` | 🟡 Core Implemented | `/shop` route, profile header, product feed with price badges, checkout popup (multi-step), FAQ popup, `performShopOrder` API, SCSS ([docs](plans/peer-shop/peer-shop-implementation.md)) — **Gaps:** Firebase product data (sizes/stock), infinite scroll, View Post overlay integration, functional filters |
-| My Ads | `myAds.php` | ❌ Not Started | Ad management |
+| My Ads | `myAds.php` | 🟡 In Progress | 144-line page + stats header, ad listing with infinite scroll, boost post modal (multi-step), `advertisementHistory` query, `advertisePostPinned` mutation, skeleton loading, staggered animations ([docs](plans/my-ads/my-ads-implementation.md)). **Gaps:** Boost modal not wired to Profile page button, success/error toast not wired on error path, Basic (time-based) ad flow not started |
 | **Admin** ||||
 | Admin Dashboard | `admin/index.php` | ❌ Not Started | Content moderation |
 | **Misc** ||||
@@ -98,8 +98,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Auth (JWT) | `auth.php` | ✅ Implemented | Server fns, HttpOnly cookies, proactive refresh, 401 interceptor. Mock backend: [Phase 1 plan](plans/mock-backend/phase-1-login-session-flows.md) — ⭐⭐⭐⭐⭐ (5/5) |
 | Registration | `js/register/` | ✅ Implemented | Verify referral, register user |
 | Posts | `js/posts.js` | 🚧 In Progress | `src/api/posts.rs` (409L) — list_posts, list_ad_posts, post_action, create_post, search_tags |
-| Comments | `js/comments.js` | 🚧 In Progress | `src/api/comments.rs` (204L) — get_post, guest_get_post, list_comments, create_comment, like/unlike |
-| Chat | `js/chat/api.js` | 🚧 In Progress | `src/api/chat.rs` (151L) — list_chats, send_message, create_chat |
+| Comments | `js/comments.js` | 🚧 In Progress | `src/api/comments.rs` (204L) — get_post, guest_get_post, list_comments, create_comment, like/unlike. Mock backend: Phase 4 complete |
+| Chat | `js/chat/api.js` | 🚧 In Progress | `src/api/chat.rs` (151L) — list_chats, send_message, create_chat. Mock backend: Phase 4 complete |
 | Wallet | `js/wallet.js` | 🚧 In Progress | `src/api/wallet.rs` (246L) — get_balance, transaction_history, transfer_tokens |
 | Referral | `js/referral.js` | ✅ Implemented | `src/api/referral.rs` (65L) — get_referral_info, get_referral_list |
 | Firebase | `js/firebase_config.js` | ❌ Not Started | Real-time, analytics |
@@ -129,10 +129,12 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 | 0 — Skeleton & Parity | 3 registration mutations, health check, 9 integration tests | [phase-0](plans/mock-backend/phase-0-mock-backend-skeleton.md) | ⭐⭐⭐⭐ (4/5) | ✅ Done — Node.js replaced, async-graphql v7 + axum 0.8 |
 | 1 — Login & Session | login, refreshToken, logout, deleteAccount, updatePassword, password reset, contactus — 9 mutations, auth middleware, 24 tests | [phase-1](plans/mock-backend/phase-1-login-session-flows.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 33 total tests, 2 seeded users, `CurrentUser` context |
 | 2 — Users & Profiles | 10 queries + 8 mutations: getProfile, searchUser, listUsersV2, getUser, follow/block/report, preferences, profile edits, referrals — 40 new tests (73 total), 6 seeded users, content filtering pipeline | [phase-2](plans/mock-backend/phase-2-users-and-profiles.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — [implementation notes](plans/mock-backend/phase-2-implementation.md) |
-| 3 — Posts & Content | listPosts, guestListPost, postAction, createPost, searchTags, ads | [phase-3](plans/mock-backend/phase-3-posts-content.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
-| 4 — Social (Comments, Chat) | listComments, createComment, like/unlike, listChats, sendMessage, createChat | [phase-4](plans/mock-backend/phase-4-social-comments-chat.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
+| 3 — Posts & Content | listPosts, guestListPost, postAction, createPost, searchTags, ads | [phase-3](plans/mock-backend/phase-3-posts-content.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 121 total tests (48+ new), 0 clippy warnings |
+| 4 — Social (Comments, Chat) | listComments, createComment, like/unlike, listChats, sendMessage, createChat | [phase-4](plans/mock-backend/phase-4-social-comments-chat.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 170 total tests (49 new), 0 clippy warnings |
 | 5 — Economy (Wallet, Shop, Ads) | balance, transferTokens, transactionHistory, shopOrderDetails, ads | [phase-5](plans/mock-backend/phase-5-economy-wallet-tokenomics-shop-ads.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
-| 6 — Admin & Moderation | (not yet planned) | — | — | ❌ Not Started |
+| 6 — Admin & Moderation | RBAC, moderation tickets/stats, hide/restore/illegal actions, admin user search, leaderboard, gem/mint ops | [phase-6](plans/mock-backend/phase-6-admin-moderation.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
+| CI — Integration | Build/test pipeline, Leptos E2E integration, schema snapshots, Node.js replacement | [phase-ci](plans/mock-backend/phase-ci-integration.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
+| Acceptance Criteria | Per-phase gates, cross-cutting quality reqs, automated verification, sign-off checklist | [acceptance](plans/mock-backend/acceptance-criteria.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
 
 ---
 
@@ -141,22 +143,71 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 1. ✅ ~~Registration~~ — Complete
 2. ✅ ~~Login / Auth~~ — Complete ([docs](plans/login/login-auth-implementation.md))
 3. 🟡 Dashboard — Mostly implemented, view-post overlay stub remains ([docs](plans/dashboard/dashboard-implementation.md))
-3b. 🚧 Forgot Password — In progress, 990-line page implemented ([docs](plans/forgot-password/forgot-password-implementation.md))
+3b. 🚧 Forgot Password — In progress, 990-line page implemented, completion sprint created ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md))
 4. 🟡 View Post — ~95% implemented, polish & testing remain ([docs](plans/view-post/view-post-implementation.md))
-5. 🟡 Profile — Mostly implemented, infinite scroll + filters remain ([docs](plans/profile/profile-implementation.md))
+5. ✅ ~~Profile~~ — Implemented, infinite scroll + filters + `use_infinite_scroll` hook ([docs](plans/profile/profile-implementation.md), [sprint](plans/profile/profile-completion-sprint.md))
 6. 🚧 New Post — In progress, ~70% structural ([docs](plans/new-post/new-post-implementation.md))
 7. 🟡 Chat — Core implemented, Firebase real-time missing ([docs](plans/chat/chat-implementation.md))
 8. 🟡 Wallet — Implemented (tests pending), shop order UI not wired ([docs](plans/wallet/wallet-implementation.md))
-9. 🟡 Settings — Implemented (with gaps), delete account UI not wired ([docs](plans/settings/settings-implementation.md))
-10. ✅ ~~Referral Board~~ — Complete, full UI + API, pending mock backend endpoints ([docs](plans/referral-board/referral-board-implementation.md))
-11. ⬜ Admin — Moderation tools (no plan yet)
+9. ✅ ~~Settings~~ — Implemented, deactivate account UI wired, save race condition fixed ([docs](plans/settings/settings-implementation.md))
+10. ✅ ~~Referral Board~~ — Complete, full UI + API, mock backend endpoints available (Phase 2) ([docs](plans/referral-board/referral-board-implementation.md))
+11. 🟡 My Ads — In progress (Phases 1–4 done), boost modal wiring + basic ad flow remaining ([docs](plans/my-ads/my-ads-implementation.md))
 12. ✅ ~~Invite~~ — Complete, deep-link relay page ([docs](plans/invite/invite-implementation.md))
 13. 🟡 Peer Shop — Core implemented (Phases 1–4), Firebase integration + polish remaining ([docs](plans/peer-shop/peer-shop-implementation.md))
-14. ⬜ Remaining pages — My Ads, Download, Version History (no plans yet)
+14. ⬜ Admin — Moderation tools (plan exists, not started) ([docs](plans/mock-backend/phase-6-admin-moderation.md))
+15. ⬜ Remaining pages — Download, Version History (no plans yet)
 
 ---
 
 ## Changelog
+
+### 2026-04-16 (Profile Completion Sprint + Code Quality Pass)
+- **4 features promoted to ✅ Implemented:** My Profile, View Profile, Edit Profile, Settings — bumps convergence from ~64% to ~79%
+- **Summary counts updated:** ✅ 5→9, 🟡 9→6, ❌ 4→3
+- **Profile sprint Tasks 1–8 implemented:** `/edit-profile` redirect, infinite scroll for profile posts, filter sidebar wired, `?user=` query param redirect, ProfileWidget wired to auth, RelationsModal infinite scroll, Deactivate account UI, settings save fix
+- **New shared hook:** `use_infinite_scroll` (`src/hooks/use_infinite_scroll.rs`) — extracted IntersectionObserver pattern from 6 components (~180 lines removed), fixes `callback.forget()` memory leak, proper cleanup of observer + JS closure on unmount
+- **Bug fixes:**
+  - `use_navigate()` moved out of `spawn_local` async block in `DeactivateAccountPanel` (Leptos hook correctness)
+  - Parallel save race condition in `settings/profile.rs` replaced with single sequential `spawn_local` (race-free, no `futures` dep needed)
+  - `callback.forget()` memory leak fixed in all IntersectionObserver call sites (observer + closure now stored together in cleanup)
+- **Files modified:** `src/hooks/mod.rs`, `src/hooks/use_infinite_scroll.rs` (new), `src/pages/profile.rs`, `src/pages/view_profile.rs`, `src/components/posts/post_list.rs`, `src/components/profile/relations_modal.rs`, `src/components/my_ads/ad_list.rs`, `src/components/wallet/transaction_history.rs`, `src/components/settings/deactivate.rs`, `src/components/settings/profile.rs`
+- **Task 9 (E2E tests) remains ❌ Not Started** — `peer-web/end2end/tests/` has no profile/settings test coverage yet
+- **Dashboard gap note updated** — removed "profile widget not wired to auth context" (now resolved)
+
+### 2026-04-16 (Plan Status Audit)
+- **Summary count fix:** 🟡 Near-Complete corrected 8 → 9, ❌ Not Started corrected 5 → 4 (My Ads was promoted to 🟡 but counters were off-by-one)
+- **Convergence recalculated:** ~60% → ~64%
+- **Referral Board (#10)** — removed "pending mock backend endpoints" note; Phase 2 (which includes `getReferralInfo` and `referralList`) has been ✅ Done since 2026-04-14
+- **All 15 plan documents audited** — no status changes required; all plan statuses match convergence tracker entries
+- **Mock backend verified:** 170 tests passing, Phases 0–4 ✅ Done, Phases 5–6 + CI + Acceptance ❌ Not Started (no new types/resolvers added since Phase 4)
+- **No new implementations detected** since 2026-04-14 (10 commits, all plan/doc work)
+
+### 2026-04-14 (Mock Backend Phase 4 Complete)
+- **Phase 4 — Social (Comments, Chat)** marked ✅ Done
+- **5 new query/mutation resolvers (comments):** `listComments`, `listChildComments`, `createComment`, `likeComment`, `unlikeComment`, `reportComment`
+- **3 new query/mutation resolvers (chat):** `listChats`, `createChat`, `sendChatMessage`
+- **New types:** `types/comment.rs` (CommentType enum, CommentUser, Comment, CommentListResponse, CreateCommentResponse), `types/chat.rs` (ChatParticipant, ChatMessage, Chat, ListChatsResponse, SendMessageResponse, CreateChatResponse, CreateChatResult)
+- **State extensions:** `comments`, `comment_likes`, `comment_reports`, `daily_comment_count` (comments); `chats`, `chat_messages` (chat)
+- **Seed data:** 6 comments (4 top-level, 2 replies), 2 comment likes, 2 chats (1 private, 1 group), 5 chat messages
+- **Cross-cutting:** `amountcomments` now computed from actual comment count in `post_record_to_graphql()`; `Comments` sort uses real counts; trending score includes comments
+- **Daily free action logic:** first 4 comments per day → `11608` (free), subsequent → `11605` (paid, Phase 5 token deduction stubbed)
+- **Private chat deduplication:** `createChat` with 1 recipient returns existing chat if already exists (`11803`)
+- **49 new integration tests** (170 total), all passing; `cargo clippy -- -D warnings` clean; `cargo fmt --check` clean
+- **Review findings (minor):** `img` field correctly resolves from user profile (plan hardcoded placeholder); 2 planned tests absent (offset-beyond-range, reply-to-different-post) — both code paths exist and are tested indirectly
+- New files: `types/comment.rs`, `types/chat.rs`, `schema/query/comments.rs`, `schema/query/chat.rs`, `schema/mutation/comment.rs`, `schema/mutation/chat.rs`
+- Modified: `state.rs` (6 new record types + fields), `seed.rs` (comment/chat seed data + UUIDs), `types/mod.rs`, `schema/mod.rs`, `schema/query/mod.rs`, `schema/mutation/mod.rs`
+
+### 2026-04-14 (Forgot Password Completion Sprint)
+- **Forgot Password completion sprint plan created** — 6-task sprint to promote 🚧 → ✅: auto-redirect for authenticated users, cookie-persisted resend counter, countdown interval stacking fix, BackButton component reuse, mock backend password reset endpoints (6 tests), E2E tests (10 tests) ([sprint](plans/forgot-password/forgot-password-completion-sprint.md))
+
+### 2026-04-14 (Plan Status Sync)
+- **My Ads promoted** ❌ Not Started → 🟡 In Progress — plan created and Phases 1–4 implemented: stats header, ad listing with infinite scroll, boost post modal (multi-step), `advertisementHistory` query, `advertisePostPinned` mutation, skeleton loading ([docs](plans/my-ads/my-ads-implementation.md))
+- **Mock Backend Phase 3 completed** ❌ Not Started → ✅ Done — 121 total tests (48+ new for Phase 3), 0 clippy warnings, `cargo fmt` clean; adds all post-related queries and mutations (listPosts, guestListPost, postAction, createPost, searchTags, ads)
+- **Mock Backend Phase 6 plan created** — RBAC, content moderation, admin operations fully planned at ⭐⭐⭐⭐⭐ quality ([docs](plans/mock-backend/phase-6-admin-moderation.md))
+- **Mock Backend CI Integration plan created** — build/test pipeline, Leptos E2E integration, schema snapshots at ⭐⭐⭐⭐⭐ quality ([docs](plans/mock-backend/phase-ci-integration.md))
+- **Mock Backend Acceptance Criteria plan created** — per-phase gates, cross-cutting quality reqs, verification tooling at ⭐⭐⭐⭐⭐ quality ([docs](plans/mock-backend/acceptance-criteria.md))
+- Summary updated: 🟡 7→8, ❌ 6→5, convergence ~57%→~60%
+- Migration priority updated: My Ads broken out from "Remaining pages", Admin now has plan link
 
 ### 2026-04-14 (Mock Backend Phase 2 Complete)
 - **Phase 2 implemented and reviewed** — 73 tests pass (33 existing + 40 new), cargo clippy/fmt clean

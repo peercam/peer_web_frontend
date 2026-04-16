@@ -9,7 +9,7 @@ use leptos_meta::Title;
 use crate::api::profile::get_profile;
 use crate::components::auth_guard::AuthGuard;
 use crate::components::settings::{
-    ContentSettings, NotificationSettings, PreferencesSettings, ProfileSettings, SettingsMenu,
+    ContentSettings, DeactivateAccountPanel, NotificationSettings, PreferencesSettings, ProfileSettings, SettingsMenu,
 };
 use crate::components::widgets::{MainMenu, ProfileWidget, VersionWidget};
 
@@ -20,6 +20,7 @@ pub enum SettingsTab {
     Notifications,
     Preferences,
     Content,
+    Deactivate,
 }
 
 /// Settings page — auth-guarded, tabbed layout.
@@ -51,6 +52,7 @@ pub fn SettingsPage() -> impl IntoView {
                         <SettingsMenu
                             active_tab=active_tab
                             on_tab_change=move |tab| active_tab.set(tab)
+                            on_deactivate=move || active_tab.set(SettingsTab::Deactivate)
                         />
 
                         <div class="settings-content-wrapper">
@@ -69,6 +71,13 @@ pub fn SettingsPage() -> impl IntoView {
                                     }
                                     SettingsTab::Content => {
                                         view! { <ContentSettings/> }.into_any()
+                                    }
+                                    SettingsTab::Deactivate => {
+                                        view! {
+                                            <DeactivateAccountPanel
+                                                on_back=move || active_tab.set(SettingsTab::Profile)
+                                            />
+                                        }.into_any()
                                     }
                                 }
                             }}

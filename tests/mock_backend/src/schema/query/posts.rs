@@ -358,66 +358,6 @@ impl PostQuery {
         }
     }
 
-    /// List advertisement posts with optional filters.
-    async fn list_advertisement_posts(
-        &self,
-        ctx: &Context<'_>,
-        offset: Option<i32>,
-        limit: Option<i32>,
-        #[graphql(name = "contentFilterBy")] _content_filter_by: Option<ContentFilterType>,
-        title: Option<String>,
-        tag: Option<String>,
-    ) -> AdListResponse {
-        let viewer_id = get_current_user(ctx);
-
-        let state = ctx.data_unchecked::<SharedState>();
-        let state_read = state.read().await;
-
-        let ad_posts: Vec<AdvertisementPost> = state_read
-            .advertisements
-            .iter()
-            .filter_map(|ad| {
-                let record = state_read.posts.iter().find(|p| p.id == ad.post_id)?;
-
-                if let Some(ref t) = title
-                    && !t.is_empty()
-                    && !record.title.to_lowercase().contains(&t.to_lowercase())
-                {
-                    return None;
-                }
-                if let Some(ref tg) = tag
-                    && !tg.is_empty()
-                {
-                    let tg_lower = tg.to_lowercase();
-                    if !record.tags.iter().any(|pt| pt.to_lowercase() == tg_lower) {
-                        return None;
-                    }
-                }
-
-                let post = state_read.post_record_to_graphql(record, viewer_id);
-                Some(AdvertisementPost {
-                    post,
-                    advertisement: AdvertisementInfo {
-                        advertisementid: ad.id.clone(),
-                        advertisementtype: ad.advertisement_type.clone(),
-                        startdate: ad.start_date.clone(),
-                        enddate: ad.end_date.clone(),
-                    },
-                })
-            })
-            .collect();
-
-        let off = offset.unwrap_or(0);
-        let lim = limit.unwrap_or(10);
-        let (page, total) = paginate(&ad_posts, off, lim);
-
-        AdListResponse {
-            meta: DefaultResponse::success("11501", "Advertisement posts retrieved"),
-            counter: total,
-            affected_rows: Some(page.to_vec()),
-        }
-    }
-
     /// List users who performed a specific interaction on a post.
     async fn post_interactions(
         &self,

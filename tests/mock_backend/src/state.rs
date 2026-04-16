@@ -1,7 +1,11 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use rust_decimal::Decimal;
 use uuid::Uuid;
+
+use crate::types::ad::AdvertisementType;
+use crate::types::wallet::TransactionCategory;
 
 /// Shared state wrapped in Arc<RwLock<>>
 pub type SharedState = Arc<RwLock<MockState>>;
@@ -88,14 +92,113 @@ pub struct PostRecord {
     pub uploaded_files: Option<String>,
 }
 
-/// Internal advertisement record.
+/// Internal advertisement record (Phase 5).
 #[derive(Debug, Clone)]
 pub struct AdvertisementRecord {
-    pub id: String,
+    pub id: Uuid,
     pub post_id: Uuid,
-    pub advertisement_type: String,
+    pub advertiser_id: Uuid,
+    pub ad_type: AdvertisementType,
     pub start_date: String,
     pub end_date: String,
+    pub token_cost: Decimal,
+    pub created_at: String,
+}
+
+// ============================================================================
+// Phase 5: Economy state records
+// ============================================================================
+
+/// System account constants.
+pub const SYSTEM_BURN_ACCOUNT: Uuid = Uuid::from_bytes([0xee,0xee,0xee,0xee, 0xee,0xee, 0x4e,0xee, 0xae,0xee, 0,0,0,0,0,1]);
+pub const SYSTEM_PEER_ACCOUNT: Uuid = Uuid::from_bytes([0xee,0xee,0xee,0xee, 0xee,0xee, 0x4e,0xee, 0xae,0xee, 0,0,0,0,0,2]);
+pub const SYSTEM_SHOP_ACCOUNT: Uuid = Uuid::from_bytes([0xee,0xee,0xee,0xee, 0xee,0xee, 0x4e,0xee, 0xae,0xee, 0,0,0,0,0,3]);
+pub const SYSTEM_MINT_ACCOUNT: Uuid = Uuid::from_bytes([0xee,0xee,0xee,0xee, 0xee,0xee, 0x4e,0xee, 0xae,0xee, 0,0,0,0,0,4]);
+
+/// Action pricing constants.
+pub const POST_PRICE: Decimal = Decimal::from_parts(200, 0, 0, false, 1);   // 20.0
+pub const LIKE_PRICE: Decimal = Decimal::from_parts(30, 0, 0, false, 1);    // 3.0
+pub const DISLIKE_PRICE: Decimal = Decimal::from_parts(30, 0, 0, false, 1); // 3.0
+pub const COMMENT_PRICE: Decimal = Decimal::from_parts(10, 0, 0, false, 1); // 1.0
+pub const AD_BASIC_DAILY_PRICE: Decimal = Decimal::from_parts(500, 0, 0, false, 1); // 50.0
+pub const AD_PINNED_PRICE: Decimal = Decimal::from_parts(2000, 0, 0, false, 1);     // 200.0
+
+/// Daily free action limits.
+pub const FREE_POSTS: u32 = 1;
+pub const FREE_LIKES: u32 = 3;
+pub const FREE_COMMENTS: u32 = 4;
+pub const FREE_DISLIKES: u32 = 0;
+
+/// Gem return rates.
+pub const VIEW_GEM_RETURN: f64 = 0.25;
+pub const LIKE_GEM_RETURN: f64 = 5.0;
+pub const DISLIKE_GEM_RETURN: f64 = -3.0;
+pub const COMMENT_GEM_RETURN: f64 = 2.0;
+
+/// Fee rates for transfers.
+pub const BURN_FEE_RATE: Decimal = Decimal::from_parts(1, 0, 0, false, 2);    // 0.01
+pub const PEER_FEE_RATE: Decimal = Decimal::from_parts(2, 0, 0, false, 2);    // 0.02
+pub const INVITER_FEE_RATE: Decimal = Decimal::from_parts(1, 0, 0, false, 2); // 0.01
+
+/// Internal transaction storage record.
+#[derive(Debug, Clone)]
+pub struct TransactionRecord {
+    pub id: Uuid,
+    pub operation_id: Uuid,
+    pub category: Option<TransactionCategory>,
+    pub transaction_type: String,
+    pub sender_id: Uuid,
+    pub recipient_id: Uuid,
+    pub token_amount: Decimal,
+    pub net_token_amount: Decimal,
+    pub message: Option<String>,
+    pub fees: Option<TransactionFeesRecord>,
+    pub created_at: String,
+}
+
+/// Internal fee record.
+#[derive(Debug, Clone)]
+pub struct TransactionFeesRecord {
+    pub total: Decimal,
+    pub burn: Decimal,
+    pub peer: Decimal,
+    pub inviter: Option<Decimal>,
+}
+
+/// Internal gem storage record.
+#[derive(Debug, Clone)]
+pub struct GemRecord {
+    pub user_id: Uuid,
+    pub post_id: Uuid,
+    pub from_user_id: Uuid,
+    pub gems: f64,
+    pub action: String,
+    pub created_at: String,
+}
+
+/// Internal shop order storage record.
+#[derive(Debug, Clone)]
+pub struct ShopOrderRecord {
+    pub id: Uuid,
+    pub transaction_id: Uuid,
+    pub shop_item_id: String,
+    pub buyer_id: Uuid,
+    pub token_amount: Decimal,
+    pub item_specs: Option<String>,
+    pub delivery: ShopDeliveryRecord,
+    pub created_at: String,
+}
+
+/// Internal delivery details record.
+#[derive(Debug, Clone)]
+pub struct ShopDeliveryRecord {
+    pub name: String,
+    pub email: String,
+    pub addressline1: String,
+    pub addressline2: Option<String>,
+    pub city: String,
+    pub zipcode: String,
+    pub country: String,
 }
 
 /// Internal comment storage record (not the GraphQL type).
@@ -173,11 +276,18 @@ pub struct MockState {
     pub comments: Vec<CommentRecord>,
     pub comment_likes: HashSet<(Uuid, Uuid)>,
     pub comment_reports: HashSet<(Uuid, Uuid)>,
-    pub daily_comment_count: HashMap<(Uuid, String), u32>,
 
     // --- Phase 4: Chat ---
     pub chats: Vec<ChatRecord>,
     pub chat_messages: Vec<ChatMessageRecord>,
+
+    // --- Phase 5: Economy ---
+    pub wallets: HashMap<Uuid, Decimal>,
+    pub transactions: Vec<TransactionRecord>,
+    pub daily_actions_used: HashMap<(Uuid, String, String), u32>,
+    pub gems: Vec<GemRecord>,
+    pub minted_dates: HashSet<String>,
+    pub shop_orders: Vec<ShopOrderRecord>,
 }
 
 impl MockState {
@@ -662,4 +772,192 @@ impl MockState {
             chatparticipants,
         }
     }
+
+    // ========================================================================
+    // Phase 5: Economy helpers
+    // ========================================================================
+
+    /// Convert a TransactionRecord to the GraphQL TransactionHistoryItem type.
+    pub fn transaction_record_to_graphql(
+        &self,
+        record: &TransactionRecord,
+    ) -> crate::types::wallet::TransactionHistoryItem {
+        use crate::types::wallet::{TransactionFees, TransactionHistoryItem, TransactionUser};
+
+        let resolve_user = |uid: &Uuid| -> TransactionUser {
+            match self.users.get(uid) {
+                Some(u) => TransactionUser {
+                    userid: u.uid.to_string(),
+                    img: u.img.clone(),
+                    username: u.username.clone(),
+                    slug: u.slug.clone(),
+                    visibility_status: Some("VISIBLE".into()),
+                    has_active_reports: Some(false),
+                    is_hidden_for_users: Some(false),
+                },
+                None => TransactionUser {
+                    userid: uid.to_string(),
+                    img: None,
+                    username: "System".into(),
+                    slug: "system".into(),
+                    visibility_status: Some("VISIBLE".into()),
+                    has_active_reports: Some(false),
+                    is_hidden_for_users: Some(false),
+                },
+            }
+        };
+
+        TransactionHistoryItem {
+            transaction_id: record.id.to_string(),
+            operationid: record.operation_id.to_string(),
+            transaction_category: record.category,
+            transactiontype: record.transaction_type.clone(),
+            tokenamount: record.token_amount.to_string(),
+            net_token_amount: record.net_token_amount.to_string(),
+            message: record.message.clone(),
+            createdat: record.created_at.clone(),
+            sender: resolve_user(&record.sender_id),
+            recipient: resolve_user(&record.recipient_id),
+            fees: record.fees.as_ref().map(|f| TransactionFees {
+                total: f.total,
+                burn: f.burn,
+                peer: f.peer,
+                inviter: f.inviter,
+            }),
+        }
+    }
+
+    /// Convert an AdvertisementRecord to the AdvertisementPost GraphQL type.
+    pub fn ad_record_to_graphql(
+        &self,
+        record: &AdvertisementRecord,
+        viewer_id: Option<Uuid>,
+    ) -> Option<crate::types::ad::AdvertisementPost> {
+        use crate::types::ad::{AdvCreator, AdvertisementPost};
+
+        let post_record = self.posts.iter().find(|p| p.id == record.post_id)?;
+        let post = self.post_record_to_graphql(post_record, viewer_id);
+
+        Some(AdvertisementPost {
+            post,
+            advertisement: AdvCreator {
+                advertisementid: record.id.to_string().into(),
+                advertisementtype: match record.ad_type {
+                    AdvertisementType::Basic => "BASIC".into(),
+                    AdvertisementType::Pinned => "PINNED".into(),
+                },
+                startdate: record.start_date.clone(),
+                enddate: record.end_date.clone(),
+                createdat: Some(record.created_at.clone()),
+                user: None,
+            },
+        })
+    }
+
+    /// Convert an AdvertisementRecord to the full Advertisement GraphQL type (for history).
+    pub fn ad_record_to_full_graphql(
+        &self,
+        record: &AdvertisementRecord,
+    ) -> Option<crate::types::ad::Advertisement> {
+        use crate::types::ad::Advertisement;
+        use crate::types::user::{ContentVisibilityStatus, ProfileUserGql};
+
+        let post_record = self.posts.iter().find(|p| p.id == record.post_id)?;
+        let post = self.post_record_to_graphql(post_record, Some(record.advertiser_id));
+
+        let user = self.users.get(&record.advertiser_id).map(|u| ProfileUserGql {
+            userid: u.uid.to_string().into(),
+            username: u.username.clone(),
+            slug: u.slug_num,
+            img: u.img.clone(),
+            visibility_status: ContentVisibilityStatus::Normal,
+            is_hidden_for_users: false,
+            has_active_reports: self.has_active_reports(&u.uid),
+            isfollowed: false,
+            isfollowing: false,
+        })?;
+
+        let cost_f64 = record.token_cost.to_string().parse::<f64>().unwrap_or(0.0);
+
+        Some(Advertisement {
+            id: record.id.to_string().into(),
+            created_at: record.created_at.clone(),
+            ad_type: record.ad_type,
+            timeframe_start: record.start_date.clone(),
+            timeframe_end: record.end_date.clone(),
+            total_token_cost: cost_f64,
+            total_euro_cost: 0.0,
+            gems_earned: 0.0,
+            amount_likes: 0,
+            amount_views: 0,
+            amount_comments: 0,
+            amount_dislikes: 0,
+            amount_reports: 0,
+            user,
+            post,
+        })
+    }
+
+    /// Check if a daily free action is available.
+    pub fn is_daily_free(&self, user_id: Uuid, action: &str) -> bool {
+        let today = today_date_string();
+        let key = (user_id, today, action.to_string());
+        let used = self.daily_actions_used.get(&key).copied().unwrap_or(0);
+        let limit = match action {
+            "post" => FREE_POSTS,
+            "like" => FREE_LIKES,
+            "comment" => FREE_COMMENTS,
+            "dislike" => FREE_DISLIKES,
+            _ => 0,
+        };
+        used < limit
+    }
+
+    /// Record use of a daily action.
+    pub fn use_daily_action(&mut self, user_id: Uuid, action: &str) {
+        let today = today_date_string();
+        let key = (user_id, today, action.to_string());
+        *self.daily_actions_used.entry(key).or_insert(0) += 1;
+    }
+
+    /// Try to perform a paid action: use free allowance if available, otherwise deduct tokens.
+    pub fn try_deduct_for_action(
+        &mut self,
+        user_id: Uuid,
+        action: &str,
+    ) -> Result<bool, &'static str> {
+        if self.is_daily_free(user_id, action) {
+            self.use_daily_action(user_id, action);
+            return Ok(true);
+        }
+
+        let price = match action {
+            "post" => POST_PRICE,
+            "like" => LIKE_PRICE,
+            "dislike" => DISLIKE_PRICE,
+            "comment" => COMMENT_PRICE,
+            _ => return Ok(false),
+        };
+
+        let balance = self.wallets.get(&user_id).copied().unwrap_or(Decimal::ZERO);
+        if balance < price {
+            return Err("51301");
+        }
+
+        *self.wallets.entry(user_id).or_insert(Decimal::ZERO) -= price;
+        *self.wallets.entry(SYSTEM_PEER_ACCOUNT).or_insert(Decimal::ZERO) += price;
+        self.use_daily_action(user_id, action);
+
+        Ok(false)
+    }
+}
+
+/// Get today's date as YYYY-MM-DD string.
+pub fn today_date_string() -> String {
+    chrono::Utc::now().format("%Y-%m-%d").to_string()
+}
+
+/// Check if an advertisement is currently active.
+pub fn is_ad_active(ad: &AdvertisementRecord, today: &str) -> bool {
+    ad.start_date.as_str() <= today && today <= ad.end_date.as_str()
 }

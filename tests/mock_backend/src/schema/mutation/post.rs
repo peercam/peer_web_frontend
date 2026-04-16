@@ -1,8 +1,11 @@
 use async_graphql::{Context, ID, Object};
+use chrono::Utc;
 use uuid::Uuid;
 
 use crate::schema::mutation::auth::get_current_user;
-use crate::state::{PostRecord, SharedState};
+use crate::state::{
+    GemRecord, PostRecord, SharedState, DISLIKE_GEM_RETURN, LIKE_GEM_RETURN, VIEW_GEM_RETURN,
+};
 use crate::types::post::*;
 use crate::types::registration::DefaultResponse;
 
@@ -96,6 +99,14 @@ impl PostMutation {
         let state = ctx.data_unchecked::<SharedState>();
         let mut state_write = state.write().await;
 
+        // Token deduction for post action
+        if let Err(_code) = state_write.try_deduct_for_action(viewer_id, "post") {
+            return CreatePostResponse {
+                meta: DefaultResponse::error("51301", "Insufficient balance to create post"),
+                affected_rows: None,
+            };
+        }
+
         let post_id = Uuid::new_v4();
         let contenttype_str = match input.contenttype {
             ContentType::Image => "image",
@@ -115,7 +126,7 @@ impl PostMutation {
             state_write.tags.insert(tag.clone());
         }
 
-        let now = chrono::Utc::now().to_rfc3339();
+        let now = Utc::now().to_rfc3339();
         let record = PostRecord {
             id: post_id,
             author_id: viewer_id,
@@ -172,10 +183,24 @@ impl PostMutation {
                 if post.author_id == viewer_id {
                     return DefaultResponse::error("31506", "Cannot like own post");
                 }
+                // Token deduction for like
+                if let Err(_code) = state_write.try_deduct_for_action(viewer_id, "like") {
+                    return DefaultResponse::error("51301", "Insufficient balance for like");
+                }
                 if !state_write.post_likes.insert((viewer_id, post_uuid)) {
                     return DefaultResponse::error("31501", "Already liked");
                 }
                 state_write.post_dislikes.remove(&(viewer_id, post_uuid));
+                // Gem accumulation for post author
+                let now = Utc::now().to_rfc3339();
+                state_write.gems.push(GemRecord {
+                    user_id: post.author_id,
+                    post_id: post_uuid,
+                    from_user_id: viewer_id,
+                    gems: LIKE_GEM_RETURN,
+                    action: "like".to_string(),
+                    created_at: now,
+                });
                 DefaultResponse::success("11503", "Post liked")
             }
             PostActionType::Unlike => {
@@ -186,10 +211,24 @@ impl PostMutation {
                 if post.author_id == viewer_id {
                     return DefaultResponse::error("31507", "Cannot dislike own post");
                 }
+                // Token deduction for dislike
+                if let Err(_code) = state_write.try_deduct_for_action(viewer_id, "dislike") {
+                    return DefaultResponse::error("51301", "Insufficient balance for dislike");
+                }
                 if !state_write.post_dislikes.insert((viewer_id, post_uuid)) {
                     return DefaultResponse::error("31502", "Already disliked");
                 }
                 state_write.post_likes.remove(&(viewer_id, post_uuid));
+                // Negative gem for post author
+                let now = Utc::now().to_rfc3339();
+                state_write.gems.push(GemRecord {
+                    user_id: post.author_id,
+                    post_id: post_uuid,
+                    from_user_id: viewer_id,
+                    gems: DISLIKE_GEM_RETURN,
+                    action: "dislike".to_string(),
+                    created_at: now,
+                });
                 DefaultResponse::success("11504", "Post disliked")
             }
             PostActionType::Undislike => {
@@ -199,6 +238,18 @@ impl PostMutation {
             PostActionType::View => {
                 if !state_write.post_views.insert((viewer_id, post_uuid)) {
                     return DefaultResponse::error("31505", "Already viewed");
+                }
+                // Gem accumulation for views (on other users' posts)
+                if post.author_id != viewer_id {
+                    let now = Utc::now().to_rfc3339();
+                    state_write.gems.push(GemRecord {
+                        user_id: post.author_id,
+                        post_id: post_uuid,
+                        from_user_id: viewer_id,
+                        gems: VIEW_GEM_RETURN,
+                        action: "view".to_string(),
+                        created_at: now,
+                    });
                 }
                 DefaultResponse::success("11506", "Post viewed")
             }

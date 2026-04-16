@@ -8,6 +8,7 @@ use std::collections::HashSet;
 
 use crate::api::wallet::get_transaction_history;
 use crate::components::wallet::TransactionItem;
+use crate::hooks::use_infinite_scroll;
 use crate::models::transaction::Transaction;
 
 const LIMIT: i32 = 20;
@@ -62,53 +63,11 @@ pub fn TransactionHistory() -> impl IntoView {
         });
     };
 
+    let scroll = use_infinite_scroll(loading, has_more, load_more);
+
     // Initial load
     Effect::new(move |_| {
         load_more();
-    });
-
-    // Setup intersection observer for infinite scroll (client-side only)
-    let sentinel_ref = NodeRef::<leptos::html::Div>::new();
-
-    #[cfg(feature = "hydrate")]
-    Effect::new(move |_| {
-        use std::sync::{Arc, Mutex};
-        use wasm_bindgen::prelude::*;
-        use wasm_bindgen::JsCast;
-
-        let Some(sentinel) = sentinel_ref.get() else {
-            return;
-        };
-
-        let callback = Closure::<dyn Fn(js_sys::Array)>::new(move |entries: js_sys::Array| {
-            for entry in entries.iter() {
-                let entry: web_sys::IntersectionObserverEntry = entry.unchecked_into();
-                if entry.is_intersecting() && !loading.get() && has_more.get() {
-                    load_more();
-                }
-            }
-        });
-
-        let options = web_sys::IntersectionObserverInit::new();
-        options.set_root_margin("100% 0px 100% 0px");
-        options.set_threshold(&JsValue::from_f64(0.01));
-
-        if let Ok(observer) = web_sys::IntersectionObserver::new_with_options(
-            callback.as_ref().unchecked_ref(),
-            &options,
-        ) {
-            observer.observe(&sentinel);
-            callback.forget();
-
-            let observer = Arc::new(Mutex::new(Some(observer)));
-            on_cleanup(move || {
-                if let Ok(mut guard) = observer.lock() {
-                    if let Some(obs) = guard.take() {
-                        obs.disconnect();
-                    }
-                }
-            });
-        }
     });
 
     view! {
@@ -147,7 +106,7 @@ pub fn TransactionHistory() -> impl IntoView {
                 // Sentinel for infinite scroll
                 <div
                     id="history-sentinel"
-                    node_ref=sentinel_ref
+                    node_ref=scroll.loader_ref
                     style="height: 20px; width: 100%"
                 />
 

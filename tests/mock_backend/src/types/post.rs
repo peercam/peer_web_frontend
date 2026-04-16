@@ -203,34 +203,6 @@ pub struct TagSearchResponse {
     pub affected_rows: Option<Vec<Tag>>,
 }
 
-/// Advertisement metadata.
-#[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
-#[graphql(rename_fields = "camelCase")]
-pub struct AdvertisementInfo {
-    pub advertisementid: String,
-    pub advertisementtype: String,
-    pub startdate: String,
-    pub enddate: String,
-}
-
-/// Advertisement post wrapper.
-#[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
-#[graphql(rename_fields = "camelCase")]
-pub struct AdvertisementPost {
-    pub post: Post,
-    pub advertisement: AdvertisementInfo,
-}
-
-/// Response for `listAdvertisementPosts` query.
-#[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
-#[graphql(rename_fields = "camelCase")]
-pub struct AdListResponse {
-    pub meta: DefaultResponse,
-    pub counter: i32,
-    #[graphql(name = "affectedRows")]
-    pub affected_rows: Option<Vec<AdvertisementPost>>,
-}
-
 /// Response for `postInteractions` query.
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 #[graphql(rename_fields = "camelCase")]

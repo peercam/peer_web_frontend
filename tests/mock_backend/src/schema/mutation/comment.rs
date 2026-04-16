@@ -3,12 +3,9 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use crate::require_auth;
-use crate::state::{CommentRecord, SharedState};
+use crate::state::{CommentRecord, GemRecord, SharedState, COMMENT_GEM_RETURN};
 use crate::types::comment::*;
 use crate::types::registration::DefaultResponse;
-
-/// Daily free comment limit.
-const DAILY_FREE_COMMENTS: u32 = 4;
 
 #[derive(Default)]
 pub struct CommentMutation;
@@ -56,13 +53,17 @@ impl CommentMutation {
             }
         };
 
-        if !state.posts.iter().any(|p| p.id == post_uuid) {
-            return CreateCommentResponse {
-                meta: DefaultResponse::error("31602", "Post not found"),
-                counter: 0,
-                affected_rows: None,
-            };
-        }
+        // Find the post and get its author for gem accumulation
+        let post_author_id = match state.posts.iter().find(|p| p.id == post_uuid) {
+            Some(p) => p.author_id,
+            None => {
+                return CreateCommentResponse {
+                    meta: DefaultResponse::error("31602", "Post not found"),
+                    counter: 0,
+                    affected_rows: None,
+                };
+            }
+        };
 
         let parent_uuid = match &parentid {
             Some(pid) => {
@@ -108,13 +109,18 @@ impl CommentMutation {
             None => None,
         };
 
-        // Daily free action tracking
-        let today = Utc::now().format("%Y-%m-%d").to_string();
-        let key = (user_id, today);
-        let count = state.daily_comment_count.get(&key).copied().unwrap_or(0);
-        let is_free = count < DAILY_FREE_COMMENTS;
-
-        // TODO: Phase 5 — deduct tokens if !is_free and balance insufficient → return 51301
+        // Token deduction for comment action
+        let deduct_result = state.try_deduct_for_action(user_id, "comment");
+        let is_free = match deduct_result {
+            Ok(free) => free,
+            Err(_code) => {
+                return CreateCommentResponse {
+                    meta: DefaultResponse::error("51301", "Insufficient balance for comment"),
+                    counter: 0,
+                    affected_rows: None,
+                };
+            }
+        };
 
         let comment_id = Uuid::new_v4();
         let now = Utc::now().to_rfc3339();
@@ -125,12 +131,23 @@ impl CommentMutation {
             post_id: post_uuid,
             parent_id: parent_uuid,
             content,
-            created_at: now,
+            created_at: now.clone(),
             visibility_status: "VISIBLE".into(),
         };
 
         state.comments.push(record);
-        *state.daily_comment_count.entry(key).or_insert(0) += 1;
+
+        // Gem accumulation: if commenting on another user's post, record gems
+        if post_author_id != user_id {
+            state.gems.push(GemRecord {
+                user_id: post_author_id,
+                post_id: post_uuid,
+                from_user_id: user_id,
+                gems: COMMENT_GEM_RETURN,
+                action: "comment".to_string(),
+                created_at: now,
+            });
+        }
 
         let comment =
             state.comment_record_to_graphql(state.comments.last().unwrap(), Some(user_id));

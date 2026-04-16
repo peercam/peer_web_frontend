@@ -1,6 +1,10 @@
+pub mod ad;
 pub mod auth;
 pub mod chat;
 pub mod comment;
 pub mod post;
 pub mod registration;
+pub mod shop;
+pub mod tokenomics;
 pub mod user;
+pub mod wallet;

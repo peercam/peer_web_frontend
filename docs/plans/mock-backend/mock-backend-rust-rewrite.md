@@ -598,7 +598,9 @@ pub struct MockState {
 
 ---
 
-## 6. Phase 4 — Social (Comments, Chat)
+## 6. Phase 4 — Social (Comments, Chat) ✅
+
+> **Status:** Complete (14 April 2026) — [Detailed plan](./phase-4-social-comments-chat.md)
 
 **Depends on:** Phase 3 (requires posts)
 **Driven by:** `peer-web/src/api/comments.rs`, `peer-web/src/api/chat.rs`, `peer-web/src/pages/chat.rs`
@@ -608,47 +610,56 @@ pub struct MockState {
 
 | File | Contents |
 |------|----------|
+| `src/types/comment.rs` | `CommentType`, `CommentUser`, `Comment`, `CommentListResponse`, `CreateCommentResponse` |
+| `src/types/chat.rs` | `ChatParticipant`, `ChatMessage`, `Chat`, `ListChatsResponse`, `SendMessageResponse`, `CreateChatResponse`, `CreateChatResult` |
 | `src/schema/query/comments.rs` | `listComments`, `listChildComments` |
-| `src/schema/mutation/comment.rs` | `createComment`, `replyComment`, `likeComment`, `unlikeComment` |
-| `src/schema/query/chat.rs` | `listChats`, `getChatMessages` |
+| `src/schema/mutation/comment.rs` | `createComment`, `likeComment`, `unlikeComment`, `reportComment` |
+| `src/schema/query/chat.rs` | `listChats` |
 | `src/schema/mutation/chat.rs` | `createChat`, `sendChatMessage` |
-| `src/types/comment.rs` | `Comment`, `CommentListResponse` |
-| `src/types/chat.rs` | `Chat`, `ChatMessage` |
 
 ### State extensions
 
 ```rust
 pub struct MockState {
     // ... existing fields ...
-    pub comments: Vec<Comment>,
-    pub comment_likes: HashSet<(Uuid, Uuid)>,  // (user, comment)
-    pub chats: Vec<Chat>,
-    pub chat_messages: Vec<ChatMessage>,
+    pub comments: Vec<CommentRecord>,
+    pub comment_likes: HashSet<(Uuid, Uuid)>,       // (user, comment)
+    pub comment_reports: HashSet<(Uuid, Uuid)>,      // (user, comment)
+    pub daily_comment_count: HashMap<(Uuid, String), u32>, // (user, date) → count
+    pub chats: Vec<ChatRecord>,
+    pub chat_messages: Vec<ChatMessageRecord>,
 }
 ```
 
 ### Comments — key behaviours
 
 - Single level of nesting: top-level comments and replies (no deeper)
-- `listComments(postid)` returns top-level only
+- `listComments(postid)` returns top-level only, paginated (offset/limit)
 - `listChildComments(parent)` returns replies to a specific comment
-- Like/unlike toggles
-- Content filtering applied
+- Like/unlike toggles with self-like and duplicate prevention
+- Report with self-report and duplicate prevention
+- Daily free action: first 4 comments per day are free (`11608`), subsequent are paid (`11605`)
+- `amountcomments` on posts computed from actual comment count
+- Content filtering: excludes comments from deleted users and non-VISIBLE comments
 
 ### Chat — key behaviours
 
-- `listChats` returns conversations for the authenticated user
-- `createChat(userid)` starts a new 1:1 conversation
-- `sendChatMessage(chatid, message)` appends a message
+- `listChats` returns conversations for the authenticated user, sorted by most recent activity
+- `createChat(input: { name, recipients, image })` creates private (1:1) or group chats
+- Private chat deduplication: returns existing chat ID if 1:1 chat already exists (`11803`)
+- `sendChatMessage(chatid, content)` appends a message and updates chat `updated_at`
 - Messages ordered by timestamp
 
-### Tests (≥10 new)
+### Seed data
 
-- Create comment on post → appears in `listComments`
-- Reply to comment → appears in `listChildComments`
-- Like/unlike comment
-- Create chat → send message → list messages
-- List chats shows latest message preview
+- 6 comments (4 top-level, 2 replies), 2 comment likes
+- 2 chats (1 private, 1 group), 5 chat messages
+
+### Tests (49 new, 170 total)
+
+- 29 comment tests: CRUD, pagination, like/unlike, report, daily free action, auth
+- 17 chat tests: list, create (private/group dedup), send, auth, validation
+- 3 cross-cutting: post `amountcomments`, reset state, regression
 
 ---
 

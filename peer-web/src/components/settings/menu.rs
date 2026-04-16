@@ -14,6 +14,8 @@ pub fn SettingsMenu(
     active_tab: RwSignal<SettingsTab>,
     /// Callback when a tab is selected.
     on_tab_change: impl Fn(SettingsTab) + 'static + Copy,
+    /// Callback to show deactivate panel.
+    on_deactivate: impl Fn() + 'static + Copy,
 ) -> impl IntoView {
     let auth = use_auth();
     let show_logout_modal = RwSignal::new(false);
@@ -57,7 +59,12 @@ pub fn SettingsMenu(
 
                 // Deactivate button
                 <li class="not-menu-item">
-                    <a href="#" class="md_font_size red-btn">
+                    <a href="#" class="md_font_size red-btn"
+                        on:click=move |e| {
+                            e.prevent_default();
+                            on_deactivate();
+                        }
+                    >
                         "Deactivate profile"
                     </a>
                 </li>

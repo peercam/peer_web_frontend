@@ -2,8 +2,9 @@
 
 **Feature:** Profile (My Profile + View Profile)  
 **Priority:** #5 (after View Post)  
-**Status:** � Mostly Implemented (core complete, incremental gaps remain)  
-**Created:** 2026-04-12
+**Status:** ✅ Implemented (E2E tests pending)  
+**Created:** 2026-04-12  
+**Updated:** 2026-04-16
 
 ---
 
@@ -40,10 +41,10 @@ Both pages display the user's posts, social statistics, and allow interactions b
   - [x] Username and slug display
   - [x] Biography (fetched from media server)
   - [x] Social statistics (posts, followers, following, peers)
-- [ ] Post feed with filters and infinite scroll
+- [x] Post feed with filters and infinite scroll
   - [x] Post feed (basic, fixed page)
-  - [ ] Infinite scroll pagination
-  - [ ] Filter and sort controls
+  - [x] Infinite scroll pagination
+  - [x] Filter and sort controls
 - [x] My Profile features:
   - [x] Edit profile button (→ settings)
   - [x] Ads dropdown (Boost post, My Ads)
@@ -57,7 +58,7 @@ Both pages display the user's posts, social statistics, and allow interactions b
   - [x] Following tab (batch load, no infinite scroll yet)
   - [x] Peers tab (mutual follows, own profile only)
   - [x] Follow button in user list items
-  - [ ] Infinite scroll within modal tabs
+  - [x] Infinite scroll within modal tabs
 - [x] Content visibility handling:
   - [x] Hidden content overlay with "View anyway" option
   - [x] Illegal content badge (profile removed)
@@ -65,8 +66,8 @@ Both pages display the user's posts, social statistics, and allow interactions b
 - [x] Loading states and skeletons
 - [x] Error states (profile not found, other errors)
 - [x] Responsive layout (desktop/tablet/mobile)
-- [ ] Left sidebar filters (placeholder only, `FiltersSidebar` not wired)
-- [ ] Legacy `?user=<uuid>` query param support
+- [x] Left sidebar filters (wired with `ProfileFilterSidebar` — ContentFilter + SortFilter)
+- [x] Legacy `?user=<uuid>` query param support
 
 ### Out of Scope (Future Work)
 

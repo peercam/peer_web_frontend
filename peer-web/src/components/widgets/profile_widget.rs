@@ -2,19 +2,39 @@
 
 use leptos::prelude::*;
 
+use crate::api::profile::get_profile;
 use crate::models::user::UserInfo;
+use crate::state::auth::use_auth;
 
 /// Profile widget showing current user info.
 #[component]
 pub fn ProfileWidget() -> impl IntoView {
-    // TODO: Get user ID from auth context
+    let auth = use_auth();
+
     let user_info = Resource::new(
-        || (),
-        |_| async move {
-            // For now, we'll need to get the user ID from somewhere
-            // This would typically come from the auth context
-            // Placeholder: return None until we have proper user context
-            None::<UserInfo>
+        move || auth.is_authenticated.get(),
+        |is_auth| async move {
+            if is_auth {
+                match get_profile(None, None).await {
+                    Ok(profile) => {
+                        let img = Some(profile.avatar_url().to_string());
+                        Some(UserInfo {
+                            id: profile.id,
+                            username: profile.username,
+                            slug: profile.slug.to_string(),
+                            img,
+                            biography: profile.biography,
+                            amount_followers: profile.amountfollower,
+                            amount_following: profile.amountfollowed,
+                            amount_peers: profile.amountfriends,
+                            user_preferences: None,
+                        })
+                    }
+                    Err(_) => None,
+                }
+            } else {
+                None
+            }
         },
     );
 

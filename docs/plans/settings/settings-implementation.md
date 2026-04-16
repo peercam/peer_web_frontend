@@ -2,9 +2,9 @@
 
 **Feature:** Settings  
 **Priority:** #9 (after Wallet)  
-**Status:** � Implemented (with gaps)  
+**Status:** ✅ Implemented  
 **Created:** 2026-04-14  
-**Updated:** 2026-04-14
+**Updated:** 2026-04-16
 
 ---
 
@@ -38,7 +38,7 @@ Implement the user settings page for the Leptos frontend. This is a multi-sectio
   - [x] Image upload with preview modal (zoom slider)
   - [x] Biography textarea (max 5000 chars)
   - [x] Display current username with change link
-  - [x] Save profile changes (avatar + bio) — ⚠️ runs sequentially, not in parallel as planned
+  - [x] Save profile changes (avatar + bio) — runs sequentially in a single `spawn_local` (race-free)
   - [x] Change username sub-panel (username + password confirmation)
   - [x] Change password sub-panel (old password, new password with strength, confirm)
   - [x] Change email sub-panel (new email + password confirmation)
@@ -52,7 +52,7 @@ Implement the user settings page for the Leptos frontend. This is a multi-sectio
   - [x] Placeholder (stub — not yet implemented in legacy)
 - [x] **Account Actions:**
   - [x] Logout with confirmation modal
-  - [ ] Deactivate profile (delete account) — ⚠️ API exists (`delete_account` server fn) but no UI component wired up; menu link is a no-op
+  - [x] Deactivate profile (delete account) — `DeactivateAccountPanel` with password confirmation, confirmation modal, `delete_account` call, logout + redirect to `/login`
 - [x] Loading and success/error states for all forms
 - [x] Password strength indicator (reuse existing component)
 - [x] Confirm password validation (reuse existing component)

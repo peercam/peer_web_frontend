@@ -82,23 +82,23 @@ tests/mock_backend/src/
 
 ### Phase 3 Completion
 
-- [ ] Posts exist in `MockState` (comments reference `postid`)
-- [ ] `PostRecord` type is available with `id` (UUID) field
-- [ ] Post interaction count computation exists (so `amountcomments` can be updated)
-- [ ] `post_record_to_graphql()` helper exists and can be extended for comment counts
+- [x] Posts exist in `MockState` (comments reference `postid`)
+- [x] `PostRecord` type is available with `id` (UUID) field
+- [x] Post interaction count computation exists (so `amountcomments` can be updated)
+- [x] `post_record_to_graphql()` helper exists and can be extended for comment counts
 
 ### Phase 1 & 2 Completion
 
-- [ ] Auth middleware from Phase 1 is working (`require_auth()`, `get_current_user()`)
-- [ ] User profiles exist in `MockState` (comments embed `CommentUser`, chats embed `ChatParticipant`)
-- [ ] Follow relationships exist (comments show `isfollowed`/`isfollowing` on `CommentUser`)
-- [ ] `DefaultResponse` type is available from Phase 0
+- [x] Auth middleware from Phase 1 is working (`require_auth()`, `get_current_user()`)
+- [x] User profiles exist in `MockState` (comments embed `CommentUser`, chats embed `ChatParticipant`)
+- [x] Follow relationships exist (comments show `isfollowed`/`isfollowing` on `CommentUser`)
+- [x] `DefaultResponse` type is available from Phase 0
 
 ### Phase 5 Integration Point
 
-- [ ] Comment creation costs tokens (1.0 per comment) unless daily free action is used
-- [ ] For Phase 4, token deduction can be **stubbed** (always succeed, or skip balance check) with a `TODO` for Phase 5 integration
-- [ ] Daily free action tracking will be fully implemented in Phase 5; Phase 4 returns `11608` for the first 4 comments per day, `11605` thereafter
+- [x] Comment creation costs tokens (1.0 per comment) unless daily free action is used
+- [x] For Phase 4, token deduction can be **stubbed** (always succeed, or skip balance check) with a `TODO` for Phase 5 integration
+- [x] Daily free action tracking will be fully implemented in Phase 5; Phase 4 returns `11608` for the first 4 comments per day, `11605` thereafter
 
 ### API Reference
 
@@ -1618,21 +1618,21 @@ PostSortType::Comments => {
 
 ### Phase 4 gate
 
-- [ ] `listComments` returns paginated top-level comments for a post with correct `CommentUser` embedding
-- [ ] `listChildComments` returns replies to a top-level comment
-- [ ] `createComment` creates both top-level and reply comments with proper nesting validation
-- [ ] `likeComment` / `unlikeComment` toggle likes with duplicate and self-like prevention
-- [ ] `reportComment` works with duplicate and self-report prevention
-- [ ] Daily free action logic: first 4 comments per day return `11608`, subsequent return `11605`
-- [ ] `listChats` returns chats with participants and messages, sorted by most recent activity
-- [ ] `createChat` creates private (1:1) and group chats, with deduplication for private chats
-- [ ] `sendChatMessage` appends messages and updates chat timestamp
-- [ ] Post `amountcomments` field computed from actual comment count
-- [ ] `POST /reset` clears all comment and chat state back to seed data
-- [ ] `cargo clippy -- -D warnings` passes
-- [ ] `cargo fmt --check` passes
-- [ ] ≥52 integration tests pass (29 comments + 20 chat + 3 cross-cutting)
-- [ ] All Phase 0–3 tests still pass (regression)
+- [x] `listComments` returns paginated top-level comments for a post with correct `CommentUser` embedding
+- [x] `listChildComments` returns replies to a top-level comment
+- [x] `createComment` creates both top-level and reply comments with proper nesting validation
+- [x] `likeComment` / `unlikeComment` toggle likes with duplicate and self-like prevention
+- [x] `reportComment` works with duplicate and self-report prevention
+- [x] Daily free action logic: first 4 comments per day return `11608`, subsequent return `11605`
+- [x] `listChats` returns chats with participants and messages, sorted by most recent activity
+- [x] `createChat` creates private (1:1) and group chats, with deduplication for private chats
+- [x] `sendChatMessage` appends messages and updates chat timestamp
+- [x] Post `amountcomments` field computed from actual comment count
+- [x] `POST /reset` clears all comment and chat state back to seed data
+- [x] `cargo clippy -- -D warnings` passes
+- [x] `cargo fmt --check` passes
+- [x] ≥52 integration tests pass (29 comments + 20 chat + 3 cross-cutting)
+- [x] All Phase 0–3 tests still pass (regression)
 
 ### Response code summary
 

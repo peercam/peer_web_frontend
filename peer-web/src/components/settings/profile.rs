@@ -11,7 +11,7 @@ use crate::api::settings::{update_bio, update_profile_image};
 use crate::components::settings::{
     ChangeEmailPanel, ChangePasswordPanel, ChangeUsernamePanel, ImageUploadModal,
 };
-use crate::components::toast::{use_toast, ToastType};
+use crate::components::toast::{use_toast, ToastContext, ToastType};
 use crate::models::profile::Profile;
 
 /// Active sub-panel within profile settings.
@@ -81,6 +81,32 @@ fn ProfileSettingsSkeleton() -> impl IntoView {
     }
 }
 
+/// Handle combined save results from parallel bio + image updates.
+fn handle_save_results(
+    bio_result: Result<(), ServerFnError>,
+    img_result: Result<(), ServerFnError>,
+    toast: ToastContext,
+    response_msg: RwSignal<Option<(String, bool)>>,
+) {
+    match (&bio_result, &img_result) {
+        (Ok(()), Ok(())) => {
+            toast.show("Profile updated successfully!", ToastType::Success);
+            response_msg.set(Some(("Profile saved.".to_string(), true)));
+        }
+        _ => {
+            let mut errors = Vec::new();
+            if let Err(e) = bio_result {
+                errors.push(format!("Bio: {}", e));
+            }
+            if let Err(e) = img_result {
+                errors.push(format!("Image: {}", e));
+            }
+            toast.show(&errors.join(", "), ToastType::Error);
+            response_msg.set(Some(("Save failed.".to_string(), false)));
+        }
+    }
+}
+
 /// Main profile panel: avatar, bio, username display, save button.
 #[component]
 fn MainProfilePanel(
@@ -121,31 +147,12 @@ fn MainProfilePanel(
             let toast = toast.clone();
 
             spawn_local(async move {
-                // Run both updates in parallel if we have an image
-                let bio_result = update_bio(bio_text).await;
-                let img_result = if let Some(img_data) = img {
-                    update_profile_image(img_data).await
-                } else {
-                    Ok(())
+                let img_result = match img {
+                    Some(img_data) => update_profile_image(img_data).await,
+                    None => Ok(()),
                 };
-
-                match (&img_result, &bio_result) {
-                    (Ok(()), Ok(())) => {
-                        toast.show("Profile updated successfully!", ToastType::Success);
-                        response_msg.set(Some(("Profile saved.".to_string(), true)));
-                    }
-                    _ => {
-                        let mut errors = Vec::new();
-                        if let Err(e) = img_result {
-                            errors.push(format!("Image: {}", e));
-                        }
-                        if let Err(e) = bio_result {
-                            errors.push(format!("Bio: {}", e));
-                        }
-                        toast.show(&errors.join(", "), ToastType::Error);
-                        response_msg.set(Some(("Save failed.".to_string(), false)));
-                    }
-                }
+                let bio_result = update_bio(bio_text).await;
+                handle_save_results(bio_result, img_result, toast, response_msg);
                 is_saving.set(false);
             });
         }

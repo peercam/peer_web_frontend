@@ -1,10 +1,15 @@
 //! Relations modal component.
 //!
-//! Modal for displaying followers, following, and peers lists.
+//! Modal for displaying followers, following, and peers lists
+//! with infinite scroll pagination.
+
+use std::rc::Rc;
 
 use leptos::prelude::*;
+use leptos::task::spawn_local;
 
 use crate::api::profile::{list_follow_relations, list_friends};
+use crate::hooks::use_infinite_scroll;
 use crate::models::profile::{BasicUserInfo, ProfileUser, RelationsTab};
 
 use super::user_list::{FriendListItem, UserListItem};
@@ -118,6 +123,9 @@ fn TabButton(
     }
 }
 
+/// Number of relations per batch.
+const RELATIONS_PER_PAGE: i32 = 50;
+
 /// Tab content with infinite scroll loading.
 #[component]
 fn RelationsTabContent(
@@ -126,81 +134,136 @@ fn RelationsTabContent(
     #[allow(unused)]
     is_own_profile: bool,
 ) -> impl IntoView {
-    // Clone user_id for each resource
-    let user_id_for_follow = user_id.clone();
-    let user_id_for_friends = user_id.clone();
+    // Per-tab state
+    let followers = RwSignal::new(Vec::<ProfileUser>::new());
+    let following = RwSignal::new(Vec::<ProfileUser>::new());
+    let friends = RwSignal::new(Vec::<BasicUserInfo>::new());
 
-    // Separate resources for followers/following and friends
-    let follow_relations = Resource::new(
-        move || (user_id_for_follow.clone(), tab.get()),
-        |(user_id, current_tab)| async move {
-            if current_tab == RelationsTab::Peers {
-                return Ok((Vec::new(), Vec::new()));
-            }
-            
-            let res = list_follow_relations(Some(user_id), 0, 50).await?;
-            let relations = res.affected_rows.unwrap_or_default();
-            Ok::<_, ServerFnError>((relations.followers, relations.following))
-        },
-    );
+    let offset = RwSignal::new(0i32);
+    let is_loading = RwSignal::new(false);
+    let has_more = RwSignal::new(true);
+    let initial_loaded = RwSignal::new(false);
 
-    let friends_resource = Resource::new(
-        move || (user_id_for_friends.clone(), tab.get()),
-        |(user_id, current_tab)| async move {
-            if current_tab != RelationsTab::Peers {
-                return Ok(Vec::new());
+    // Reset when tab changes
+    Effect::new(move |prev_tab: Option<RelationsTab>| {
+        let current_tab = tab.get();
+        if prev_tab.is_some() && prev_tab != Some(current_tab) {
+            followers.set(Vec::new());
+            following.set(Vec::new());
+            friends.set(Vec::new());
+            offset.set(0);
+            has_more.set(true);
+            initial_loaded.set(false);
+        }
+        current_tab
+    });
+
+    let uid = user_id.clone();
+    let load_more = Rc::new(move || {
+        if is_loading.get() || !has_more.get() {
+            return;
+        }
+        is_loading.set(true);
+        let user_id = uid.clone();
+        let current_tab = tab.get_untracked();
+        let current_offset = offset.get();
+
+        spawn_local(async move {
+            match current_tab {
+                RelationsTab::Followers | RelationsTab::Following => {
+                    match list_follow_relations(Some(user_id), current_offset, RELATIONS_PER_PAGE).await {
+                        Ok(res) => {
+                            let relations = res.affected_rows.unwrap_or_default();
+                            let (new_followers, new_following) = (relations.followers, relations.following);
+                            let got_results = match current_tab {
+                                RelationsTab::Followers => {
+                                    let has_new = !new_followers.is_empty();
+                                    followers.update(|f| f.extend(new_followers));
+                                    has_new
+                                }
+                                RelationsTab::Following => {
+                                    let has_new = !new_following.is_empty();
+                                    following.update(|f| f.extend(new_following));
+                                    has_new
+                                }
+                                _ => false,
+                            };
+                            if got_results {
+                                offset.update(|o| *o += RELATIONS_PER_PAGE);
+                            }
+                            has_more.set(got_results);
+                        }
+                        Err(e) => {
+                            leptos::logging::error!("Failed to load relations: {:?}", e);
+                            has_more.set(false);
+                        }
+                    }
+                }
+                RelationsTab::Peers => {
+                    match list_friends(Some(user_id), current_offset, RELATIONS_PER_PAGE).await {
+                        Ok(res) => {
+                            let new_friends = res.affected_rows;
+                            let has_new = !new_friends.is_empty();
+                            friends.update(|f| f.extend(new_friends));
+                            if has_new {
+                                offset.update(|o| *o += RELATIONS_PER_PAGE);
+                            }
+                            has_more.set(has_new);
+                        }
+                        Err(e) => {
+                            leptos::logging::error!("Failed to load friends: {:?}", e);
+                            has_more.set(false);
+                        }
+                    }
+                }
             }
-            
-            let res = list_friends(Some(user_id), 0, 50).await?;
-            Ok::<_, ServerFnError>(res.affected_rows)
-        },
-    );
+            is_loading.set(false);
+            initial_loaded.set(true);
+        });
+    });
+
+    let scroll = use_infinite_scroll(is_loading, has_more, {
+        let load_more = load_more.clone();
+        move || load_more()
+    });
+
+    // Initial load
+    {
+        let load_more = load_more.clone();
+        Effect::new(move |_| {
+            // Re-run when tab changes (tracked by tab.get())
+            let _tab = tab.get();
+            if !is_loading.get() && !initial_loaded.get() {
+                load_more();
+            }
+        });
+    }
 
     view! {
         <div class="relations-tab-content" role="tabpanel">
-            <Suspense fallback=move || view! { <LoadingSpinner/> }>
-                {move || {
-                    let current_tab = tab.get();
-                    match current_tab {
-                        RelationsTab::Followers => {
-                            follow_relations.get().map(|result| {
-                                match result {
-                                    Ok((followers, _)) => view! {
-                                        <UserList users=followers/>
-                                    }.into_any(),
-                                    Err(e) => view! {
-                                        <ErrorMessage message=e.to_string()/>
-                                    }.into_any(),
-                                }
-                            })
-                        },
-                        RelationsTab::Following => {
-                            follow_relations.get().map(|result| {
-                                match result {
-                                    Ok((_, following)) => view! {
-                                        <UserList users=following/>
-                                    }.into_any(),
-                                    Err(e) => view! {
-                                        <ErrorMessage message=e.to_string()/>
-                                    }.into_any(),
-                                }
-                            })
-                        },
-                        RelationsTab::Peers => {
-                            friends_resource.get().map(|result| {
-                                match result {
-                                    Ok(friends) => view! {
-                                        <FriendList users=friends/>
-                                    }.into_any(),
-                                    Err(e) => view! {
-                                        <ErrorMessage message=e.to_string()/>
-                                    }.into_any(),
-                                }
-                            })
-                        },
+            {move || {
+                let current_tab = tab.get();
+                match current_tab {
+                    RelationsTab::Followers => {
+                        let users = followers.get();
+                        view! { <UserList users=users/> }.into_any()
                     }
-                }}
-            </Suspense>
+                    RelationsTab::Following => {
+                        let users = following.get();
+                        view! { <UserList users=users/> }.into_any()
+                    }
+                    RelationsTab::Peers => {
+                        let users = friends.get();
+                        view! { <FriendList users=users/> }.into_any()
+                    }
+                }
+            }}
+
+            <div class="relations-loader" node_ref=scroll.loader_ref>
+                <Show when=move || is_loading.get()>
+                    <LoadingSpinner/>
+                </Show>
+            </div>
         </div>
     }
 }

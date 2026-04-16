@@ -4,10 +4,9 @@ use axum::{
 };
 use http_body_util::BodyExt;
 use mock_backend::seed::{
-    SEED_CHAT_GROUP, SEED_CHAT_PRIVATE, SEED_COMMENT_1, SEED_COMMENT_2, SEED_COMMENT_3,
-    SEED_COMMENT_4, SEED_COMMENT_5, SEED_POST_1, SEED_POST_2, SEED_POST_3, SEED_POST_4,
-    SEED_POST_5, SEED_POST_8, SEED_USER_ALICE, SEED_USER_BOB, SEED_USER_CAROL, SEED_USER_DAVE,
-    SEED_USER_VERIFIED,
+    SEED_CHAT_GROUP, SEED_CHAT_PRIVATE, SEED_COMMENT_1, SEED_COMMENT_2, SEED_COMMENT_5,
+    SEED_POST_1, SEED_POST_2, SEED_POST_3, SEED_POST_4, SEED_SHOP_TX_1, SEED_USER_ALICE,
+    SEED_USER_BOB, SEED_USER_CAROL, SEED_USER_DAVE, SEED_USER_VERIFIED,
 };
 use mock_backend::{app, app_with_state, state::MockState};
 use serde_json::{Value, json};
@@ -82,6 +81,14 @@ async fn graphql_with_auth(state: &Arc<RwLock<MockState>>, query: &str, token: &
 
 fn default_shared_state() -> Arc<RwLock<MockState>> {
     Arc::new(RwLock::new(MockState::default()))
+}
+
+/// Extract a GraphQL Decimal value (serialized as JSON string) as f64.
+fn decimal_val(v: &Value) -> f64 {
+    v.as_str()
+        .and_then(|s| s.parse::<f64>().ok())
+        .or_else(|| v.as_f64())
+        .expect("Expected a numeric value (string or number)")
 }
 
 #[tokio::test]
@@ -3589,10 +3596,10 @@ async fn test_list_advertisement_posts() {
     .await;
 
     let data = &res["data"]["listAdvertisementPosts"];
-    assert_eq!(data["meta"]["ResponseCode"], "11501");
-    assert!(data["counter"].as_i64().unwrap() >= 1);
-    let ad = &data["affectedRows"][0];
-    assert!(ad["advertisement"]["advertisementid"].is_string());
+    // Seed ad (end_date 2025-05-01) is in the past, so Phase 5 active-date filter
+    // returns no results — 22002 means "no active advertisements found".
+    let code = data["meta"]["ResponseCode"].as_str().unwrap();
+    assert!(code == "22002" || code == "12002");
 }
 
 // ============================================================================
@@ -4933,4 +4940,1395 @@ async fn test_reset_clears_phase4_state() {
         "11601"
     );
     assert!(res2["data"]["listComments"]["counter"].as_i64().unwrap() >= 2);
+}
+
+// ============================================================================
+// Phase 5: Wallet Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_wallet_balance_seeded_user() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { balance { meta { ResponseCode } currentliquidity } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["balance"]["meta"]["ResponseCode"], "11204");
+    let balance = decimal_val(&res["data"]["balance"]["currentliquidity"]);
+    assert!((balance - 1000.0).abs() < 0.01);
+}
+
+#[tokio::test]
+async fn test_wallet_balance_no_auth() {
+    let state = default_shared_state();
+    let res = graphql_stateful(
+        &state,
+        r#"query { balance { meta { ResponseCode } currentliquidity } }"#,
+    )
+    .await;
+    assert_eq!(res["data"]["balance"]["meta"]["ResponseCode"], "60501");
+}
+
+#[tokio::test]
+async fn test_wallet_transfer_tokens() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_ALICE}", numberoftokens: 50.0) {{ meta {{ ResponseCode }} affectedRows {{ tokenSendFormatted tokensSubstractedFromWalletFormatted }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["resolveTransferV2"]["meta"]["ResponseCode"],
+        "11211"
+    );
+    let rows = &res["data"]["resolveTransferV2"]["affectedRows"];
+    assert!(rows["tokenSendFormatted"].as_str().is_some());
+    assert!(rows["tokensSubstractedFromWalletFormatted"].as_str().is_some());
+
+    // Verify balances changed
+    let res2 = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token,
+    )
+    .await;
+    let sender_bal = decimal_val(&res2["data"]["balance"]["currentliquidity"]);
+    // 1000 - 50 - fees (4% of 50 = 2.0) = 948.0
+    assert!(sender_bal < 950.0);
+}
+
+#[tokio::test]
+async fn test_wallet_transfer_fee_breakdown() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_ALICE}", numberoftokens: 50.0) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // Check transaction history for fee details
+    let res = graphql_with_auth(
+        &state,
+        r#"query { transactionHistory(type: TRANSACTION, limit: 5) { meta { ResponseCode } affectedRows { fees { burn peer inviter } } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["transactionHistory"]["meta"]["ResponseCode"],
+        "11215"
+    );
+    let rows = &res["data"]["transactionHistory"]["affectedRows"];
+    assert!(rows.is_array());
+    // Find the new transfer (first one due to sort by newest)
+    let tx = &rows[0];
+    let fees = &tx["fees"];
+    assert!((decimal_val(&fees["burn"]) - 0.5).abs() < 0.01);
+    assert!((decimal_val(&fees["peer"]) - 1.0).abs() < 0.01);
+    assert!((decimal_val(&fees["inviter"]) - 0.5).abs() < 0.01);
+}
+
+#[tokio::test]
+async fn test_wallet_transfer_formatted_values() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_ALICE}", numberoftokens: 50.0) {{ meta {{ ResponseCode }} affectedRows {{ tokenSendFormatted tokensSubstractedFromWalletFormatted }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let rows = &res["data"]["resolveTransferV2"]["affectedRows"];
+    let send = rows["tokenSendFormatted"].as_str().unwrap();
+    let subtracted = rows["tokensSubstractedFromWalletFormatted"].as_str().unwrap();
+    assert!(send.contains("50"));
+    assert!(subtracted.contains("52"));
+}
+
+#[tokio::test]
+async fn test_wallet_transfer_appears_in_history() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_ALICE}", numberoftokens: 25.0) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { transactionHistory(type: TRANSACTION, limit: 10) { meta { ResponseCode } affectedRows { tokenamount sender { userid } recipient { userid } } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["transactionHistory"]["meta"]["ResponseCode"],
+        "11215"
+    );
+    let rows = res["data"]["transactionHistory"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    assert!(!rows.is_empty());
+}
+
+#[tokio::test]
+async fn test_wallet_transfer_to_self() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_VERIFIED}", numberoftokens: 10.0) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["resolveTransferV2"]["meta"]["ResponseCode"],
+        "31202"
+    );
+}
+
+#[tokio::test]
+async fn test_wallet_transfer_to_nonexistent_user() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { resolveTransferV2(recipient: "99999999-9999-4999-a999-999999999999", numberoftokens: 10.0) { meta { ResponseCode } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["resolveTransferV2"]["meta"]["ResponseCode"],
+        "31007"
+    );
+}
+
+#[tokio::test]
+async fn test_wallet_transfer_to_system_account() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // SYSTEM_PEER_ACCOUNT = "eeeeeeee-eeee-4eee-aeee-000000000002"
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { resolveTransferV2(recipient: "eeeeeeee-eeee-4eee-aeee-000000000002", numberoftokens: 10.0) { meta { ResponseCode } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["resolveTransferV2"]["meta"]["ResponseCode"],
+        "31203"
+    );
+}
+
+#[tokio::test]
+async fn test_wallet_transfer_insufficient_balance() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_ALICE}", numberoftokens: 99999.0) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["resolveTransferV2"]["meta"]["ResponseCode"],
+        "51301"
+    );
+}
+
+#[tokio::test]
+async fn test_wallet_transfer_below_minimum() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_ALICE}", numberoftokens: 0.0000001) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["resolveTransferV2"]["meta"]["ResponseCode"],
+        "30264"
+    );
+}
+
+#[tokio::test]
+async fn test_wallet_transfer_long_message() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+    let long_msg = "x".repeat(501);
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_ALICE}", numberoftokens: 10.0, message: "{long_msg}") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["resolveTransferV2"]["meta"]["ResponseCode"],
+        "30270"
+    );
+}
+
+#[tokio::test]
+async fn test_wallet_transfer_url_in_message() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_ALICE}", numberoftokens: 10.0, message: "Check https://evil.com") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["resolveTransferV2"]["meta"]["ResponseCode"],
+        "30271"
+    );
+}
+
+#[tokio::test]
+async fn test_wallet_transaction_history_pagination() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { transactionHistory(limit: 1, offset: 0) { meta { ResponseCode } affectedRows { tokenamount } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["transactionHistory"]["meta"]["ResponseCode"],
+        "11215"
+    );
+    let rows = res["data"]["transactionHistory"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    assert_eq!(rows.len(), 1);
+}
+
+#[tokio::test]
+async fn test_wallet_transaction_history_no_transactions() {
+    let state = default_shared_state();
+    // Carol has no transactions in seed data
+    let token = login_as(&state, "carol@peer.com", "CarolPass123").await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { transactionHistory { meta { ResponseCode } affectedRows { tokenamount } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["transactionHistory"]["meta"]["ResponseCode"],
+        "21209"
+    );
+}
+
+#[tokio::test]
+async fn test_wallet_transaction_history_filter_by_type() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { transactionHistory(type: PAYMENT) { meta { ResponseCode } affectedRows { transactionCategory } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["transactionHistory"]["meta"]["ResponseCode"],
+        "11215"
+    );
+    // The seed has a Like payment for the verified user
+    let rows = res["data"]["transactionHistory"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    assert!(!rows.is_empty());
+}
+
+// ============================================================================
+// Phase 5: Tokenomics Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_tokenomics_action_prices() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { getActionPrices { meta { ResponseCode } affectedRows { postPrice likePrice dislikePrice commentPrice } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["getActionPrices"]["meta"]["ResponseCode"],
+        "11304"
+    );
+    let prices = &res["data"]["getActionPrices"]["affectedRows"];
+    assert!((prices["postPrice"].as_f64().unwrap() - 20.0).abs() < 0.01);
+    assert!((prices["likePrice"].as_f64().unwrap() - 3.0).abs() < 0.01);
+    assert!((prices["dislikePrice"].as_f64().unwrap() - 3.0).abs() < 0.01);
+    assert!((prices["commentPrice"].as_f64().unwrap() - 1.0).abs() < 0.01);
+}
+
+#[tokio::test]
+async fn test_tokenomics_action_prices_no_auth() {
+    let state = default_shared_state();
+    let res = graphql_stateful(
+        &state,
+        r#"query { getActionPrices { meta { ResponseCode } } }"#,
+    )
+    .await;
+    assert_eq!(
+        res["data"]["getActionPrices"]["meta"]["ResponseCode"],
+        "60501"
+    );
+}
+
+#[tokio::test]
+async fn test_tokenomics_get_tokenomics() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { getTokenomics { meta { ResponseCode } actionTokenPrices { postPrice likePrice } actionGemsReturns { viewGemsReturn likeGemsReturn } mintingData { tokensMintedYesterday } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["getTokenomics"]["meta"]["ResponseCode"],
+        "11212"
+    );
+    assert!(
+        res["data"]["getTokenomics"]["actionTokenPrices"]["postPrice"]
+            .as_f64()
+            .is_some()
+    );
+    assert!(
+        res["data"]["getTokenomics"]["actionGemsReturns"]["viewGemsReturn"]
+            .as_f64()
+            .is_some()
+    );
+}
+
+#[tokio::test]
+async fn test_tokenomics_daily_free_status_fresh() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { getDailyFreeStatus { meta { ResponseCode } affectedRows { name used available } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["getDailyFreeStatus"]["meta"]["ResponseCode"],
+        "11303"
+    );
+    let rows = res["data"]["getDailyFreeStatus"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    assert_eq!(rows.len(), 4);
+    // All should have used == 0
+    for row in rows {
+        assert_eq!(row["used"].as_i64().unwrap(), 0);
+    }
+    // post=1, like=3, comment=4 are > 0; dislike=0
+    let post_row = rows.iter().find(|r| r["name"] == "post").unwrap();
+    assert_eq!(post_row["available"].as_i64().unwrap(), 1);
+    let like_row = rows.iter().find(|r| r["name"] == "like").unwrap();
+    assert_eq!(like_row["available"].as_i64().unwrap(), 3);
+    let comment_row = rows.iter().find(|r| r["name"] == "comment").unwrap();
+    assert_eq!(comment_row["available"].as_i64().unwrap(), 4);
+    let dislike_row = rows.iter().find(|r| r["name"] == "dislike").unwrap();
+    assert_eq!(dislike_row["available"].as_i64().unwrap(), 0);
+}
+
+#[tokio::test]
+async fn test_tokenomics_daily_free_after_actions() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Perform 2 likes (SEED_POST_3 and SEED_POST_4 are alice's)
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolvePostAction(action: LIKE, postid: "{SEED_POST_3}") {{ ResponseCode }} }}"#
+        ),
+        &token,
+    )
+    .await;
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolvePostAction(action: LIKE, postid: "{SEED_POST_4}") {{ ResponseCode }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { getDailyFreeStatus { meta { ResponseCode } affectedRows { name used available } } }"#,
+        &token,
+    )
+    .await;
+
+    let rows = res["data"]["getDailyFreeStatus"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    let like_row = rows.iter().find(|r| r["name"] == "like").unwrap();
+    assert_eq!(like_row["used"].as_i64().unwrap(), 2);
+    assert_eq!(like_row["available"].as_i64().unwrap(), 1); // FREE_LIKES = 3
+}
+
+#[tokio::test]
+async fn test_tokenomics_daily_free_likes_no_cost() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Get initial balance
+    let res0 = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token,
+    )
+    .await;
+    let initial_balance = decimal_val(&res0["data"]["balance"]["currentliquidity"]);
+
+    // Like 3 posts (all free: SEED_POST_3, 4 are alice's, we need a 3rd)
+    for post in [SEED_POST_3, SEED_POST_4] {
+        let _ = graphql_with_auth(
+            &state,
+            &format!(
+                r#"mutation {{ resolvePostAction(action: LIKE, postid: "{post}") {{ ResponseCode }} }}"#
+            ),
+            &token,
+        )
+        .await;
+    }
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token,
+    )
+    .await;
+    let after_balance = decimal_val(&res["data"]["balance"]["currentliquidity"]);
+
+    // Balance should be unchanged (free likes)
+    assert!((after_balance - initial_balance).abs() < 0.01);
+}
+
+#[tokio::test]
+async fn test_tokenomics_paid_like_after_free_limit() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res0 = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token,
+    )
+    .await;
+    let initial_balance = decimal_val(&res0["data"]["balance"]["currentliquidity"]);
+
+    // Use all 3 free likes
+    for post in [SEED_POST_3, SEED_POST_4] {
+        let _ = graphql_with_auth(
+            &state,
+            &format!(
+                r#"mutation {{ resolvePostAction(action: LIKE, postid: "{post}") {{ ResponseCode }} }}"#
+            ),
+            &token,
+        )
+        .await;
+    }
+
+    // Need a 3rd distinct post from another user. Create one via alice.
+    let alice_token = login_alice(&state).await;
+    let create_res = graphql_with_auth(
+        &state,
+        r#"mutation { createPost(action: POST, input: { title: "Test post for like", contenttype: image }) { meta { ResponseCode } affectedRows { id } } }"#,
+        &alice_token,
+    )
+    .await;
+    let new_post_id = create_res["data"]["createPost"]["affectedRows"]["id"]
+        .as_str()
+        .unwrap();
+
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolvePostAction(action: LIKE, postid: "{new_post_id}") {{ ResponseCode }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // Now 4th like should cost tokens. Create another post by alice.
+    let create_res2 = graphql_with_auth(
+        &state,
+        r#"mutation { createPost(action: POST, input: { title: "Test post for paid like", contenttype: image }) { meta { ResponseCode } affectedRows { id } } }"#,
+        &alice_token,
+    )
+    .await;
+    let new_post_id2 = create_res2["data"]["createPost"]["affectedRows"]["id"]
+        .as_str()
+        .unwrap();
+
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolvePostAction(action: LIKE, postid: "{new_post_id2}") {{ ResponseCode }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // Check balance decreased by LIKE_PRICE (3.0)
+    let res = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token,
+    )
+    .await;
+    let after_balance = decimal_val(&res["data"]["balance"]["currentliquidity"]);
+    assert!((initial_balance - after_balance - 3.0).abs() < 0.5);
+}
+
+#[tokio::test]
+async fn test_tokenomics_todays_interactions() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+    let alice_token = login_alice(&state).await;
+
+    // Alice likes verified user's post (creates a gem for verified user)
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolvePostAction(action: LIKE, postid: "{SEED_POST_1}") {{ ResponseCode }} }}"#
+        ),
+        &alice_token,
+    )
+    .await;
+
+    // Now check today's interactions for verified user
+    let res = graphql_with_auth(
+        &state,
+        r#"query { listTodaysInteractions { meta { ResponseCode } affectedRows { totalScore } } }"#,
+        &token,
+    )
+    .await;
+
+    let code = res["data"]["listTodaysInteractions"]["meta"]["ResponseCode"]
+        .as_str()
+        .unwrap();
+    assert!(code == "11204" || code == "21204");
+}
+
+// ============================================================================
+// Phase 5: Advertisement Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_ads_list_no_active_ads() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // SEED_AD_1 has end_date 2025-05-01 which is in the past
+    let res = graphql_with_auth(
+        &state,
+        r#"query { listAdvertisementPosts { meta { ResponseCode } counter } }"#,
+        &token,
+    )
+    .await;
+
+    // The seed ad's dates are in the past, so it won't be active
+    let code = res["data"]["listAdvertisementPosts"]["meta"]["ResponseCode"]
+        .as_str()
+        .unwrap();
+    assert!(code == "22002" || code == "12002");
+}
+
+#[tokio::test]
+async fn test_ads_list_no_auth() {
+    let state = default_shared_state();
+    let res = graphql_stateful(
+        &state,
+        r#"query { listAdvertisementPosts { meta { ResponseCode } } }"#,
+    )
+    .await;
+    assert_eq!(
+        res["data"]["listAdvertisementPosts"]["meta"]["ResponseCode"],
+        "60501"
+    );
+}
+
+#[tokio::test]
+async fn test_ads_create_basic() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ advertisePostBasic(postid: "{SEED_POST_1}", startday: "{today}", durationInDays: THREE_DAYS, advertisePlan: BASIC) {{ meta {{ ResponseCode }} affectedRows {{ id type timeframeStart timeframeEnd totalTokenCost }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["advertisePostBasic"]["meta"]["ResponseCode"],
+        "12001"
+    );
+    let rows = &res["data"]["advertisePostBasic"]["affectedRows"];
+    assert!(rows.is_array());
+    let ad = &rows[0];
+    // 3 days * 50.0/day = 150.0
+    assert!((ad["totalTokenCost"].as_f64().unwrap() - 150.0).abs() < 0.01);
+}
+
+#[tokio::test]
+async fn test_ads_basic_end_date() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ advertisePostBasic(postid: "{SEED_POST_2}", startday: "{today}", durationInDays: THREE_DAYS, advertisePlan: BASIC) {{ meta {{ ResponseCode }} affectedRows {{ timeframeStart timeframeEnd }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let ad = &res["data"]["advertisePostBasic"]["affectedRows"][0];
+    let start = ad["timeframeStart"].as_str().unwrap();
+    let end = ad["timeframeEnd"].as_str().unwrap();
+    assert_eq!(start, today);
+    // End should be start + 3 days
+    let start_date = chrono::NaiveDate::parse_from_str(start, "%Y-%m-%d").unwrap();
+    let end_date = chrono::NaiveDate::parse_from_str(end, "%Y-%m-%d").unwrap();
+    assert_eq!((end_date - start_date).num_days(), 3);
+}
+
+#[tokio::test]
+async fn test_ads_create_pinned() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ advertisePostPinned(postid: "{SEED_POST_1}", advertisePlan: PINNED) {{ meta {{ ResponseCode }} affectedRows {{ totalTokenCost type }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["advertisePostPinned"]["meta"]["ResponseCode"],
+        "12001"
+    );
+    let ad = &res["data"]["advertisePostPinned"]["affectedRows"][0];
+    assert!((ad["totalTokenCost"].as_f64().unwrap() - 200.0).abs() < 0.01);
+}
+
+#[tokio::test]
+async fn test_ads_create_for_non_owned_post() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    // SEED_POST_3 belongs to alice
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ advertisePostBasic(postid: "{SEED_POST_3}", startday: "{today}", durationInDays: THREE_DAYS, advertisePlan: BASIC) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["advertisePostBasic"]["meta"]["ResponseCode"],
+        "31510"
+    );
+}
+
+#[tokio::test]
+async fn test_ads_create_duplicate_active_ad() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+
+    // Create first ad
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ advertisePostBasic(postid: "{SEED_POST_1}", startday: "{today}", durationInDays: THREE_DAYS, advertisePlan: BASIC) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // Try creating second ad on same post
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ advertisePostBasic(postid: "{SEED_POST_1}", startday: "{today}", durationInDays: THREE_DAYS, advertisePlan: BASIC) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["advertisePostBasic"]["meta"]["ResponseCode"],
+        "32006"
+    );
+}
+
+#[tokio::test]
+async fn test_ads_create_insufficient_balance() {
+    let state = default_shared_state();
+    // Carol has 1000.0 balance. Drain it first via transfer, then try create ad.
+    let carol_token = login_as(&state, "carol@peer.com", "CarolPass123").await;
+
+    // Transfer most of Carol's balance away
+    // Need to leave Carol with less than 150 tokens (ad cost).
+    // Total deduction = transfer + 4% fees.
+    // Balance 1000, transfer 850 → costs 850*1.04 = 884 → remaining 116
+    let _transfer_res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_ALICE}", numberoftokens: 850.0) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &carol_token,
+    )
+    .await;
+
+    // Carol needs a post to advertise - but Carol doesn't own one in seed data
+    // Instead, create one for carol first
+    let create_res = graphql_with_auth(
+        &state,
+        r#"mutation { createPost(action: POST, input: { title: "Carol test post", contenttype: text }) { affectedRows { id } } }"#,
+        &carol_token,
+    )
+    .await;
+    let post_id = create_res["data"]["createPost"]["affectedRows"]["id"]
+        .as_str()
+        .unwrap();
+
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ advertisePostBasic(postid: "{post_id}", startday: "{today}", durationInDays: THREE_DAYS, advertisePlan: BASIC) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &carol_token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["advertisePostBasic"]["meta"]["ResponseCode"],
+        "51301"
+    );
+}
+
+#[tokio::test]
+async fn test_ads_advertisement_history() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    // Create an ad first
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ advertisePostBasic(postid: "{SEED_POST_1}", startday: "{today}", durationInDays: THREE_DAYS, advertisePlan: BASIC) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { advertisementHistory { meta { ResponseCode } affectedRows { stats { tokenSpent amountAds } advertisements { id type totalTokenCost } } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["advertisementHistory"]["meta"]["ResponseCode"],
+        "12002"
+    );
+    let rows = &res["data"]["advertisementHistory"]["affectedRows"];
+    assert!(rows["stats"]["amountAds"].as_i64().unwrap() >= 1);
+    assert!(rows["stats"]["tokenSpent"].as_f64().unwrap() > 0.0);
+}
+
+#[tokio::test]
+async fn test_ads_history_sort_by_cost() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    // Create two ads with different costs
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ advertisePostBasic(postid: "{SEED_POST_1}", startday: "{today}", durationInDays: THREE_DAYS, advertisePlan: BASIC) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ advertisePostPinned(postid: "{SEED_POST_2}", advertisePlan: PINNED) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { advertisementHistory(sort: BIGGEST_COST) { meta { ResponseCode } affectedRows { advertisements { totalTokenCost } } } }"#,
+        &token,
+    )
+    .await;
+
+    let ads = res["data"]["advertisementHistory"]["affectedRows"]["advertisements"]
+        .as_array()
+        .unwrap();
+    if ads.len() >= 2 {
+        let first_cost = ads[0]["totalTokenCost"].as_f64().unwrap();
+        let second_cost = ads[1]["totalTokenCost"].as_f64().unwrap();
+        assert!(first_cost >= second_cost);
+    }
+}
+
+#[tokio::test]
+async fn test_ads_advertised_posts_excluded_from_list_posts() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    // Create an active ad on SEED_POST_1
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ advertisePostBasic(postid: "{SEED_POST_1}", startday: "{today}", durationInDays: THREE_DAYS, advertisePlan: BASIC) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // list posts should not include SEED_POST_1
+    let res = graphql_with_auth(
+        &state,
+        r#"query { listPosts(limit: 100) { affectedRows { id } } }"#,
+        &token,
+    )
+    .await;
+
+    let posts = res["data"]["listPosts"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    let has_advertised = posts
+        .iter()
+        .any(|p| p["id"].as_str().unwrap() == SEED_POST_1.to_string());
+    assert!(!has_advertised, "Advertised post should be excluded from listPosts");
+}
+
+// ============================================================================
+// Phase 5: Shop Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_shop_purchase_item() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { performShopOrder(tokenAmount: 50.0, shopItemId: "test-item-001", orderDetails: { name: "Test User", email: "test@example.com", addressline1: "Musterstraße 42", city: "Berlin", zipcode: "10115", country: GERMANY }) { status ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["performShopOrder"]["ResponseCode"],
+        "12201"
+    );
+
+    // Balance should have decreased
+    let res2 = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token,
+    )
+    .await;
+    let balance = decimal_val(&res2["data"]["balance"]["currentliquidity"]);
+    assert!((balance - 950.0).abs() < 0.1);
+}
+
+#[tokio::test]
+async fn test_shop_order_details() {
+    let state = default_shared_state();
+    let alice_token = login_alice(&state).await;
+
+    // SEED_SHOP_ORDER_1 belongs to alice with SEED_SHOP_TX_1
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ shopOrderDetails(transactionId: "{SEED_SHOP_TX_1}") {{ meta {{ ResponseCode }} affectedRows {{ shopOrderId shopItemId deliveryDetails {{ name email city zipcode }} }} }} }}"#
+        ),
+        &alice_token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["shopOrderDetails"]["meta"]["ResponseCode"],
+        "12202"
+    );
+    let order = &res["data"]["shopOrderDetails"]["affectedRows"][0];
+    assert_eq!(order["shopItemId"], "peer-tshirt-001");
+    assert_eq!(order["deliveryDetails"]["city"], "Berlin");
+}
+
+#[tokio::test]
+async fn test_shop_order_not_found() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { shopOrderDetails(transactionId: "99999999-9999-4999-a999-999999999999") { meta { ResponseCode } } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["shopOrderDetails"]["meta"]["ResponseCode"],
+        "22101"
+    );
+}
+
+#[tokio::test]
+async fn test_shop_purchase_no_auth() {
+    let state = default_shared_state();
+    let res = graphql_stateful(
+        &state,
+        r#"mutation { performShopOrder(tokenAmount: 50.0, shopItemId: "test-item", orderDetails: { name: "Test", email: "t@t.com", addressline1: "Street 123", city: "Berlin", zipcode: "10115", country: GERMANY }) { ResponseCode } }"#,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["performShopOrder"]["ResponseCode"],
+        "60501"
+    );
+}
+
+#[tokio::test]
+async fn test_shop_purchase_insufficient_balance() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { performShopOrder(tokenAmount: 99999.0, shopItemId: "expensive-item", orderDetails: { name: "Test User", email: "test@example.com", addressline1: "Street 123456", city: "Berlin", zipcode: "10115", country: GERMANY }) { ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["performShopOrder"]["ResponseCode"],
+        "51301"
+    );
+}
+
+#[tokio::test]
+async fn test_shop_purchase_invalid_name() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { performShopOrder(tokenAmount: 10.0, shopItemId: "item", orderDetails: { name: "X", email: "test@example.com", addressline1: "Street 123456", city: "Berlin", zipcode: "10115", country: GERMANY }) { ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["performShopOrder"]["ResponseCode"], "30101");
+}
+
+#[tokio::test]
+async fn test_shop_purchase_invalid_zipcode() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { performShopOrder(tokenAmount: 10.0, shopItemId: "item", orderDetails: { name: "Test User", email: "test@example.com", addressline1: "Street 123456", city: "Berlin", zipcode: "123", country: GERMANY }) { ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["performShopOrder"]["ResponseCode"], "30101");
+}
+
+#[tokio::test]
+async fn test_shop_purchase_invalid_email() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { performShopOrder(tokenAmount: 10.0, shopItemId: "item", orderDetails: { name: "Test User", email: "notanemail", addressline1: "Street 123456", city: "Berlin", zipcode: "10115", country: GERMANY }) { ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["performShopOrder"]["ResponseCode"], "30101");
+}
+
+// ============================================================================
+// Phase 5: Cross-Cutting Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_cross_comment_deducts_after_free_limit() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res0 = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token,
+    )
+    .await;
+    let initial_balance = decimal_val(&res0["data"]["balance"]["currentliquidity"]);
+
+    // Use 4 free comments (FREE_COMMENTS = 4)
+    for i in 0..4 {
+        let _ = graphql_with_auth(
+            &state,
+            &format!(
+                r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_3}", content: "Free comment {i}") {{ meta {{ ResponseCode }} }} }}"#
+            ),
+            &token,
+        )
+        .await;
+    }
+
+    // 5th comment should cost tokens
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_3}", content: "Paid comment") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token,
+    )
+    .await;
+    let after_balance = decimal_val(&res["data"]["balance"]["currentliquidity"]);
+
+    // Should have decreased by COMMENT_PRICE (1.0)
+    assert!((initial_balance - after_balance - 1.0).abs() < 0.1);
+}
+
+#[tokio::test]
+async fn test_cross_comment_insufficient_balance_after_free() {
+    let state = default_shared_state();
+    let carol_token = login_as(&state, "carol@peer.com", "CarolPass123").await;
+
+    // Drain Carol's balance. Transfer 961 costs 961*1.04 = 999.44, leaving ~0.56 tokens
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_ALICE}", numberoftokens: 961.0) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &carol_token,
+    )
+    .await;
+
+    // Use 4 free comments
+    for i in 0..4 {
+        let _ = graphql_with_auth(
+            &state,
+            &format!(
+                r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_3}", content: "Comment {i}") {{ meta {{ ResponseCode }} }} }}"#
+            ),
+            &carol_token,
+        )
+        .await;
+    }
+
+    // 5th should fail with insufficient balance (needs 1.0 tokens, has ~0.56)
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_3}", content: "Should fail") {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &carol_token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["createComment"]["meta"]["ResponseCode"],
+        "51301"
+    );
+}
+
+#[tokio::test]
+async fn test_cross_like_deducts_after_free_limit() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+    let alice_token = login_alice(&state).await;
+
+    let res0 = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token,
+    )
+    .await;
+    let initial_balance = decimal_val(&res0["data"]["balance"]["currentliquidity"]);
+
+    // Use 3 free likes
+    for post in [SEED_POST_3, SEED_POST_4] {
+        let _ = graphql_with_auth(
+            &state,
+            &format!(
+                r#"mutation {{ resolvePostAction(action: LIKE, postid: "{post}") {{ ResponseCode }} }}"#
+            ),
+            &token,
+        )
+        .await;
+    }
+
+    // Create a 3rd post by alice
+    let create_res = graphql_with_auth(
+        &state,
+        r#"mutation { createPost(action: POST, input: { title: "Third like target", contenttype: text }) { affectedRows { id } } }"#,
+        &alice_token,
+    )
+    .await;
+    let post3 = create_res["data"]["createPost"]["affectedRows"]["id"]
+        .as_str()
+        .unwrap();
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolvePostAction(action: LIKE, postid: "{post3}") {{ ResponseCode }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // 4th like should cost tokens
+    let create_res2 = graphql_with_auth(
+        &state,
+        r#"mutation { createPost(action: POST, input: { title: "Fourth like target", contenttype: text }) { affectedRows { id } } }"#,
+        &alice_token,
+    )
+    .await;
+    let post4 = create_res2["data"]["createPost"]["affectedRows"]["id"]
+        .as_str()
+        .unwrap();
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolvePostAction(action: LIKE, postid: "{post4}") {{ ResponseCode }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token,
+    )
+    .await;
+    let after_balance = decimal_val(&res["data"]["balance"]["currentliquidity"]);
+
+    // Should have decreased by LIKE_PRICE (3.0)
+    assert!((initial_balance - after_balance - 3.0).abs() < 0.5);
+}
+
+#[tokio::test]
+async fn test_cross_gem_accumulation_on_like() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+    let alice_token = login_alice(&state).await;
+
+    // Alice likes verified user's post
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolvePostAction(action: LIKE, postid: "{SEED_POST_1}") {{ ResponseCode }} }}"#
+        ),
+        &alice_token,
+    )
+    .await;
+
+    // Check win logs for verified user (gem should be recorded)
+    let res = graphql_with_auth(
+        &state,
+        r#"query { listWinLogs(day: D0) { meta { ResponseCode } counter affectedRows { action } } }"#,
+        &token,
+    )
+    .await;
+
+    let code = res["data"]["listWinLogs"]["meta"]["ResponseCode"]
+        .as_str()
+        .unwrap();
+    // Should have at least the seed gems + the new like gem
+    assert!(code == "11203" || code == "21202");
+    if code == "11203" {
+        assert!(res["data"]["listWinLogs"]["counter"].as_i64().unwrap() >= 1);
+    }
+}
+
+#[tokio::test]
+async fn test_cross_reset_clears_economy_state() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Transfer some tokens to modify state
+    let _ = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolveTransferV2(recipient: "{SEED_USER_ALICE}", numberoftokens: 100.0) {{ meta {{ ResponseCode }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // Verify balance changed
+    let res_before = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token,
+    )
+    .await;
+    let bal_before = decimal_val(&res_before["data"]["balance"]["currentliquidity"]);
+    assert!(bal_before < 1000.0);
+
+    // Reset
+    let app = app_with_state(state.clone());
+    let request = Request::builder()
+        .method("POST")
+        .uri("/reset")
+        .body(Body::empty())
+        .unwrap();
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Login again (sessions cleared)
+    let token2 = login_default(&state).await;
+
+    // Balance should be back to seed default (1000.0)
+    let res_after = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &token2,
+    )
+    .await;
+    let bal_after = decimal_val(&res_after["data"]["balance"]["currentliquidity"]);
+    assert!((bal_after - 1000.0).abs() < 0.01);
+}
+
+#[tokio::test]
+async fn test_cross_phase4_regression_comment_still_works() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ createComment(action: COMMENT, postid: "{SEED_POST_3}", content: "Regression test comment") {{ meta {{ ResponseCode status }} counter }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let code = res["data"]["createComment"]["meta"]["ResponseCode"]
+        .as_str()
+        .unwrap();
+    // Should succeed with either free (11608) or paid (11605) code
+    assert!(code == "11608" || code == "11605");
+    assert_eq!(res["data"]["createComment"]["counter"].as_i64().unwrap(), 1);
 }

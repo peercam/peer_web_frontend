@@ -1,10 +1,16 @@
 use std::collections::{HashMap, HashSet};
 use uuid::{Uuid, uuid};
+use rust_decimal::Decimal;
 
 use crate::state::{
     AdvertisementRecord, ChatMessageRecord, ChatRecord, CommentRecord, ContentVisibilityState,
-    MockState, PostRecord, User, UserPreferencesState,
+    GemRecord, MockState, PostRecord, ShopDeliveryRecord, ShopOrderRecord, TransactionFeesRecord,
+    TransactionRecord, User, UserPreferencesState, SYSTEM_BURN_ACCOUNT, SYSTEM_PEER_ACCOUNT,
+    SYSTEM_SHOP_ACCOUNT, SYSTEM_MINT_ACCOUNT, LIKE_GEM_RETURN, VIEW_GEM_RETURN,
+    COMMENT_GEM_RETURN,
 };
+use crate::types::ad::AdvertisementType;
+use crate::types::wallet::TransactionCategory;
 
 /// Primary test referral — matches existing Node.js mock
 pub const REFERRAL_PRIMARY: Uuid = uuid!("85d5f836-b1f5-4c4e-9381-1b058e13df93");
@@ -49,6 +55,24 @@ pub const SEED_MSG_2: Uuid = uuid!("40000000-0000-4000-a000-000000000002");
 pub const SEED_MSG_3: Uuid = uuid!("40000000-0000-4000-a000-000000000003");
 pub const SEED_MSG_4: Uuid = uuid!("40000000-0000-4000-a000-000000000004");
 pub const SEED_MSG_5: Uuid = uuid!("40000000-0000-4000-a000-000000000005");
+
+// --- Phase 5 seed transaction UUIDs ---
+pub const SEED_TX_1: Uuid = uuid!("50000000-0000-4000-a000-000000000001");
+pub const SEED_TX_2: Uuid = uuid!("50000000-0000-4000-a000-000000000002");
+pub const SEED_TX_3: Uuid = uuid!("50000000-0000-4000-a000-000000000003");
+pub const SEED_OP_1: Uuid = uuid!("50000000-0000-4000-a000-000000000101");
+pub const SEED_OP_2: Uuid = uuid!("50000000-0000-4000-a000-000000000102");
+pub const SEED_OP_3: Uuid = uuid!("50000000-0000-4000-a000-000000000103");
+
+// --- Phase 5 seed advertisement UUID ---
+pub const SEED_AD_1: Uuid = uuid!("60000000-0000-4000-a000-000000000001");
+
+// --- Phase 5 seed shop order UUID ---
+pub const SEED_SHOP_ORDER_1: Uuid = uuid!("70000000-0000-4000-a000-000000000001");
+pub const SEED_SHOP_TX_1: Uuid = uuid!("70000000-0000-4000-a000-000000000002");
+
+/// Default token balance for seeded users.
+pub const DEFAULT_USER_BALANCE: Decimal = Decimal::from_parts(10000, 0, 0, false, 1); // 1000.0
 
 /// Pre-known credentials for seeded test users
 pub mod credentials {
@@ -290,9 +314,21 @@ impl Default for MockState {
             comments: seed_comments(SEED_USER_VERIFIED, SEED_USER_ALICE),
             comment_likes: seed_comment_likes(SEED_USER_VERIFIED, SEED_USER_ALICE),
             comment_reports: HashSet::new(),
-            daily_comment_count: HashMap::new(),
             chats: seed_chats(SEED_USER_VERIFIED, SEED_USER_ALICE, SEED_USER_BOB),
             chat_messages: seed_chat_messages(SEED_USER_VERIFIED, SEED_USER_ALICE),
+            wallets: seed_wallets(&[
+                SEED_USER_VERIFIED,
+                SEED_USER_UNVERIFIED,
+                SEED_USER_ALICE,
+                SEED_USER_BOB,
+                SEED_USER_CAROL,
+                SEED_USER_DAVE,
+            ]),
+            transactions: seed_transactions(SEED_USER_VERIFIED, SEED_USER_ALICE),
+            daily_actions_used: HashMap::new(),
+            gems: seed_gems(SEED_USER_VERIFIED, SEED_USER_ALICE),
+            minted_dates: HashSet::new(),
+            shop_orders: seed_shop_orders(SEED_USER_ALICE),
         }
     }
 }
@@ -450,11 +486,14 @@ fn seed_post_views(verified_user: Uuid, user2: Uuid) -> HashSet<(Uuid, Uuid)> {
 
 fn seed_advertisements() -> Vec<AdvertisementRecord> {
     vec![AdvertisementRecord {
-        id: "ad-001".into(),
+        id: SEED_AD_1,
         post_id: SEED_POST_8,
-        advertisement_type: "STANDARD".into(),
+        advertiser_id: SEED_USER_VERIFIED,
+        ad_type: AdvertisementType::Basic,
         start_date: "2025-04-01".into(),
         end_date: "2025-05-01".into(),
+        token_cost: Decimal::from_parts(1500, 0, 0, false, 1), // 150.0
+        created_at: "2025-04-01T08:00:00Z".into(),
     }]
 }
 
@@ -597,4 +636,122 @@ fn seed_chat_messages(verified_user: Uuid, user2: Uuid) -> Vec<ChatMessageRecord
             created_at: "2025-04-04T11:00:00Z".into(),
         },
     ]
+}
+
+// ============================================================================
+// Phase 5: Seed Economy Data
+// ============================================================================
+
+fn seed_wallets(users: &[Uuid]) -> HashMap<Uuid, Decimal> {
+    let mut wallets = HashMap::new();
+    for &uid in users {
+        wallets.insert(uid, DEFAULT_USER_BALANCE);
+    }
+    wallets.insert(SYSTEM_MINT_ACCOUNT, Decimal::from_parts(50_000_000, 0, 0, false, 1));
+    wallets.insert(SYSTEM_PEER_ACCOUNT, Decimal::ZERO);
+    wallets.insert(SYSTEM_BURN_ACCOUNT, Decimal::ZERO);
+    wallets.insert(SYSTEM_SHOP_ACCOUNT, Decimal::ZERO);
+    wallets
+}
+
+fn seed_transactions(user1: Uuid, user2: Uuid) -> Vec<TransactionRecord> {
+    vec![
+        // P2P transfer: user1 sent 50 tokens to user2
+        TransactionRecord {
+            id: SEED_TX_1,
+            operation_id: SEED_OP_1,
+            category: Some(TransactionCategory::P2pTransfer),
+            transaction_type: "CREDIT".into(),
+            sender_id: user1,
+            recipient_id: user2,
+            token_amount: Decimal::from_parts(500, 0, 0, false, 1),   // 50.0
+            net_token_amount: Decimal::from_parts(500, 0, 0, false, 1),
+            message: Some("Great post!".into()),
+            fees: Some(TransactionFeesRecord {
+                total: Decimal::from_parts(20, 0, 0, false, 1),  // 2.0
+                burn: Decimal::from_parts(5, 0, 0, false, 1),   // 0.5
+                peer: Decimal::from_parts(10, 0, 0, false, 1),  // 1.0
+                inviter: Some(Decimal::from_parts(5, 0, 0, false, 1)), // 0.5
+            }),
+            created_at: "2025-04-10T10:00:00Z".into(),
+        },
+        // Like payment: user1 paid 3 tokens for like
+        TransactionRecord {
+            id: SEED_TX_2,
+            operation_id: SEED_OP_2,
+            category: Some(TransactionCategory::Like),
+            transaction_type: "DEBIT".into(),
+            sender_id: user1,
+            recipient_id: SYSTEM_PEER_ACCOUNT,
+            token_amount: Decimal::from_parts(30, 0, 0, false, 1),  // 3.0
+            net_token_amount: Decimal::from_parts(30, 0, 0, false, 1),
+            message: None,
+            fees: None,
+            created_at: "2025-04-11T14:00:00Z".into(),
+        },
+        // Post creation payment: user2 paid 20 tokens for post
+        TransactionRecord {
+            id: SEED_TX_3,
+            operation_id: SEED_OP_3,
+            category: Some(TransactionCategory::PostCreate),
+            transaction_type: "DEBIT".into(),
+            sender_id: user2,
+            recipient_id: SYSTEM_PEER_ACCOUNT,
+            token_amount: Decimal::from_parts(200, 0, 0, false, 1), // 20.0
+            net_token_amount: Decimal::from_parts(200, 0, 0, false, 1),
+            message: None,
+            fees: None,
+            created_at: "2025-04-12T09:00:00Z".into(),
+        },
+    ]
+}
+
+fn seed_gems(user1: Uuid, user2: Uuid) -> Vec<GemRecord> {
+    vec![
+        GemRecord {
+            user_id: user1,
+            post_id: SEED_POST_1,
+            from_user_id: user2,
+            gems: LIKE_GEM_RETURN,
+            action: "like".into(),
+            created_at: "2025-04-11T14:00:00Z".into(),
+        },
+        GemRecord {
+            user_id: user1,
+            post_id: SEED_POST_1,
+            from_user_id: user2,
+            gems: VIEW_GEM_RETURN,
+            action: "view".into(),
+            created_at: "2025-04-11T13:00:00Z".into(),
+        },
+        GemRecord {
+            user_id: user2,
+            post_id: SEED_POST_3,
+            from_user_id: user1,
+            gems: COMMENT_GEM_RETURN,
+            action: "comment".into(),
+            created_at: "2025-04-12T10:00:00Z".into(),
+        },
+    ]
+}
+
+fn seed_shop_orders(user2: Uuid) -> Vec<ShopOrderRecord> {
+    vec![ShopOrderRecord {
+        id: SEED_SHOP_ORDER_1,
+        transaction_id: SEED_SHOP_TX_1,
+        shop_item_id: "peer-tshirt-001".into(),
+        buyer_id: user2,
+        token_amount: Decimal::from_parts(500, 0, 0, false, 1), // 50.0
+        item_specs: Some("L".into()),
+        delivery: ShopDeliveryRecord {
+            name: "Test User".into(),
+            email: "test@example.com".into(),
+            addressline1: "Musterstraße 42".into(),
+            addressline2: None,
+            city: "Berlin".into(),
+            zipcode: "10115".into(),
+            country: "GERMANY".into(),
+        },
+        created_at: "2025-04-13T15:00:00Z".into(),
+    }]
 }

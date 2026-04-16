@@ -5,6 +5,7 @@ use leptos::task::spawn_local;
 
 use crate::api::posts::{list_ad_posts, list_posts};
 use crate::components::posts::PostCard;
+use crate::hooks::use_infinite_scroll;
 use crate::models::post::{AdvertisementPost, FeedItem};
 use crate::state::filters::use_filter_state;
 
@@ -26,9 +27,6 @@ pub fn PostList() -> impl IntoView {
     let has_more = RwSignal::new(true);
     let ad_posts = RwSignal::new(Vec::<AdvertisementPost>::new());
     let ads_loaded = RwSignal::new(false);
-
-    // Loader element ref for intersection observer
-    let loader_ref = NodeRef::<leptos::html::Div>::new();
 
     // Load ads once on mount
     Effect::new(move |_| {
@@ -126,53 +124,8 @@ pub fn PostList() -> impl IntoView {
         });
     };
 
-    // Set up intersection observer for infinite scroll
-    #[cfg(feature = "hydrate")]
-    Effect::new(move |_| {
-        use wasm_bindgen::prelude::*;
-        use wasm_bindgen::JsCast;
-        use std::sync::{Arc, Mutex};
-
-        let Some(el) = loader_ref.get() else {
-            return;
-        };
-
-        // Create observer callback
-        let callback = Closure::<dyn Fn(js_sys::Array)>::new(move |entries: js_sys::Array| {
-            for entry in entries.iter() {
-                let entry: web_sys::IntersectionObserverEntry = entry.unchecked_into();
-                if entry.is_intersecting() && !is_loading.get() && has_more.get() {
-                    load_posts();
-                }
-            }
-        });
-
-        let options = web_sys::IntersectionObserverInit::new();
-        options.set_root_margin("0px 0px 200px 0px");
-        options.set_threshold(&JsValue::from_f64(0.1));
-
-        if let Ok(observer) = web_sys::IntersectionObserver::new_with_options(
-            callback.as_ref().unchecked_ref(),
-            &options,
-        ) {
-            observer.observe(&el);
-
-            // Leak callback to keep it alive for the observer's lifetime.
-            // The observer holds a reference to it via JS, so dropping it
-            // here would invalidate the callback pointer.
-            callback.forget();
-
-            // Wrap observer in Arc<Mutex> so it's Send + Sync for on_cleanup
-            let observer = Arc::new(Mutex::new(Some(observer)));
-            on_cleanup(move || {
-                if let Ok(mut guard) = observer.lock() {
-                    if let Some(obs) = guard.take() {
-                        obs.disconnect();
-                    }
-                }
-            });
-        }
-    });
+    // Set up infinite scroll via shared hook
+    let scroll = use_infinite_scroll(is_loading, has_more, load_posts);
 
     // Initial load
     Effect::new(move |_| {
@@ -192,7 +145,7 @@ pub fn PostList() -> impl IntoView {
             />
         </div>
 
-        <div id="post_loader" node_ref=loader_ref class="post-loader">
+        <div id="post_loader" node_ref=scroll.loader_ref class="post-loader">
             <Show when=move || is_loading.get()>
                 <div class="loading-indicator">
                     <img src="/svg/logo_farbe.svg" alt="Loading..." class="loading-spinner"/>

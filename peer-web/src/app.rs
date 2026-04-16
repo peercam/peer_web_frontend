@@ -2,6 +2,7 @@ use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
+    hooks::use_navigate,
     path, StaticSegment,
 };
 
@@ -59,6 +60,8 @@ pub fn App() -> impl IntoView {
                         <Route path=StaticSegment("new") view=NewPostPage/>
                         <Route path=StaticSegment("create") view=NewPostPage/>
                         <Route path=StaticSegment("shop") view=PeerShopPage/>
+                        <Route path=StaticSegment("edit-profile") view=EditProfileRedirect/>
+                        <Route path=StaticSegment("edit_profile") view=EditProfileRedirect/>
                         <Route path=path!("/profile/:slug") view=ViewProfilePage/>
                         <Route path=path!("/u/:slug") view=ViewProfilePage/>
                         <Route path=path!("/post/:id") view=ViewPostPage/>
@@ -78,4 +81,15 @@ fn HomePage() -> impl IntoView {
         <h1>"Welcome to Peer"</h1>
         <a href="/register">"Create an Account"</a>
     }
+}
+
+/// Redirect legacy edit-profile URLs to the settings page.
+#[component]
+fn EditProfileRedirect() -> impl IntoView {
+    let navigate = use_navigate();
+    Effect::new(move |_| {
+        navigate("/settings", Default::default());
+    });
+
+    view! {}
 }
