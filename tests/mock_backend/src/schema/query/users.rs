@@ -22,7 +22,7 @@ fn build_profile_user(
         slug: user.slug_num,
         img: user.img.clone(),
         visibility_status: convert_visibility(user.visibility_status),
-        is_hidden_for_users: false,
+        is_hidden_for_users: state.get_visibility(&user.uid) == "HIDDEN",
         has_active_reports: state.has_active_reports(&user.uid),
         isfollowed: state.is_following(me, &user.uid),
         isfollowing: state.is_following(&user.uid, me),
@@ -41,7 +41,7 @@ fn build_basic_user_info(
         slug: user.slug_num,
         biography: user.biography.clone(),
         visibility_status: convert_visibility(user.visibility_status),
-        is_hidden_for_users: false,
+        is_hidden_for_users: state.get_visibility(&user.uid) == "HIDDEN",
         has_active_reports: state.has_active_reports(&user.uid),
         updatedat: Some(user.updated_at.clone()),
     }
@@ -120,7 +120,7 @@ impl UserQuery {
             img: user.img.clone(),
             biography: user.biography.clone(),
             visibility_status: convert_visibility(user.visibility_status),
-            is_hidden_for_users: false,
+            is_hidden_for_users: state_read.get_visibility(&target_uid) == "HIDDEN",
             has_active_reports: state_read.has_active_reports(&target_uid),
             i_follow_this_user: state_read.is_following(&me, &target_uid),
             this_user_follows_me: state_read.is_following(&target_uid, &me),
@@ -241,7 +241,7 @@ impl UserQuery {
                 img: u.img.clone(),
                 biography: u.biography.clone(),
                 visibility_status: convert_visibility(u.visibility_status),
-                is_hidden_for_users: false,
+                is_hidden_for_users: state_read.get_visibility(&u.uid) == "HIDDEN",
                 has_active_reports: state_read.has_active_reports(&u.uid),
                 createdat: Some(u.created_at.clone()),
                 updatedat: Some(u.updated_at.clone()),
@@ -460,7 +460,7 @@ impl UserQuery {
                 slug: u.slug_num,
                 has_active_reports: state_read.has_active_reports(&u.uid),
                 visibility_status: convert_visibility(u.visibility_status),
-                is_hidden_for_users: false,
+                is_hidden_for_users: state_read.get_visibility(&u.uid) == "HIDDEN",
             })
             .collect();
 
@@ -476,7 +476,7 @@ impl UserQuery {
                 slug: u.slug_num,
                 has_active_reports: state_read.has_active_reports(&u.uid),
                 visibility_status: convert_visibility(u.visibility_status),
-                is_hidden_for_users: false,
+                is_hidden_for_users: state_read.get_visibility(&u.uid) == "HIDDEN",
             })
             .collect();
 

@@ -663,7 +663,9 @@ pub struct MockState {
 
 ---
 
-## 7. Phase 5 — Economy (Wallet, Tokenomics, Shop, Ads)
+## 7. Phase 5 — Economy (Wallet, Tokenomics, Shop, Ads) ✅
+
+> **Status:** Complete — 219 total tests (49 new), 0 clippy warnings
 
 **Depends on:** Phase 3 (requires posts for ads)
 **Driven by:** `peer-web/src/pages/wallet.rs`, `peer-web/src/api/wallet.rs`
@@ -724,22 +726,21 @@ pub struct MockState {
 | `getGems` | Return gem totals from post interactions |
 | `mintTokens` | Convert gems → tokens at configured rate |
 
-### Tests (≥10 new)
+### Tests (49 new, 219 total)
 
-- Check balance
-- Transfer tokens → both balances update, transaction recorded
-- Transfer with insufficient balance → error
-- Fee calculation
-- Get action prices
-- List transaction history with filters
-- Create advertisement → appears in `listAdvertisementPosts`
-- Purchase shop item → deducts tokens, creates order
+- 16 wallet tests: balance, transfer, fees, insufficient balance, transaction history
+- 8 tokenomics tests: action prices, daily free status, gems, minting
+- 12 ads tests: create basic/pinned, list, history, cost calculation
+- 8 shop tests: purchase, order details, delivery validation
+- 5 cross-cutting: token deduction in actions, reset state, regression
 
 ---
 
-## 8. Phase 6 — Admin & Moderation
+## 8. Phase 6 — Admin & Moderation ✅
 
-**Depends on:** Phase 3 (requires posts/users to moderate)
+> **Status:** Complete — 266 total tests (47 new), 0 clippy warnings
+
+**Depends on:** Phase 3 (requires posts/users to moderate), Phase 5 (requires wallets/gems)
 **Driven by:** `admin/` PHP admin panel (future Leptos admin, if planned)
 **Detailed plan:** [phase-6-admin-moderation.md](./phase-6-admin-moderation.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
 
@@ -747,28 +748,36 @@ pub struct MockState {
 
 | File | Contents |
 |------|----------|
+| `src/guards.rs` | `RoleGuard`, `UserRolesMask`, role constants, `require_admin()`, `require_moderator()` |
+| `src/types/moderation.rs` | `ModerationStatus`, `ModerationContentType`, `ModerationStats`, `ModerationItem`, `BasicUserInfo`, `TargetContent` |
+| `src/types/admin.rs` | `AdminUser`, `AllUserInfo`, `PostCommentsData`, `LeaderboardParamsInput` |
+| `src/types/admin_gems.rs` | `DailyGemStatusData`, `GemsterResponse`, `GemstersData`, `MintAccount` |
 | `src/schema/query/moderation.rs` | `moderationStats`, `moderationItems` |
-| `src/schema/mutation/moderation.rs` | `hideContent`, `restoreContent`, `markIllegal` |
-| `src/schema/query/admin.rs` | `listUsersAdminV2`, `leaderboard`, `friendshipGraph` |
-| `src/types/moderation.rs` | `ModerationStats`, `ModerationTicket`, `ModerationAction` |
+| `src/schema/mutation/moderation.rs` | `performModeration` (hide/restore/illegal via single mutation) |
+| `src/schema/query/admin.rs` | `listUsersAdminV2`, `allfriends`, `postcomments`, `generateLeaderboard` |
+| `src/schema/query/admin_gems.rs` | `gemster`, `dailygemstatus`, `dailygemsresults`, `getMintAccount` |
+| `src/schema/mutation/admin_gems.rs` | `globalwins`, `distributeTokensForGems`, `gemsters`, `alphaMint` |
 
 ### State extensions
 
 ```rust
 pub struct MockState {
     // ... existing fields ...
-    pub moderation_tickets: Vec<ModerationTicket>,
-    pub content_visibility: HashMap<Uuid, ContentVisibility>, // content_id → state
+    pub moderation_tickets: Vec<ModerationTicketRecord>,
+    pub content_visibility: HashMap<Uuid, String>,  // content_id → "NORMAL"/"HIDDEN"/"ILLEGAL"
+    pub gem_records: Vec<GemRecord>,
+    pub alpha_minted: bool,
+    pub minted_dates: HashSet<String>,
 }
 ```
 
 ### Role-based access
 
-Implement a simple role-check guard using async-graphql's `Guard` trait:
+`RoleGuard` implements async-graphql's `Guard` trait with bitmask checking:
 
 ```rust
 pub struct RoleGuard {
-    required: u32,  // bitmask
+    required_role: u32,  // bitmask
 }
 ```
 
@@ -778,15 +787,21 @@ pub struct RoleGuard {
 | Admin | `16` | Admin queries + base |
 | Moderator | `256` | Moderation queries + base |
 
-Seeded test users should include one admin and one moderator account.
+Seeded test users: one admin (`roles_mask: 16`) and one moderator (`roles_mask: 256`).
 
-### Tests (≥6 new)
+### Seed data
 
-- Moderator can view moderation stats
-- Regular user blocked from moderation endpoints (`62101`)
-- Hide content → content marked as hidden
-- Admin can search users with extended fields (email, ip)
-- Regular user cannot access admin queries
+- 3 moderation tickets (2 for posts, 1 for comment) in `WaitingForReview` status
+- Admin user at IP `192.168.1.1`, Moderator at IP `192.168.1.2`
+- Mint account with `MINT_INITIAL_BALANCE: 5_000_000.0`
+
+### Tests (47 new, 266 total)
+
+- 14 moderation tests: stats, item listing, filtering, performModeration actions, auth
+- 6 visibility tests: hidden/illegal content filtered from list queries
+- 12 admin tests: user search (email, IP, verified, roles), allfriends, postcomments, leaderboard
+- 10 gem/mint tests: gemster, dailygemstatus, dailygemsresults, globalwins, distributeTokens, alphaMint
+- 5 cross-cutting: report→ticket flow, reset state, regression, duplicate prevention
 
 ---
 

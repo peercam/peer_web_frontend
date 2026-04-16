@@ -12,6 +12,7 @@ pub mod settings;
 pub mod shop;
 pub mod transaction;
 pub mod user;
+pub mod version;
 
 pub use advertisement::*;
 pub use chat::*;

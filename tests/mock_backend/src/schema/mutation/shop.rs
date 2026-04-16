@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::require_auth;
 use crate::state::{
-    SharedState, ShopDeliveryRecord, ShopOrderRecord, TransactionRecord, SYSTEM_SHOP_ACCOUNT,
+    SYSTEM_SHOP_ACCOUNT, SharedState, ShopDeliveryRecord, ShopOrderRecord, TransactionRecord,
 };
 use crate::types::registration::DefaultResponse;
 use crate::types::shop::*;

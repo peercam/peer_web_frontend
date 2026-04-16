@@ -46,6 +46,10 @@ pub struct Comment {
     pub amountreplies: i32,
     pub isliked: bool,
     pub user: CommentUser,
+    #[graphql(name = "visibilityStatus")]
+    pub visibility_status: Option<String>,
+    #[graphql(name = "isHiddenForUsers")]
+    pub is_hidden_for_users: Option<bool>,
 }
 
 /// Response for `listComments` and `listChildComments` queries.

@@ -52,6 +52,7 @@ impl CommentQuery {
                 c.post_id == post_uuid
                     && c.parent_id.is_none()
                     && c.visibility_status == "VISIBLE"
+                    && state.get_visibility(&c.id) != "ILLEGAL"
                     && !state.deleted_users.contains(&c.author_id)
             })
             .collect();
@@ -117,6 +118,7 @@ impl CommentQuery {
                 c.parent_id == Some(parent_uuid)
                     && c.visibility_status == "VISIBLE"
                     && !state.deleted_users.contains(&c.author_id)
+                    && state.get_visibility(&c.id) != "ILLEGAL"
             })
             .collect();
 

@@ -22,6 +22,7 @@ pub mod step_announcer;
 pub mod success_step;
 pub mod toast;
 pub mod validation;
+pub mod version_history;
 pub mod view_post;
 pub mod wallet;
 pub mod widgets;

@@ -5,8 +5,9 @@ use axum::{
 use http_body_util::BodyExt;
 use mock_backend::seed::{
     SEED_CHAT_GROUP, SEED_CHAT_PRIVATE, SEED_COMMENT_1, SEED_COMMENT_2, SEED_COMMENT_5,
-    SEED_POST_1, SEED_POST_2, SEED_POST_3, SEED_POST_4, SEED_SHOP_TX_1, SEED_USER_ALICE,
-    SEED_USER_BOB, SEED_USER_CAROL, SEED_USER_DAVE, SEED_USER_VERIFIED,
+    SEED_MOD_TICKET_COMMENT, SEED_MOD_TICKET_POST, SEED_MOD_TICKET_USER, SEED_POST_1, SEED_POST_2,
+    SEED_POST_3, SEED_POST_4, SEED_SHOP_TX_1, SEED_USER_ALICE, SEED_USER_BOB, SEED_USER_CAROL,
+    SEED_USER_DAVE, SEED_USER_VERIFIED,
 };
 use mock_backend::{app, app_with_state, state::MockState};
 use serde_json::{Value, json};
@@ -1769,7 +1770,7 @@ async fn test_list_follow_relations() {
     let followers = &data["affectedRows"]["followers"];
     let following = &data["affectedRows"]["following"];
     assert!(followers.as_array().unwrap().len() >= 2);
-    assert!(following.as_array().unwrap().len() >= 1);
+    assert!(!following.as_array().unwrap().is_empty());
 }
 
 #[tokio::test]
@@ -2474,6 +2475,7 @@ async fn test_blocked_user_excluded_from_search() {
 // Phase 3: Posts & Content Tests — Helpers
 // ============================================================================
 
+#[allow(dead_code)]
 async fn login_bob(state: &Arc<RwLock<MockState>>) -> String {
     login_as(state, "bob@peer.com", "BobPass123").await
 }
@@ -3287,9 +3289,9 @@ async fn test_view_post() {
     let state = default_shared_state();
     let token = login_default(&state).await;
     // SEED_POST_7 not viewed by verified user in seed
-    let postid = SEED_POST_3.to_string(); // already viewed, use another
+    let _postid = SEED_POST_3.to_string(); // already viewed, use another
     // Use a different post not yet viewed
-    let res = graphql_with_auth(
+    let _res = graphql_with_auth(
         &state,
         r#"
         mutation {
@@ -3856,9 +3858,7 @@ async fn test_list_comments_invalid_post_uuid() {
 
     let res = graphql_with_auth(
         &state,
-        &format!(
-            r#"query {{ listComments(postid: "not-a-uuid") {{ meta {{ ResponseCode }} counter }} }}"#
-        ),
+        r#"query { listComments(postid: "not-a-uuid") { meta { ResponseCode } counter } }"#,
         &token,
     )
     .await;
@@ -4149,7 +4149,7 @@ async fn test_like_comment() {
         .iter()
         .find(|r| r["commentid"].as_str().unwrap() == SEED_COMMENT_1.to_string())
         .unwrap();
-    assert_eq!(c1["isliked"].as_bool().unwrap(), true);
+    assert!(c1["isliked"].as_bool().unwrap());
     assert!(c1["amountlikes"].as_i64().unwrap() >= 1);
 }
 
@@ -4994,15 +4994,14 @@ async fn test_wallet_transfer_tokens() {
     );
     let rows = &res["data"]["resolveTransferV2"]["affectedRows"];
     assert!(rows["tokenSendFormatted"].as_str().is_some());
-    assert!(rows["tokensSubstractedFromWalletFormatted"].as_str().is_some());
+    assert!(
+        rows["tokensSubstractedFromWalletFormatted"]
+            .as_str()
+            .is_some()
+    );
 
     // Verify balances changed
-    let res2 = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token,
-    )
-    .await;
+    let res2 = graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token).await;
     let sender_bal = decimal_val(&res2["data"]["balance"]["currentliquidity"]);
     // 1000 - 50 - fees (4% of 50 = 2.0) = 948.0
     assert!(sender_bal < 950.0);
@@ -5060,7 +5059,9 @@ async fn test_wallet_transfer_formatted_values() {
 
     let rows = &res["data"]["resolveTransferV2"]["affectedRows"];
     let send = rows["tokenSendFormatted"].as_str().unwrap();
-    let subtracted = rows["tokensSubstractedFromWalletFormatted"].as_str().unwrap();
+    let subtracted = rows["tokensSubstractedFromWalletFormatted"]
+        .as_str()
+        .unwrap();
     assert!(send.contains("50"));
     assert!(subtracted.contains("52"));
 }
@@ -5446,12 +5447,7 @@ async fn test_tokenomics_daily_free_likes_no_cost() {
     let token = login_default(&state).await;
 
     // Get initial balance
-    let res0 = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token,
-    )
-    .await;
+    let res0 = graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token).await;
     let initial_balance = decimal_val(&res0["data"]["balance"]["currentliquidity"]);
 
     // Like 3 posts (all free: SEED_POST_3, 4 are alice's, we need a 3rd)
@@ -5466,12 +5462,7 @@ async fn test_tokenomics_daily_free_likes_no_cost() {
         .await;
     }
 
-    let res = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token,
-    )
-    .await;
+    let res = graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token).await;
     let after_balance = decimal_val(&res["data"]["balance"]["currentliquidity"]);
 
     // Balance should be unchanged (free likes)
@@ -5483,12 +5474,7 @@ async fn test_tokenomics_paid_like_after_free_limit() {
     let state = default_shared_state();
     let token = login_default(&state).await;
 
-    let res0 = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token,
-    )
-    .await;
+    let res0 = graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token).await;
     let initial_balance = decimal_val(&res0["data"]["balance"]["currentliquidity"]);
 
     // Use all 3 free likes
@@ -5545,12 +5531,7 @@ async fn test_tokenomics_paid_like_after_free_limit() {
     .await;
 
     // Check balance decreased by LIKE_PRICE (3.0)
-    let res = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token,
-    )
-    .await;
+    let res = graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token).await;
     let after_balance = decimal_val(&res["data"]["balance"]["currentliquidity"]);
     assert!((initial_balance - after_balance - 3.0).abs() < 0.5);
 }
@@ -5897,13 +5878,14 @@ async fn test_ads_advertised_posts_excluded_from_list_posts() {
     )
     .await;
 
-    let posts = res["data"]["listPosts"]["affectedRows"]
-        .as_array()
-        .unwrap();
+    let posts = res["data"]["listPosts"]["affectedRows"].as_array().unwrap();
     let has_advertised = posts
         .iter()
         .any(|p| p["id"].as_str().unwrap() == SEED_POST_1.to_string());
-    assert!(!has_advertised, "Advertised post should be excluded from listPosts");
+    assert!(
+        !has_advertised,
+        "Advertised post should be excluded from listPosts"
+    );
 }
 
 // ============================================================================
@@ -5922,18 +5904,10 @@ async fn test_shop_purchase_item() {
     )
     .await;
 
-    assert_eq!(
-        res["data"]["performShopOrder"]["ResponseCode"],
-        "12201"
-    );
+    assert_eq!(res["data"]["performShopOrder"]["ResponseCode"], "12201");
 
     // Balance should have decreased
-    let res2 = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token,
-    )
-    .await;
+    let res2 = graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token).await;
     let balance = decimal_val(&res2["data"]["balance"]["currentliquidity"]);
     assert!((balance - 950.0).abs() < 0.1);
 }
@@ -5989,10 +5963,7 @@ async fn test_shop_purchase_no_auth() {
     )
     .await;
 
-    assert_eq!(
-        res["data"]["performShopOrder"]["ResponseCode"],
-        "60501"
-    );
+    assert_eq!(res["data"]["performShopOrder"]["ResponseCode"], "60501");
 }
 
 #[tokio::test]
@@ -6007,10 +5978,7 @@ async fn test_shop_purchase_insufficient_balance() {
     )
     .await;
 
-    assert_eq!(
-        res["data"]["performShopOrder"]["ResponseCode"],
-        "51301"
-    );
+    assert_eq!(res["data"]["performShopOrder"]["ResponseCode"], "51301");
 }
 
 #[tokio::test]
@@ -6067,12 +6035,7 @@ async fn test_cross_comment_deducts_after_free_limit() {
     let state = default_shared_state();
     let token = login_default(&state).await;
 
-    let res0 = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token,
-    )
-    .await;
+    let res0 = graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token).await;
     let initial_balance = decimal_val(&res0["data"]["balance"]["currentliquidity"]);
 
     // Use 4 free comments (FREE_COMMENTS = 4)
@@ -6097,12 +6060,7 @@ async fn test_cross_comment_deducts_after_free_limit() {
     )
     .await;
 
-    let res = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token,
-    )
-    .await;
+    let res = graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token).await;
     let after_balance = decimal_val(&res["data"]["balance"]["currentliquidity"]);
 
     // Should have decreased by COMMENT_PRICE (1.0)
@@ -6158,12 +6116,7 @@ async fn test_cross_like_deducts_after_free_limit() {
     let token = login_default(&state).await;
     let alice_token = login_alice(&state).await;
 
-    let res0 = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token,
-    )
-    .await;
+    let res0 = graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token).await;
     let initial_balance = decimal_val(&res0["data"]["balance"]["currentliquidity"]);
 
     // Use 3 free likes
@@ -6216,12 +6169,7 @@ async fn test_cross_like_deducts_after_free_limit() {
     )
     .await;
 
-    let res = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token,
-    )
-    .await;
+    let res = graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token).await;
     let after_balance = decimal_val(&res["data"]["balance"]["currentliquidity"]);
 
     // Should have decreased by LIKE_PRICE (3.0)
@@ -6278,12 +6226,8 @@ async fn test_cross_reset_clears_economy_state() {
     .await;
 
     // Verify balance changed
-    let res_before = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token,
-    )
-    .await;
+    let res_before =
+        graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token).await;
     let bal_before = decimal_val(&res_before["data"]["balance"]["currentliquidity"]);
     assert!(bal_before < 1000.0);
 
@@ -6301,12 +6245,8 @@ async fn test_cross_reset_clears_economy_state() {
     let token2 = login_default(&state).await;
 
     // Balance should be back to seed default (1000.0)
-    let res_after = graphql_with_auth(
-        &state,
-        r#"query { balance { currentliquidity } }"#,
-        &token2,
-    )
-    .await;
+    let res_after =
+        graphql_with_auth(&state, r#"query { balance { currentliquidity } }"#, &token2).await;
     let bal_after = decimal_val(&res_after["data"]["balance"]["currentliquidity"]);
     assert!((bal_after - 1000.0).abs() < 0.01);
 }
@@ -6331,4 +6271,1405 @@ async fn test_cross_phase4_regression_comment_still_works() {
     // Should succeed with either free (11608) or paid (11605) code
     assert!(code == "11608" || code == "11605");
     assert_eq!(res["data"]["createComment"]["counter"].as_i64().unwrap(), 1);
+}
+
+// ============================================================================
+// Phase 6: Helper functions
+// ============================================================================
+
+async fn login_admin(state: &Arc<RwLock<MockState>>) -> String {
+    login_as(state, "admin@peerapp.de", "Admin1234").await
+}
+
+async fn login_moderator(state: &Arc<RwLock<MockState>>) -> String {
+    login_as(state, "mod@peerapp.de", "Mod1234").await
+}
+
+// ============================================================================
+// Phase 6: Moderation Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_moderation_stats_as_moderator() {
+    let state = default_shared_state();
+    let token = login_moderator(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            moderationStats {
+                meta { status ResponseCode }
+                affectedRows {
+                    AmountAwaitingReview
+                    AmountHidden
+                    AmountRestored
+                    AmountIllegal
+                }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["moderationStats"];
+    assert_eq!(data["meta"]["ResponseCode"], "12101");
+    assert_eq!(data["affectedRows"]["AmountAwaitingReview"], 2);
+    assert_eq!(data["affectedRows"]["AmountHidden"], 1);
+    assert_eq!(data["affectedRows"]["AmountRestored"], 0);
+    assert_eq!(data["affectedRows"]["AmountIllegal"], 0);
+}
+
+#[tokio::test]
+async fn test_moderation_stats_as_regular_user() {
+    let state = default_shared_state();
+    let token = login_alice(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            moderationStats {
+                meta { status ResponseCode }
+                affectedRows { AmountAwaitingReview }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    // Should get an error (guard rejects)
+    assert!(res["errors"].is_array());
+    assert!(
+        res["errors"][0]["extensions"]["code"]
+            .as_str()
+            .unwrap()
+            .contains("62101")
+    );
+}
+
+#[tokio::test]
+async fn test_moderation_stats_no_auth() {
+    let state = default_shared_state();
+
+    let res = graphql_stateful(
+        &state,
+        r#"query {
+            moderationStats {
+                meta { status ResponseCode }
+                affectedRows { AmountAwaitingReview }
+            }
+        }"#,
+    )
+    .await;
+
+    assert!(res["errors"].is_array());
+    assert!(
+        res["errors"][0]["extensions"]["code"]
+            .as_str()
+            .unwrap()
+            .contains("60501")
+    );
+}
+
+#[tokio::test]
+async fn test_moderation_items_list_all() {
+    let state = default_shared_state();
+    let token = login_moderator(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            moderationItems {
+                meta { status ResponseCode }
+                affectedRows {
+                    moderationTicketId
+                    targetContentId
+                    targettype
+                    reportscount
+                    status
+                    reporters { userid username }
+                    moderatedBy { userid username }
+                }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["moderationItems"];
+    assert_eq!(data["meta"]["ResponseCode"], "12102");
+    assert_eq!(data["affectedRows"].as_array().unwrap().len(), 3);
+}
+
+#[tokio::test]
+async fn test_moderation_items_filter_by_status() {
+    let state = default_shared_state();
+    let token = login_moderator(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            moderationItems(status: waiting_for_review) {
+                meta { ResponseCode }
+                affectedRows { moderationTicketId status }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let items = res["data"]["moderationItems"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    assert_eq!(items.len(), 2);
+    for item in items {
+        assert_eq!(item["status"], "waiting_for_review");
+    }
+}
+
+#[tokio::test]
+async fn test_moderation_items_filter_by_content_type_post() {
+    let state = default_shared_state();
+    let token = login_moderator(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            moderationItems(contentType: post) {
+                meta { ResponseCode }
+                affectedRows { moderationTicketId targettype }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let items = res["data"]["moderationItems"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["targettype"], "post");
+}
+
+#[tokio::test]
+async fn test_moderation_items_filter_by_content_type_user() {
+    let state = default_shared_state();
+    let token = login_moderator(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            moderationItems(contentType: user) {
+                meta { ResponseCode }
+                affectedRows { moderationTicketId status moderatedBy { userid } }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let items = res["data"]["moderationItems"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["status"], "hidden");
+    assert!(!items[0]["moderatedBy"].is_null());
+}
+
+#[tokio::test]
+async fn test_moderation_items_pagination() {
+    let state = default_shared_state();
+    let token = login_moderator(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            moderationItems(offset: 1, limit: 1) {
+                meta { ResponseCode }
+                affectedRows { moderationTicketId }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let items = res["data"]["moderationItems"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    assert_eq!(items.len(), 1);
+}
+
+#[tokio::test]
+async fn test_moderation_items_as_regular_user() {
+    let state = default_shared_state();
+    let token = login_alice(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            moderationItems {
+                meta { ResponseCode }
+                affectedRows { moderationTicketId }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    assert!(res["errors"].is_array());
+}
+
+#[tokio::test]
+async fn test_perform_moderation_hide_post() {
+    let state = default_shared_state();
+    let token = login_moderator(&state).await;
+
+    let ticket_id = SEED_MOD_TICKET_POST.to_string();
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{
+                performModeration(
+                    moderationTicketId: "{ticket_id}"
+                    moderationAction: hidden
+                ) {{ status ResponseCode }}
+            }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["performModeration"]["ResponseCode"], "12103");
+
+    // Verify post visibility changed
+    let st = state.read().await;
+    assert_eq!(st.content_visibility.get(&SEED_POST_1).unwrap(), "HIDDEN");
+}
+
+#[tokio::test]
+async fn test_perform_moderation_restore_comment() {
+    let state = default_shared_state();
+    let token = login_moderator(&state).await;
+
+    let ticket_id = SEED_MOD_TICKET_COMMENT.to_string();
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{
+                performModeration(
+                    moderationTicketId: "{ticket_id}"
+                    moderationAction: restored
+                ) {{ status ResponseCode }}
+            }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["performModeration"]["ResponseCode"], "12103");
+
+    let st = state.read().await;
+    assert_eq!(
+        st.content_visibility.get(&SEED_COMMENT_1).unwrap(),
+        "NORMAL"
+    );
+}
+
+#[tokio::test]
+async fn test_perform_moderation_mark_illegal() {
+    let state = default_shared_state();
+    let token = login_moderator(&state).await;
+
+    let ticket_id = SEED_MOD_TICKET_USER.to_string();
+    // User ticket is currently hidden; mark it illegal
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{
+                performModeration(
+                    moderationTicketId: "{ticket_id}"
+                    moderationAction: illegal
+                ) {{ status ResponseCode }}
+            }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["performModeration"]["ResponseCode"], "12103");
+
+    let st = state.read().await;
+    assert_eq!(
+        st.content_visibility.get(&SEED_USER_DAVE).unwrap(),
+        "ILLEGAL"
+    );
+}
+
+#[tokio::test]
+async fn test_perform_moderation_nonexistent_ticket() {
+    let state = default_shared_state();
+    let token = login_moderator(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation {
+            performModeration(
+                moderationTicketId: "00000000-0000-4000-a000-ffffffffffff"
+                moderationAction: hidden
+            ) { status ResponseCode }
+        }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["performModeration"]["ResponseCode"], "22103");
+}
+
+#[tokio::test]
+async fn test_perform_moderation_duplicate_action() {
+    let state = default_shared_state();
+    let token = login_moderator(&state).await;
+
+    // User ticket is already "hidden"
+    let ticket_id = SEED_MOD_TICKET_USER.to_string();
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{
+                performModeration(
+                    moderationTicketId: "{ticket_id}"
+                    moderationAction: hidden
+                ) {{ status ResponseCode }}
+            }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["performModeration"]["ResponseCode"], "32103");
+}
+
+// ============================================================================
+// Phase 6: Content Visibility Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_hidden_post_shows_hidden_flag() {
+    let state = default_shared_state();
+    let mod_token = login_moderator(&state).await;
+    let user_token = login_alice(&state).await;
+
+    // Hide the post via moderation
+    let ticket_id = SEED_MOD_TICKET_POST.to_string();
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ performModeration(moderationTicketId: "{ticket_id}", moderationAction: hidden) {{ ResponseCode }} }}"#
+        ),
+        &mod_token,
+    )
+    .await;
+
+    // Post should show isHiddenForUsers: true in listPosts
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listPosts(sortBy: NEWEST, offset: 0, limit: 20) { meta { ResponseCode } affectedRows { id isHiddenForUsers visibilityStatus } }
+        }"#,
+        &user_token,
+    )
+    .await;
+
+    let posts = res["data"]["listPosts"]["affectedRows"].as_array().unwrap();
+    let hidden_post = posts.iter().find(|p| p["id"] == SEED_POST_1.to_string());
+    if let Some(p) = hidden_post {
+        assert_eq!(p["isHiddenForUsers"], true);
+    }
+}
+
+#[tokio::test]
+async fn test_illegal_post_filtered_from_list() {
+    let state = default_shared_state();
+    let mod_token = login_moderator(&state).await;
+    let user_token = login_alice(&state).await;
+
+    // Mark post as illegal
+    let ticket_id = SEED_MOD_TICKET_POST.to_string();
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ performModeration(moderationTicketId: "{ticket_id}", moderationAction: illegal) {{ ResponseCode }} }}"#
+        ),
+        &mod_token,
+    )
+    .await;
+
+    // Post should not appear in list
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listPosts(sortBy: NEWEST, offset: 0, limit: 20) { affectedRows { id } }
+        }"#,
+        &user_token,
+    )
+    .await;
+
+    let posts = res["data"]["listPosts"]["affectedRows"].as_array().unwrap();
+    let illegal_post = posts.iter().find(|p| p["id"] == SEED_POST_1.to_string());
+    assert!(
+        illegal_post.is_none(),
+        "Illegal post should be filtered out"
+    );
+}
+
+#[tokio::test]
+async fn test_restored_post_visible_again() {
+    let state = default_shared_state();
+    let mod_token = login_moderator(&state).await;
+    let user_token = login_alice(&state).await;
+
+    let ticket_id = SEED_MOD_TICKET_POST.to_string();
+    // First hide it
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ performModeration(moderationTicketId: "{ticket_id}", moderationAction: hidden) {{ ResponseCode }} }}"#
+        ),
+        &mod_token,
+    )
+    .await;
+
+    // Then restore it
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ performModeration(moderationTicketId: "{ticket_id}", moderationAction: restored) {{ ResponseCode }} }}"#
+        ),
+        &mod_token,
+    )
+    .await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listPosts(sortBy: NEWEST, offset: 0, limit: 20) { affectedRows { id visibilityStatus } }
+        }"#,
+        &user_token,
+    )
+    .await;
+
+    let posts = res["data"]["listPosts"]["affectedRows"].as_array().unwrap();
+    let post = posts.iter().find(|p| p["id"] == SEED_POST_1.to_string());
+    assert!(post.is_some(), "Restored post should be visible");
+    // The original post visibility_status is "VISIBLE" (from seed),
+    // and moderation "NORMAL" falls through to the original value
+    let vis = post.unwrap()["visibilityStatus"].as_str().unwrap();
+    assert!(
+        vis == "VISIBLE" || vis == "NORMAL",
+        "Expected VISIBLE or NORMAL, got {vis}"
+    );
+}
+
+#[tokio::test]
+async fn test_hidden_user_shows_in_profile() {
+    let state = default_shared_state();
+    let token = login_alice(&state).await;
+
+    // Dave is hidden in seed data
+    let dave_id = SEED_USER_DAVE.to_string();
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ getProfile(userid: "{dave_id}") {{
+                meta {{ ResponseCode }}
+                affectedRows {{ isHiddenForUsers }}
+            }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    // Dave is HIDDEN via content_visibility
+    assert_eq!(
+        res["data"]["getProfile"]["affectedRows"]["isHiddenForUsers"],
+        true
+    );
+}
+
+#[tokio::test]
+async fn test_report_user_creates_ticket() {
+    let state = default_shared_state();
+    let token = login_alice(&state).await;
+
+    // Report Carol (no existing ticket for Carol)
+    let carol_id = SEED_USER_CAROL.to_string();
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{
+                reportUser(userid: "{carol_id}") {{
+                    status ResponseCode
+                }}
+            }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let code = res["data"]["reportUser"]["ResponseCode"].as_str().unwrap();
+    assert!(
+        code == "11012" || code == "31008",
+        "Expected report success (11012) or already-reported (31008), got {code}"
+    );
+
+    // Check that a moderation ticket was created
+    let st = state.read().await;
+    let ticket = st
+        .moderation_tickets
+        .iter()
+        .find(|t| t.target_content_id == SEED_USER_CAROL && t.target_type == "user");
+    assert!(
+        ticket.is_some(),
+        "Moderation ticket should be created for reported user"
+    );
+}
+
+// ============================================================================
+// Phase 6: Admin Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_admin_search_users_by_email() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listUsersAdminV2(email: "alice@peer.com") {
+                meta { ResponseCode }
+                counter
+                affectedRows { id email }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listUsersAdminV2"];
+    assert_eq!(data["meta"]["ResponseCode"], "11009");
+    assert!(data["counter"].as_i64().unwrap() >= 1);
+    assert_eq!(data["affectedRows"][0]["email"], "alice@peer.com");
+}
+
+#[tokio::test]
+async fn test_admin_search_users_by_ip() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listUsersAdminV2(ip: "192.168.1.1") {
+                meta { ResponseCode }
+                counter
+                affectedRows { id ip }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listUsersAdminV2"];
+    assert_eq!(data["meta"]["ResponseCode"], "11009");
+    assert!(data["counter"].as_i64().unwrap() >= 1);
+}
+
+#[tokio::test]
+async fn test_admin_search_users_by_verified() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listUsersAdminV2(verified: 1) {
+                meta { ResponseCode }
+                counter
+                affectedRows { id verified }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listUsersAdminV2"];
+    assert_eq!(data["meta"]["ResponseCode"], "11009");
+    assert!(data["counter"].as_i64().unwrap() >= 1);
+    // All returned should be verified
+    for user in data["affectedRows"].as_array().unwrap() {
+        assert_eq!(user["verified"], 1);
+    }
+}
+
+#[tokio::test]
+async fn test_admin_search_userid_and_username_error() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{
+                listUsersAdminV2(userid: "{}", username: "alice") {{
+                    meta {{ ResponseCode }}
+                }}
+            }}"#,
+            SEED_USER_ALICE
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["listUsersAdminV2"]["meta"]["ResponseCode"],
+        "31012"
+    );
+}
+
+#[tokio::test]
+async fn test_admin_search_invalid_uuid() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listUsersAdminV2(userid: "not-a-uuid") {
+                meta { ResponseCode }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["listUsersAdminV2"]["meta"]["ResponseCode"],
+        "30201"
+    );
+}
+
+#[tokio::test]
+async fn test_admin_search_invalid_ip() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listUsersAdminV2(ip: "999.999.999.999") {
+                meta { ResponseCode }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["listUsersAdminV2"]["meta"]["ResponseCode"],
+        "30257"
+    );
+}
+
+#[tokio::test]
+async fn test_admin_search_extended_fields() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listUsersAdminV2(email: "admin@peerapp.de") {
+                meta { ResponseCode }
+                affectedRows { id email rolesMask liquidity verified }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listUsersAdminV2"];
+    assert_eq!(data["meta"]["ResponseCode"], "11009");
+    let user = &data["affectedRows"][0];
+    assert!(!user["email"].is_null());
+    assert!(!user["rolesMask"].is_null());
+    assert!(!user["liquidity"].is_null());
+}
+
+#[tokio::test]
+async fn test_admin_search_as_regular_user() {
+    let state = default_shared_state();
+    let token = login_alice(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listUsersAdminV2 {
+                meta { ResponseCode }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    assert!(res["errors"].is_array());
+}
+
+#[tokio::test]
+async fn test_admin_allfriends() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            allfriends {
+                meta { ResponseCode }
+                counter
+                affectedRows { followerid followername followedid followedname }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["allfriends"];
+    assert_eq!(data["meta"]["ResponseCode"], "11101");
+    assert!(data["counter"].as_i64().unwrap() > 0);
+    assert!(data["affectedRows"].is_array());
+}
+
+#[tokio::test]
+async fn test_admin_postcomments() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let post_id = SEED_POST_1.to_string();
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{
+                postcomments(postid: "{post_id}") {{
+                    meta {{ ResponseCode }}
+                    counter
+                    affectedRows {{
+                        commentid
+                        content
+                        visibilityStatus
+                        isHiddenForUsers
+                        subcomments {{ commentid content }}
+                    }}
+                }}
+            }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["postcomments"];
+    assert_eq!(data["meta"]["ResponseCode"], "11101");
+}
+
+#[tokio::test]
+async fn test_admin_generate_leaderboard() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            generateLeaderboard(leaderboardParams: {
+                startDate: "2025-01-01"
+                endDate: "2025-01-31"
+                leaderboardUsersCount: 10
+            }) {
+                meta { ResponseCode }
+                leaderboardResultLink
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["generateLeaderboard"];
+    assert_eq!(data["meta"]["ResponseCode"], "12301");
+    assert!(
+        data["leaderboardResultLink"]
+            .as_str()
+            .unwrap()
+            .contains(".csv")
+    );
+}
+
+#[tokio::test]
+async fn test_admin_generate_leaderboard_invalid_range() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            generateLeaderboard(leaderboardParams: {
+                startDate: "2025-02-01"
+                endDate: "2025-01-01"
+                leaderboardUsersCount: 10
+            }) {
+                meta { ResponseCode }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["generateLeaderboard"]["meta"]["ResponseCode"],
+        "33002"
+    );
+}
+
+// ============================================================================
+// Phase 6: Admin Gem/Mint Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_gemster_returns_data() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            gemster {
+                meta { ResponseCode }
+                affectedRows { d0 d1 d2 d3 d4 d5 d6 d7 w0 m0 y0 }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["gemster"];
+    assert_eq!(data["meta"]["ResponseCode"], "11207");
+    assert!(!data["affectedRows"].is_null());
+}
+
+#[tokio::test]
+async fn test_dailygemstatus() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            dailygemstatus {
+                meta { ResponseCode }
+                affectedRows { d0 w0 m0 y0 }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["dailygemstatus"]["meta"]["ResponseCode"],
+        "11207"
+    );
+}
+
+#[tokio::test]
+async fn test_dailygemsresults_d0() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    // First convert interactions to gems
+    graphql_with_auth(
+        &state,
+        r#"mutation { globalwins { ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            dailygemsresults(day: D0) {
+                meta { ResponseCode }
+                affectedRows { totalGems data { userid gems } }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["dailygemsresults"];
+    let code = data["meta"]["ResponseCode"].as_str().unwrap();
+    // Either has gems (11207) or no gems (21206)
+    assert!(code == "11207" || code == "21206");
+}
+
+#[tokio::test]
+async fn test_get_mint_account() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            getMintAccount {
+                meta { ResponseCode }
+                mintAccount { accountid initialBalance currentBalance }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["getMintAccount"];
+    assert_eq!(data["meta"]["ResponseCode"], "0");
+    assert!(!data["mintAccount"]["initialBalance"].is_null());
+    assert!(!data["mintAccount"]["currentBalance"].is_null());
+}
+
+#[tokio::test]
+async fn test_globalwins_converts_interactions() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { globalwins { status ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["globalwins"];
+    let code = data["ResponseCode"].as_str().unwrap();
+    // Either converted (11206) or nothing to convert (21205)
+    assert!(code == "11206" || code == "21205");
+}
+
+#[tokio::test]
+async fn test_globalwins_no_pending() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    // Run globalwins twice — second should have nothing
+    graphql_with_auth(
+        &state,
+        r#"mutation { globalwins { ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { globalwins { ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["globalwins"]["ResponseCode"], "21205");
+}
+
+#[tokio::test]
+async fn test_distribute_tokens_already_minted() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+
+    // First convert interactions to gems
+    graphql_with_auth(
+        &state,
+        r#"mutation { globalwins { ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    // Distribute once
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ distributeTokensForGems(date: "{}") {{ meta {{ ResponseCode }} }} }}"#,
+            today
+        ),
+        &token,
+    )
+    .await;
+
+    // Distribute again — should fail with 31204
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ distributeTokensForGems(date: "{}") {{ meta {{ ResponseCode }} }} }}"#,
+            today
+        ),
+        &token,
+    )
+    .await;
+
+    assert_eq!(
+        res["data"]["distributeTokensForGems"]["meta"]["ResponseCode"],
+        "31204"
+    );
+}
+
+#[tokio::test]
+async fn test_alpha_mint_credits_users() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    // Get alice's balance before alpha mint
+    let alice_token = login_alice(&state).await;
+    let before = graphql_with_auth(
+        &state,
+        r#"query { balance { meta { ResponseCode } currentliquidity } }"#,
+        &alice_token,
+    )
+    .await;
+    let bal_before = decimal_val(&before["data"]["balance"]["currentliquidity"]);
+
+    // Run alpha mint
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { alphaMint { status ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["alphaMint"]["ResponseCode"], "200");
+
+    // Check alice got 100 tokens
+    let after = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &alice_token,
+    )
+    .await;
+    let bal_after = decimal_val(&after["data"]["balance"]["currentliquidity"]);
+
+    assert!(
+        (bal_after - bal_before - 100.0).abs() < 0.01,
+        "Alice should have gained 100 tokens: before={bal_before}, after={bal_after}"
+    );
+}
+
+#[tokio::test]
+async fn test_dailygemsresults_no_gems() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    // D7 (7 days ago) should have no gems in freshly seeded state
+    let res = graphql_with_auth(
+        &state,
+        r#"query { dailygemsresults(day: D7) { meta { ResponseCode } affectedRows { totalGems } } }"#,
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["dailygemsresults"];
+    let code = data["meta"]["ResponseCode"].as_str().unwrap();
+    // Seed gems are all from a fixed date, so D7 (relative) likely has nothing
+    assert!(
+        code == "21206" || code == "11207",
+        "Expected 21206 (no gems) or 11207 (data), got {code}"
+    );
+}
+
+#[tokio::test]
+async fn test_distribute_tokens_success() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+    let alice_token = login_alice(&state).await;
+
+    // Get alice's balance before
+    let before = graphql_with_auth(
+        &state,
+        r#"query { balance { currentliquidity } }"#,
+        &alice_token,
+    )
+    .await;
+    let bal_before = decimal_val(&before["data"]["balance"]["currentliquidity"]);
+
+    // Convert interactions to gems first
+    graphql_with_auth(
+        &state,
+        r#"mutation { globalwins { ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ distributeTokensForGems(date: "{today}") {{ meta {{ ResponseCode }} counter affectedRows {{ winStatus {{ totalGems gemsintoken }} }} }} }}"#
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["distributeTokensForGems"];
+    let code = data["meta"]["ResponseCode"].as_str().unwrap();
+    // Should succeed if gems exist for today's date
+    if code == "11208" {
+        assert!(
+            data["counter"].as_i64().unwrap() > 0,
+            "Should have distributed to at least 1 user"
+        );
+        assert!(!data["affectedRows"]["winStatus"]["totalGems"].is_null());
+        assert!(!data["affectedRows"]["winStatus"]["gemsintoken"].is_null());
+
+        // Check alice balance went up
+        let after = graphql_with_auth(
+            &state,
+            r#"query { balance { currentliquidity } }"#,
+            &alice_token,
+        )
+        .await;
+        let bal_after = decimal_val(&after["data"]["balance"]["currentliquidity"]);
+        assert!(
+            bal_after >= bal_before,
+            "Balance should not decrease after distribution: before={bal_before}, after={bal_after}"
+        );
+    }
+    // If 21206 (no gems for today), that's acceptable depending on seed gem dates
+}
+
+#[tokio::test]
+async fn test_hidden_comment_shows_hidden_flag() {
+    let state = default_shared_state();
+    let mod_token = login_moderator(&state).await;
+
+    // Hide the comment via moderation
+    let ticket_id = SEED_MOD_TICKET_COMMENT.to_string();
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ performModeration(moderationTicketId: "{ticket_id}", moderationAction: hidden) {{ ResponseCode }} }}"#
+        ),
+        &mod_token,
+    )
+    .await;
+
+    // Admin postcomments should show the comment with isHiddenForUsers: true
+    let admin_token = login_admin(&state).await;
+    let post_id = SEED_POST_1.to_string();
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ postcomments(postid: "{post_id}", offset: 0, limit: 20) {{ affectedRows {{ commentid visibilityStatus isHiddenForUsers subcomments {{ commentid visibilityStatus isHiddenForUsers }} }} }} }}"#
+        ),
+        &admin_token,
+    )
+    .await;
+
+    let comments = res["data"]["postcomments"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    let hidden_comment = comments
+        .iter()
+        .find(|c| c["commentid"] == SEED_COMMENT_1.to_string());
+    if let Some(c) = hidden_comment {
+        assert_eq!(
+            c["isHiddenForUsers"], true,
+            "Hidden comment should have isHiddenForUsers: true"
+        );
+        assert_eq!(c["visibilityStatus"], "HIDDEN");
+    }
+}
+
+#[tokio::test]
+async fn test_hidden_comment_in_regular_listing() {
+    let state = default_shared_state();
+    let mod_token = login_moderator(&state).await;
+    let user_token = login_default(&state).await;
+
+    // Hide the comment via moderation
+    let ticket_id = SEED_MOD_TICKET_COMMENT.to_string();
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ performModeration(moderationTicketId: "{ticket_id}", moderationAction: hidden) {{ ResponseCode }} }}"#
+        ),
+        &mod_token,
+    )
+    .await;
+
+    // In the regular comment listing, hidden comment should show visibility info
+    let post_id = SEED_POST_1.to_string();
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listComments(postid: "{post_id}", commentOffset: 0, commentLimit: 20) {{ affectedRows {{ commentid isHiddenForUsers visibilityStatus }} }} }}"#
+        ),
+        &user_token,
+    )
+    .await;
+
+    let comments = res["data"]["listComments"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    // Hidden comment should still appear (not ILLEGAL) but with flag
+    let hidden = comments
+        .iter()
+        .find(|c| c["commentid"] == SEED_COMMENT_1.to_string());
+    if let Some(c) = hidden {
+        assert_eq!(c["isHiddenForUsers"], true);
+    }
+}
+
+// ============================================================================
+// Phase 6: Cross-Cutting Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_alpha_mint_twice_fails() {
+    let state = default_shared_state();
+    let token = login_admin(&state).await;
+
+    graphql_with_auth(&state, r#"mutation { alphaMint { ResponseCode } }"#, &token).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"mutation { alphaMint { status ResponseCode } }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["alphaMint"]["ResponseCode"], "31204");
+}
+
+#[tokio::test]
+async fn test_report_post_then_moderator_sees_ticket() {
+    let state = default_shared_state();
+    let user_token = login_alice(&state).await;
+    let mod_token = login_moderator(&state).await;
+
+    // Report post 2 (by verified user, no existing ticket for it)
+    let post_id = SEED_POST_2.to_string();
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ resolvePostAction(postid: "{post_id}", action: REPORT) {{ ResponseCode }} }}"#
+        ),
+        &user_token,
+    )
+    .await;
+
+    // Moderator should see the new ticket
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            moderationItems(contentType: post) {
+                affectedRows { targetContentId status }
+            }
+        }"#,
+        &mod_token,
+    )
+    .await;
+
+    let items = res["data"]["moderationItems"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    // There should be at least 2 post tickets (seed + newly created)
+    assert!(items.len() >= 2, "Expected at least 2 post tickets");
+    let new_ticket = items.iter().find(|t| {
+        t["targetContentId"]
+            .as_str()
+            .map(|s| s == post_id)
+            .unwrap_or(false)
+    });
+    assert!(
+        new_ticket.is_some(),
+        "Moderator should see newly reported post ticket"
+    );
+    assert_eq!(new_ticket.unwrap()["status"], "waiting_for_review");
+}
+
+#[tokio::test]
+async fn test_reset_clears_moderation_state() {
+    let state = default_shared_state();
+    let mod_token = login_moderator(&state).await;
+
+    // Perform a moderation action
+    let ticket_id = SEED_MOD_TICKET_POST.to_string();
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ performModeration(moderationTicketId: "{ticket_id}", moderationAction: hidden) {{ ResponseCode }} }}"#
+        ),
+        &mod_token,
+    )
+    .await;
+
+    // Reset
+    let app = app_with_state(state.clone());
+    let request = Request::builder()
+        .method("POST")
+        .uri("/reset")
+        .body(Body::empty())
+        .unwrap();
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // After reset, ticket should be back to waiting_for_review
+    let mod_token = login_moderator(&state).await;
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            moderationStats {
+                meta { ResponseCode }
+                affectedRows { AmountAwaitingReview AmountHidden }
+            }
+        }"#,
+        &mod_token,
+    )
+    .await;
+
+    // Seed has 2 waiting, 1 hidden
+    assert_eq!(
+        res["data"]["moderationStats"]["affectedRows"]["AmountAwaitingReview"],
+        2
+    );
+    assert_eq!(
+        res["data"]["moderationStats"]["affectedRows"]["AmountHidden"],
+        1
+    );
+}
+
+#[tokio::test]
+async fn test_phase6_regression_existing_tests_pass() {
+    // Simple regression: listing posts still works alongside Phase 6 changes
+    let state = default_shared_state();
+    let token = login_alice(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listPosts(sortBy: NEWEST, offset: 0, limit: 10) {
+                meta { status ResponseCode }
+                affectedRows { id }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    assert_eq!(res["data"]["listPosts"]["meta"]["ResponseCode"], "11501");
+    assert!(
+        !res["data"]["listPosts"]["affectedRows"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
 }

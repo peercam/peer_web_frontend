@@ -8,6 +8,7 @@ use axum::{Json, Router, extract::State, routing::post};
 use tower_http::cors::{Any, CorsLayer};
 
 pub mod filters;
+pub mod guards;
 pub mod routes;
 pub mod schema;
 pub mod seed;
@@ -39,18 +40,36 @@ async fn graphql_handler(
     headers: HeaderMap,
     req: GraphQLRequest,
 ) -> async_graphql_axum::GraphQLResponse {
-    let current_user = extract_bearer_user(&state, &headers).await;
+    let (current_user, roles_mask) = extract_bearer_user(&state, &headers).await;
     let mut request = req.into_inner();
     request = request.data(CurrentUser(current_user));
+    if let Some(mask) = roles_mask {
+        request = request.data(guards::UserRolesMask(mask));
+    }
     state.schema.execute(request).await.into()
 }
 
-async fn extract_bearer_user(state: &AppState, headers: &HeaderMap) -> Option<Uuid> {
-    let auth_header = headers.get("authorization")?;
-    let auth_str = auth_header.to_str().ok()?;
-    let token = auth_str.strip_prefix("Bearer ")?;
+async fn extract_bearer_user(state: &AppState, headers: &HeaderMap) -> (Option<Uuid>, Option<u32>) {
+    let auth_header = match headers.get("authorization") {
+        Some(h) => h,
+        None => return (None, None),
+    };
+    let auth_str = match auth_header.to_str() {
+        Ok(s) => s,
+        Err(_) => return (None, None),
+    };
+    let token = match auth_str.strip_prefix("Bearer ") {
+        Some(t) => t,
+        None => return (None, None),
+    };
     let mock_state = state.mock_state.read().await;
-    mock_state.access_tokens.get(token).copied()
+    match mock_state.access_tokens.get(token) {
+        Some(&uid) => {
+            let roles_mask = mock_state.users.get(&uid).map(|u| u.role).unwrap_or(0);
+            (Some(uid), Some(roles_mask))
+        }
+        None => (None, None),
+    }
 }
 
 /// Reset handler — clears mutable state for test isolation

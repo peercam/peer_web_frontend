@@ -4,10 +4,12 @@ pub mod query;
 use async_graphql::{EmptySubscription, MergedObject, Schema};
 
 use crate::state::SharedState;
+use mutation::admin_gems::AdminGemMutation;
 use mutation::ads::AdMutation;
 use mutation::auth::AuthMutation;
 use mutation::chat::ChatMutation;
 use mutation::comment::CommentMutation;
+use mutation::moderation::ModerationMutation;
 use mutation::post::PostMutation;
 use mutation::profile::ProfileMutation;
 use mutation::registration::RegistrationMutation;
@@ -27,6 +29,8 @@ pub struct MutationRoot(
     pub WalletMutation,
     pub AdMutation,
     pub ShopMutation,
+    pub ModerationMutation,
+    pub AdminGemMutation,
 );
 
 /// The full GraphQL schema

@@ -118,6 +118,7 @@ impl RegistrationMutation {
                 img: None,
                 biography: None,
                 visibility_status: crate::state::ContentVisibilityState::Normal,
+                ip: None,
                 created_at: chrono::Utc::now().to_rfc3339(),
                 updated_at: chrono::Utc::now().to_rfc3339(),
             },

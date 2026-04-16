@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::schema::mutation::auth::get_current_user;
 use crate::state::{
-    GemRecord, PostRecord, SharedState, DISLIKE_GEM_RETURN, LIKE_GEM_RETURN, VIEW_GEM_RETURN,
+    DISLIKE_GEM_RETURN, GemRecord, LIKE_GEM_RETURN, PostRecord, SharedState, VIEW_GEM_RETURN,
 };
 use crate::types::post::*;
 use crate::types::registration::DefaultResponse;
@@ -273,6 +273,8 @@ impl PostMutation {
                 if !state_write.post_reports.insert((viewer_id, post_uuid)) {
                     return DefaultResponse::error("31503", "Already reported");
                 }
+                // Create or update moderation ticket
+                let _ = state_write.report_content(post_uuid, "post", viewer_id);
                 DefaultResponse::success("11505", "Post reported")
             }
             PostActionType::Share => {

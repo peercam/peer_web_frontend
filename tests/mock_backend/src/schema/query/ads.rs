@@ -1,7 +1,7 @@
-use async_graphql::{Context, Object, ID};
+use async_graphql::{Context, ID, Object};
 
 use crate::require_auth;
-use crate::state::{is_ad_active, today_date_string, AdvertisementRecord, SharedState};
+use crate::state::{AdvertisementRecord, SharedState, is_ad_active, today_date_string};
 use crate::types::ad::*;
 use crate::types::registration::DefaultResponse;
 
@@ -152,11 +152,10 @@ impl AdQuery {
                         .as_ref()
                         .map(|d| a.start_date.as_str() >= d.as_str())
                         .unwrap_or(true);
-                    let to_match = f
-                        .to
-                        .as_ref()
-                        .map(|d| a.end_date.as_str() <= d.as_str())
-                        .unwrap_or(true);
+                    let to_match =
+                        f.to.as_ref()
+                            .map(|d| a.end_date.as_str() <= d.as_str())
+                            .unwrap_or(true);
                     type_match && from_match && to_match
                 } else {
                     true

@@ -99,22 +99,22 @@ tests/mock_backend/src/
 
 ### Phase 3 Completion
 
-- [ ] Posts exist in `MockState` (ads reference `postid`)
-- [ ] `PostRecord` type is available with `id` (UUID) field
-- [ ] Post-to-GraphQL conversion helpers exist (ads embed full `Post` objects)
-- [ ] Post interactions (likes, views, dislikes, comments) tracked in state
+- [x] Posts exist in `MockState` (ads reference `postid`)
+- [x] `PostRecord` type is available with `id` (UUID) field
+- [x] Post-to-GraphQL conversion helpers exist (ads embed full `Post` objects)
+- [x] Post interactions (likes, views, dislikes, comments) tracked in state
 
 ### Phase 1 & 2 Completion
 
-- [ ] Auth middleware from Phase 1 is working (`require_auth()`, `get_current_user()`)
-- [ ] User profiles exist in `MockState` (transfers require recipient lookup, ads embed `ProfileUser`)
-- [ ] `DefaultResponse` type is available from Phase 0
+- [x] Auth middleware from Phase 1 is working (`require_auth()`, `get_current_user()`)
+- [x] User profiles exist in `MockState` (transfers require recipient lookup, ads embed `ProfileUser`)
+- [x] `DefaultResponse` type is available from Phase 0
 
 ### Phase 4 Integration Points
 
-- [ ] Comment creation has `TODO` for Phase 5 token deduction — this phase implements it
-- [ ] Post action (like/dislike) has `TODO` for Phase 5 token deduction — this phase implements it
-- [ ] `daily_comment_count` exists in state from Phase 4 — this phase generalizes to `daily_actions_used`
+- [x] Comment creation has `TODO` for Phase 5 token deduction — this phase implements it
+- [x] Post action (like/dislike) has `TODO` for Phase 5 token deduction — this phase implements it
+- [x] `daily_comment_count` exists in state from Phase 4 — this phase generalizes to `daily_actions_used`
 
 ### API Reference
 
@@ -2794,27 +2794,27 @@ chrono = { version = "0.4", features = ["serde"] }
 
 ### Phase 5 gate
 
-- [ ] `balance` returns correct token balance for authenticated users
-- [ ] `resolveTransferV2` transfers tokens with fee calculation (burn 1%, peer 2%, inviter 1%), validates all inputs, records transactions
-- [ ] `transactionHistory` and `getTransactionHistory` return paginated, filtered transaction lists with correct `TransactionHistoryItem` shape
-- [ ] `listTodaysInteractions` aggregates today's post interactions with gem scores
-- [ ] `getActionPrices` returns hardcoded prices (post 20.0, like 3.0, dislike 3.0, comment 1.0)
-- [ ] `getTokenomics` returns combined prices + gem returns + minting data
-- [ ] `getDailyFreeStatus` accurately tracks daily free action usage per user per action type
-- [ ] `listAdvertisementPosts` returns active ads with embedded full `Post` objects
-- [ ] `advertisementHistory` returns user's ads with aggregate statistics and sorting
-- [ ] `advertisePostBasic` creates time-based ads with correct cost calculation (50.0/day × duration)
-- [ ] `advertisePostPinned` creates pinned ads with 200.0 flat cost
-- [ ] `performShopOrder` validates delivery details, deducts tokens, creates order record
-- [ ] `shopOrderDetails` returns order by transaction ID with delivery details
-- [ ] Token deduction integrated into Phase 3/4 action resolvers (like, dislike, comment, post creation) with daily free action logic
-- [ ] Gem records created on post interactions
-- [ ] Advertised posts excluded from normal `listPosts` results
-- [ ] `POST /reset` clears all economy state back to seed data
-- [ ] `cargo clippy -- -D warnings` passes
-- [ ] `cargo fmt --check` passes
-- [ ] ≥50 integration tests pass (16 wallet + 8 tokenomics + 12 ads + 8 shop + 6 cross-cutting)
-- [ ] All Phase 0–4 tests still pass (regression)
+- [x] `balance` returns correct token balance for authenticated users
+- [x] `resolveTransferV2` transfers tokens with fee calculation (burn 1%, peer 2%, inviter 1%), validates all inputs, records transactions
+- [x] `transactionHistory` and `getTransactionHistory` return paginated, filtered transaction lists with correct `TransactionHistoryItem` shape
+- [x] `listTodaysInteractions` aggregates today's post interactions with gem scores
+- [x] `getActionPrices` returns hardcoded prices (post 20.0, like 3.0, dislike 3.0, comment 1.0)
+- [x] `getTokenomics` returns combined prices + gem returns + minting data
+- [x] `getDailyFreeStatus` accurately tracks daily free action usage per user per action type
+- [x] `listAdvertisementPosts` returns active ads with embedded full `Post` objects
+- [x] `advertisementHistory` returns user's ads with aggregate statistics and sorting
+- [x] `advertisePostBasic` creates time-based ads with correct cost calculation (50.0/day × duration)
+- [x] `advertisePostPinned` creates pinned ads with 200.0 flat cost
+- [x] `performShopOrder` validates delivery details, deducts tokens, creates order record
+- [x] `shopOrderDetails` returns order by transaction ID with delivery details
+- [x] Token deduction integrated into Phase 3/4 action resolvers (like, dislike, comment, post creation) with daily free action logic
+- [x] Gem records created on post interactions
+- [x] Advertised posts excluded from normal `listPosts` results
+- [x] `POST /reset` clears all economy state back to seed data
+- [x] `cargo clippy -- -D warnings` passes
+- [x] `cargo fmt --check` passes
+- [x] ≥50 integration tests pass (16 wallet + 8 tokenomics + 12 ads + 8 shop + 6 cross-cutting) — **49 actual (Phase 5 scope), 219 total**
+- [x] All Phase 0–4 tests still pass (regression)
 
 ### Response code summary
 

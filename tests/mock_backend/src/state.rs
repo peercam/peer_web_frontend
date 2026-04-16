@@ -1,7 +1,8 @@
+use chrono::Datelike;
+use rust_decimal::Decimal;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use crate::types::ad::AdvertisementType;
@@ -40,6 +41,7 @@ pub struct User {
     pub img: Option<String>,
     pub biography: Option<String>,
     pub visibility_status: ContentVisibilityState,
+    pub ip: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -110,18 +112,26 @@ pub struct AdvertisementRecord {
 // ============================================================================
 
 /// System account constants.
-pub const SYSTEM_BURN_ACCOUNT: Uuid = Uuid::from_bytes([0xee,0xee,0xee,0xee, 0xee,0xee, 0x4e,0xee, 0xae,0xee, 0,0,0,0,0,1]);
-pub const SYSTEM_PEER_ACCOUNT: Uuid = Uuid::from_bytes([0xee,0xee,0xee,0xee, 0xee,0xee, 0x4e,0xee, 0xae,0xee, 0,0,0,0,0,2]);
-pub const SYSTEM_SHOP_ACCOUNT: Uuid = Uuid::from_bytes([0xee,0xee,0xee,0xee, 0xee,0xee, 0x4e,0xee, 0xae,0xee, 0,0,0,0,0,3]);
-pub const SYSTEM_MINT_ACCOUNT: Uuid = Uuid::from_bytes([0xee,0xee,0xee,0xee, 0xee,0xee, 0x4e,0xee, 0xae,0xee, 0,0,0,0,0,4]);
+pub const SYSTEM_BURN_ACCOUNT: Uuid = Uuid::from_bytes([
+    0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0x4e, 0xee, 0xae, 0xee, 0, 0, 0, 0, 0, 1,
+]);
+pub const SYSTEM_PEER_ACCOUNT: Uuid = Uuid::from_bytes([
+    0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0x4e, 0xee, 0xae, 0xee, 0, 0, 0, 0, 0, 2,
+]);
+pub const SYSTEM_SHOP_ACCOUNT: Uuid = Uuid::from_bytes([
+    0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0x4e, 0xee, 0xae, 0xee, 0, 0, 0, 0, 0, 3,
+]);
+pub const SYSTEM_MINT_ACCOUNT: Uuid = Uuid::from_bytes([
+    0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0x4e, 0xee, 0xae, 0xee, 0, 0, 0, 0, 0, 4,
+]);
 
 /// Action pricing constants.
-pub const POST_PRICE: Decimal = Decimal::from_parts(200, 0, 0, false, 1);   // 20.0
-pub const LIKE_PRICE: Decimal = Decimal::from_parts(30, 0, 0, false, 1);    // 3.0
+pub const POST_PRICE: Decimal = Decimal::from_parts(200, 0, 0, false, 1); // 20.0
+pub const LIKE_PRICE: Decimal = Decimal::from_parts(30, 0, 0, false, 1); // 3.0
 pub const DISLIKE_PRICE: Decimal = Decimal::from_parts(30, 0, 0, false, 1); // 3.0
 pub const COMMENT_PRICE: Decimal = Decimal::from_parts(10, 0, 0, false, 1); // 1.0
 pub const AD_BASIC_DAILY_PRICE: Decimal = Decimal::from_parts(500, 0, 0, false, 1); // 50.0
-pub const AD_PINNED_PRICE: Decimal = Decimal::from_parts(2000, 0, 0, false, 1);     // 200.0
+pub const AD_PINNED_PRICE: Decimal = Decimal::from_parts(2000, 0, 0, false, 1); // 200.0
 
 /// Daily free action limits.
 pub const FREE_POSTS: u32 = 1;
@@ -136,8 +146,8 @@ pub const DISLIKE_GEM_RETURN: f64 = -3.0;
 pub const COMMENT_GEM_RETURN: f64 = 2.0;
 
 /// Fee rates for transfers.
-pub const BURN_FEE_RATE: Decimal = Decimal::from_parts(1, 0, 0, false, 2);    // 0.01
-pub const PEER_FEE_RATE: Decimal = Decimal::from_parts(2, 0, 0, false, 2);    // 0.02
+pub const BURN_FEE_RATE: Decimal = Decimal::from_parts(1, 0, 0, false, 2); // 0.01
+pub const PEER_FEE_RATE: Decimal = Decimal::from_parts(2, 0, 0, false, 2); // 0.02
 pub const INVITER_FEE_RATE: Decimal = Decimal::from_parts(1, 0, 0, false, 2); // 0.01
 
 /// Internal transaction storage record.
@@ -199,6 +209,19 @@ pub struct ShopDeliveryRecord {
     pub city: String,
     pub zipcode: String,
     pub country: String,
+}
+
+/// A moderation ticket record.
+#[derive(Debug, Clone)]
+pub struct ModerationTicketRecord {
+    pub id: Uuid,
+    pub target_content_id: Uuid,
+    pub target_type: String,
+    pub reporter_ids: Vec<Uuid>,
+    pub reports_count: i32,
+    pub status: String,
+    pub moderated_by: Option<Uuid>,
+    pub created_at: String,
 }
 
 /// Internal comment storage record (not the GraphQL type).
@@ -288,6 +311,11 @@ pub struct MockState {
     pub gems: Vec<GemRecord>,
     pub minted_dates: HashSet<String>,
     pub shop_orders: Vec<ShopOrderRecord>,
+
+    // --- Phase 6: Admin & Moderation ---
+    pub moderation_tickets: Vec<ModerationTicketRecord>,
+    pub content_visibility: HashMap<Uuid, String>,
+    pub alpha_minted: bool,
 }
 
 impl MockState {
@@ -495,8 +523,15 @@ impl MockState {
                 Some(record.mediadescription.clone())
             },
             createdat: record.created_at.clone(),
-            visibility_status: Some(record.visibility_status.clone()),
-            is_hidden_for_users: Some(record.visibility_status == "HIDDEN"),
+            visibility_status: {
+                let mod_vis = self.get_visibility(&record.id);
+                if mod_vis != "NORMAL" {
+                    Some(mod_vis.to_string())
+                } else {
+                    Some(record.visibility_status.clone())
+                }
+            },
+            is_hidden_for_users: Some(self.get_visibility(&record.id) == "HIDDEN"),
             has_active_reports: Some(has_reports),
             amountreports,
             amountlikes,
@@ -534,6 +569,12 @@ impl MockState {
             .iter()
             .filter(|p| {
                 if p.visibility_status != "VISIBLE" {
+                    return false;
+                }
+
+                // Content visibility from moderation
+                let mod_vis = self.get_visibility(&p.id);
+                if mod_vis == "ILLEGAL" {
                     return false;
                 }
 
@@ -713,6 +754,8 @@ impl MockState {
             },
         };
 
+        let mod_vis = self.get_visibility(&record.id);
+
         Comment {
             commentid: record.id.to_string().into(),
             userid: record.author_id.to_string().into(),
@@ -724,6 +767,8 @@ impl MockState {
             amountreplies,
             isliked,
             user,
+            visibility_status: Some(mod_vis.to_string()),
+            is_hidden_for_users: Some(mod_vis == "HIDDEN"),
         }
     }
 
@@ -865,17 +910,20 @@ impl MockState {
         let post_record = self.posts.iter().find(|p| p.id == record.post_id)?;
         let post = self.post_record_to_graphql(post_record, Some(record.advertiser_id));
 
-        let user = self.users.get(&record.advertiser_id).map(|u| ProfileUserGql {
-            userid: u.uid.to_string().into(),
-            username: u.username.clone(),
-            slug: u.slug_num,
-            img: u.img.clone(),
-            visibility_status: ContentVisibilityStatus::Normal,
-            is_hidden_for_users: false,
-            has_active_reports: self.has_active_reports(&u.uid),
-            isfollowed: false,
-            isfollowing: false,
-        })?;
+        let user = self
+            .users
+            .get(&record.advertiser_id)
+            .map(|u| ProfileUserGql {
+                userid: u.uid.to_string().into(),
+                username: u.username.clone(),
+                slug: u.slug_num,
+                img: u.img.clone(),
+                visibility_status: ContentVisibilityStatus::Normal,
+                is_hidden_for_users: false,
+                has_active_reports: self.has_active_reports(&u.uid),
+                isfollowed: false,
+                isfollowing: false,
+            })?;
 
         let cost_f64 = record.token_cost.to_string().parse::<f64>().unwrap_or(0.0);
 
@@ -945,10 +993,639 @@ impl MockState {
         }
 
         *self.wallets.entry(user_id).or_insert(Decimal::ZERO) -= price;
-        *self.wallets.entry(SYSTEM_PEER_ACCOUNT).or_insert(Decimal::ZERO) += price;
+        *self
+            .wallets
+            .entry(SYSTEM_PEER_ACCOUNT)
+            .or_insert(Decimal::ZERO) += price;
         self.use_daily_action(user_id, action);
 
         Ok(false)
+    }
+
+    // ========================================================================
+    // Phase 6: Admin & Moderation helpers
+    // ========================================================================
+
+    /// Check if a UUID is a system account.
+    pub fn is_system_account(&self, uid: Uuid) -> bool {
+        uid == SYSTEM_BURN_ACCOUNT
+            || uid == SYSTEM_PEER_ACCOUNT
+            || uid == SYSTEM_SHOP_ACCOUNT
+            || uid == SYSTEM_MINT_ACCOUNT
+    }
+
+    /// Get content visibility status string (defaults to "NORMAL").
+    pub fn get_visibility(&self, content_id: &Uuid) -> &str {
+        self.content_visibility
+            .get(content_id)
+            .map(|s| s.as_str())
+            .unwrap_or("NORMAL")
+    }
+
+    /// Check if content is visible (not ILLEGAL).
+    pub fn is_content_visible(&self, content_id: &Uuid) -> bool {
+        self.get_visibility(content_id) != "ILLEGAL"
+    }
+
+    /// Resolve a user UUID into BasicUserInfo.
+    pub fn find_user_basic_info(
+        &self,
+        uid: &Uuid,
+    ) -> Option<crate::types::moderation::BasicUserInfo> {
+        let u = self.users.get(uid)?;
+        let vis = self.get_visibility(&u.uid);
+        Some(crate::types::moderation::BasicUserInfo {
+            userid: u.uid.to_string(),
+            img: u.img.clone(),
+            username: u.username.clone(),
+            slug: u.slug.clone(),
+            biography: u.biography.clone(),
+            visibility_status: Some(vis.to_string()),
+            has_active_reports: Some(self.has_active_reports(&u.uid)),
+            is_hidden_for_users: Some(vis == "HIDDEN"),
+            updatedat: Some(u.updated_at.clone()),
+        })
+    }
+
+    /// Resolve a moderation ticket record into its GraphQL representation.
+    pub fn resolve_moderation_item(
+        &self,
+        ticket: &ModerationTicketRecord,
+    ) -> crate::types::moderation::ModerationItem {
+        use crate::types::moderation::{ModerationItem, TargetContent};
+
+        let target_content = match ticket.target_type.as_str() {
+            "post" => {
+                let post = self
+                    .posts
+                    .iter()
+                    .find(|p| p.id == ticket.target_content_id)
+                    .map(|p| self.post_record_to_graphql(p, None));
+                TargetContent {
+                    post,
+                    comment: None,
+                    user: None,
+                }
+            }
+            "comment" => {
+                let comment = self
+                    .comments
+                    .iter()
+                    .find(|c| c.id == ticket.target_content_id)
+                    .map(|c| self.comment_record_to_graphql(c, None));
+                TargetContent {
+                    post: None,
+                    comment,
+                    user: None,
+                }
+            }
+            "user" => {
+                let user = self.find_user_basic_info(&ticket.target_content_id);
+                TargetContent {
+                    post: None,
+                    comment: None,
+                    user,
+                }
+            }
+            _ => TargetContent {
+                post: None,
+                comment: None,
+                user: None,
+            },
+        };
+
+        let reporters: Vec<_> = ticket
+            .reporter_ids
+            .iter()
+            .filter_map(|uid| self.find_user_basic_info(uid))
+            .collect();
+
+        let moderated_by = ticket
+            .moderated_by
+            .and_then(|uid| self.find_user_basic_info(&uid));
+
+        ModerationItem {
+            moderation_ticket_id: ticket.id.to_string().into(),
+            target_content_id: ticket.target_content_id.to_string().into(),
+            targettype: ticket.target_type.clone(),
+            reportscount: ticket.reports_count,
+            status: ticket.status.clone(),
+            createdat: ticket.created_at.clone(),
+            targetcontent: target_content,
+            reporters,
+            moderated_by,
+        }
+    }
+
+    /// Find or create a moderation ticket for reported content.
+    pub fn report_content(
+        &mut self,
+        target_id: Uuid,
+        target_type: &str,
+        reporter_id: Uuid,
+    ) -> Result<bool, &'static str> {
+        // Check if restored content (cannot be re-reported)
+        if self
+            .moderation_tickets
+            .iter()
+            .any(|t| t.target_content_id == target_id && t.status == "restored")
+        {
+            return Err("32104");
+        }
+
+        // Check if reporter already reported this content
+        if self
+            .moderation_tickets
+            .iter()
+            .any(|t| t.target_content_id == target_id && t.reporter_ids.contains(&reporter_id))
+        {
+            return Err("32104");
+        }
+
+        // Find existing waiting ticket for this content
+        if let Some(ticket) = self
+            .moderation_tickets
+            .iter_mut()
+            .find(|t| t.target_content_id == target_id && t.status == "waiting_for_review")
+        {
+            ticket.reporter_ids.push(reporter_id);
+            ticket.reports_count += 1;
+            return Ok(false);
+        }
+
+        // Create new ticket
+        let ticket = ModerationTicketRecord {
+            id: Uuid::new_v4(),
+            target_content_id: target_id,
+            target_type: target_type.to_string(),
+            reporter_ids: vec![reporter_id],
+            reports_count: 1,
+            status: "waiting_for_review".to_string(),
+            moderated_by: None,
+            created_at: today_date_string(),
+        };
+        self.moderation_tickets.push(ticket);
+        Ok(true)
+    }
+
+    /// Search users with admin-specific filters.
+    #[allow(clippy::too_many_arguments)]
+    pub fn search_users_admin(
+        &self,
+        userid: Option<&async_graphql::ID>,
+        email: Option<&str>,
+        username: Option<&str>,
+        status: Option<i32>,
+        verified: Option<i32>,
+        ip: Option<&str>,
+        offset: usize,
+        limit: usize,
+    ) -> Vec<crate::types::admin::AdminUser> {
+        let results: Vec<_> = self
+            .users
+            .values()
+            .filter(|u| {
+                if let Some(uid) = userid
+                    && u.uid.to_string() != uid.as_str()
+                {
+                    return false;
+                }
+                if let Some(e) = email
+                    && !u.email.to_lowercase().contains(&e.to_lowercase())
+                {
+                    return false;
+                }
+                if let Some(un) = username
+                    && !u.username.to_lowercase().contains(&un.to_lowercase())
+                {
+                    return false;
+                }
+                if let Some(s) = status
+                    && u.status as i32 != s
+                {
+                    return false;
+                }
+                if let Some(v) = verified {
+                    let is_verified = i32::from(self.verified_users.contains(&u.uid));
+                    if is_verified != v {
+                        return false;
+                    }
+                }
+                if let Some(ip_filter) = ip {
+                    match &u.ip {
+                        Some(user_ip) if user_ip == ip_filter => {}
+                        _ => return false,
+                    }
+                }
+                true
+            })
+            .skip(offset)
+            .take(limit)
+            .map(|u| {
+                let vis = self.get_visibility(&u.uid);
+                let liquidity = self.wallets.get(&u.uid).copied();
+                crate::types::admin::AdminUser {
+                    id: u.uid.to_string().into(),
+                    username: u.username.clone(),
+                    slug: u.slug.clone(),
+                    img: u.img.clone(),
+                    biography: u.biography.clone(),
+                    status: Some(u.status as i32),
+                    visibility_status: Some(vis.to_string()),
+                    has_active_reports: Some(self.has_active_reports(&u.uid)),
+                    is_hidden_for_users: Some(vis == "HIDDEN"),
+                    email: Some(u.email.clone()),
+                    verified: Some(if self.verified_users.contains(&u.uid) {
+                        1
+                    } else {
+                        0
+                    }),
+                    roles_mask: Some(u.role as i32),
+                    ip: u.ip.clone(),
+                    liquidity,
+                    situation: None,
+                }
+            })
+            .collect();
+        results
+    }
+
+    /// Get username by UUID.
+    pub fn get_username(&self, uid: Uuid) -> String {
+        self.users
+            .get(&uid)
+            .map(|u| u.username.clone())
+            .unwrap_or_else(|| "unknown".into())
+    }
+
+    /// Get admin post comments with subcomments and visibility info.
+    pub fn get_admin_post_comments(
+        &self,
+        post_id_str: &str,
+        offset: usize,
+        limit: usize,
+    ) -> Vec<crate::types::admin::PostCommentsData> {
+        use crate::types::admin::{PostCommentsData, PostSubCommentsData};
+        use crate::types::user::ContentVisibilityStatus;
+
+        let post_id = match Uuid::parse_str(post_id_str) {
+            Ok(id) => id,
+            Err(_) => return vec![],
+        };
+
+        // Get top-level comments for this post
+        let top_level: Vec<_> = self
+            .comments
+            .iter()
+            .filter(|c| c.post_id == post_id && c.parent_id.is_none())
+            .skip(offset)
+            .take(limit)
+            .collect();
+
+        top_level
+            .iter()
+            .map(|c| {
+                let vis_str = self.get_visibility(&c.id);
+                let vis = match vis_str {
+                    "HIDDEN" => ContentVisibilityStatus::Hidden,
+                    "ILLEGAL" => ContentVisibilityStatus::Illegal,
+                    _ => ContentVisibilityStatus::Normal,
+                };
+
+                let amountlikes = self
+                    .comment_likes
+                    .iter()
+                    .filter(|(_, cid)| *cid == c.id)
+                    .count();
+
+                let subcomments: Vec<PostSubCommentsData> = self
+                    .comments
+                    .iter()
+                    .filter(|sc| sc.parent_id == Some(c.id))
+                    .map(|sc| {
+                        let sc_vis_str = self.get_visibility(&sc.id);
+                        let sc_vis = match sc_vis_str {
+                            "HIDDEN" => ContentVisibilityStatus::Hidden,
+                            "ILLEGAL" => ContentVisibilityStatus::Illegal,
+                            _ => ContentVisibilityStatus::Normal,
+                        };
+                        let sc_likes = self
+                            .comment_likes
+                            .iter()
+                            .filter(|(_, cid)| *cid == sc.id)
+                            .count();
+                        let sc_replies = self
+                            .comments
+                            .iter()
+                            .filter(|r| r.parent_id == Some(sc.id))
+                            .count();
+                        PostSubCommentsData {
+                            commentid: Some(sc.id.to_string().into()),
+                            userid: Some(sc.author_id.to_string().into()),
+                            postid: Some(sc.post_id.to_string().into()),
+                            parentid: sc.parent_id.map(|p| p.to_string().into()),
+                            content: Some(sc.content.clone()),
+                            createdat: Some(sc.created_at.clone()),
+                            amountlikes: Some(Decimal::from(sc_likes as i64)),
+                            amountreplies: Some(Decimal::from(sc_replies as i64)),
+                            isliked: Some(false),
+                            user: self.find_user_basic_info(&sc.author_id),
+                            visibility_status: sc_vis,
+                            is_hidden_for_users: sc_vis_str == "HIDDEN",
+                        }
+                    })
+                    .collect();
+
+                PostCommentsData {
+                    commentid: Some(c.id.to_string().into()),
+                    userid: Some(c.author_id.to_string().into()),
+                    postid: Some(c.post_id.to_string().into()),
+                    parentid: None,
+                    content: Some(c.content.clone()),
+                    createdat: Some(c.created_at.clone()),
+                    amountlikes: Some(Decimal::from(amountlikes as i64)),
+                    isliked: Some(false),
+                    user: self.find_user_basic_info(&c.author_id),
+                    subcomments: if subcomments.is_empty() {
+                        None
+                    } else {
+                        Some(subcomments)
+                    },
+                    visibility_status: vis,
+                    is_hidden_for_users: vis_str == "HIDDEN",
+                }
+            })
+            .collect()
+    }
+
+    /// Aggregate gem records into DailyGemStatusData (d0–d7, w0, m0, y0).
+    pub fn aggregate_gems_by_period(&self) -> crate::types::admin_gems::DailyGemStatusData {
+        let today = chrono::Utc::now().date_naive();
+
+        let gem_date = |g: &GemRecord| -> Option<chrono::NaiveDate> {
+            chrono::NaiveDate::parse_from_str(&g.created_at[..10], "%Y-%m-%d").ok()
+        };
+
+        let sum_for = |filter: &dyn Fn(chrono::NaiveDate) -> bool| -> Decimal {
+            let total: f64 = self
+                .gems
+                .iter()
+                .filter_map(|g| gem_date(g).map(|d| (d, g.gems)))
+                .filter(|(d, _)| filter(*d))
+                .map(|(_, gems)| gems)
+                .sum();
+            Decimal::from_f64_retain(total).unwrap_or(Decimal::ZERO)
+        };
+
+        let day = |n: i64| -> Decimal {
+            let target = today - chrono::Duration::days(n);
+            sum_for(&|d| d == target)
+        };
+
+        let week_start =
+            today - chrono::Duration::days(today.weekday().num_days_from_monday() as i64);
+        let month_start = today.with_day(1).unwrap_or(today);
+        let year_start = chrono::NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap_or(today);
+
+        crate::types::admin_gems::DailyGemStatusData {
+            d0: day(0),
+            d1: day(1),
+            d2: day(2),
+            d3: day(3),
+            d4: day(4),
+            d5: day(5),
+            d6: day(6),
+            d7: day(7),
+            w0: sum_for(&|d| d >= week_start && d <= today),
+            m0: sum_for(&|d| d >= month_start && d <= today),
+            y0: sum_for(&|d| d >= year_start && d <= today),
+        }
+    }
+
+    /// Get per-user gem totals for a specific day filter.
+    pub fn get_gems_for_day(
+        &self,
+        day: &crate::types::wallet::DayFilterType,
+    ) -> (
+        Vec<crate::types::admin_gems::DailyGemsResultsUserData>,
+        Decimal,
+    ) {
+        let target_date = day_filter_to_date(day);
+        let mut user_gems: std::collections::HashMap<Uuid, f64> = std::collections::HashMap::new();
+
+        for g in &self.gems {
+            if g.created_at.starts_with(&target_date) {
+                *user_gems.entry(g.user_id).or_default() += g.gems;
+            }
+        }
+
+        let total: f64 = user_gems.values().sum();
+        let results: Vec<_> = user_gems
+            .into_iter()
+            .map(
+                |(uid, gems)| crate::types::admin_gems::DailyGemsResultsUserData {
+                    userid: Some(uid.to_string().into()),
+                    pkey: Some(uid.to_string().into()),
+                    gems: Some(Decimal::from_f64_retain(gems).unwrap_or(Decimal::ZERO)),
+                },
+            )
+            .collect();
+
+        (
+            results,
+            Decimal::from_f64_retain(total).unwrap_or(Decimal::ZERO),
+        )
+    }
+
+    /// Convert pending interactions to gem records. Returns count converted.
+    pub fn convert_interactions_to_gems(&mut self) -> usize {
+        let now = today_date_string();
+        let mut count = 0usize;
+
+        // Scan post interactions and create gem records for unprocessed ones
+        // We track which (user, post, action) combos already have gem records
+        let existing_gems: std::collections::HashSet<(Uuid, Uuid, String)> = self
+            .gems
+            .iter()
+            .map(|g| (g.user_id, g.post_id, g.action.clone()))
+            .collect();
+
+        // Process likes
+        let likes: Vec<(Uuid, Uuid)> = self.post_likes.iter().copied().collect();
+        for (liker_id, post_id) in likes {
+            if let Some(post) = self.posts.iter().find(|p| p.id == post_id) {
+                let author_id = post.author_id;
+                if author_id != liker_id
+                    && !existing_gems.contains(&(author_id, post_id, "like".to_string()))
+                {
+                    self.gems.push(GemRecord {
+                        user_id: author_id,
+                        post_id,
+                        from_user_id: liker_id,
+                        gems: LIKE_GEM_RETURN,
+                        action: "like".into(),
+                        created_at: format!("{now}T00:00:00Z"),
+                    });
+                    count += 1;
+                }
+            }
+        }
+
+        // Process views
+        let views: Vec<(Uuid, Uuid)> = self.post_views.iter().copied().collect();
+        for (viewer_id, post_id) in views {
+            if let Some(post) = self.posts.iter().find(|p| p.id == post_id) {
+                let author_id = post.author_id;
+                if author_id != viewer_id
+                    && !existing_gems.contains(&(author_id, post_id, "view".to_string()))
+                {
+                    self.gems.push(GemRecord {
+                        user_id: author_id,
+                        post_id,
+                        from_user_id: viewer_id,
+                        gems: VIEW_GEM_RETURN,
+                        action: "view".into(),
+                        created_at: format!("{now}T00:00:00Z"),
+                    });
+                    count += 1;
+                }
+            }
+        }
+
+        // Process dislikes (negative gems for the post author)
+        let dislikes: Vec<(Uuid, Uuid)> = self.post_dislikes.iter().copied().collect();
+        for (disliker_id, post_id) in dislikes {
+            if let Some(post) = self.posts.iter().find(|p| p.id == post_id) {
+                let author_id = post.author_id;
+                if author_id != disliker_id
+                    && !existing_gems.contains(&(author_id, post_id, "dislike".to_string()))
+                {
+                    self.gems.push(GemRecord {
+                        user_id: author_id,
+                        post_id,
+                        from_user_id: disliker_id,
+                        gems: DISLIKE_GEM_RETURN,
+                        action: "dislike".into(),
+                        created_at: format!("{now}T00:00:00Z"),
+                    });
+                    count += 1;
+                }
+            }
+        }
+
+        // Process comments (gems for the post author per unique commenter)
+        let comment_pairs: Vec<(Uuid, Uuid)> = self
+            .comments
+            .iter()
+            .map(|c| (c.author_id, c.post_id))
+            .collect();
+        for (commenter_id, post_id) in comment_pairs {
+            if let Some(post) = self.posts.iter().find(|p| p.id == post_id) {
+                let author_id = post.author_id;
+                if author_id != commenter_id
+                    && !existing_gems.contains(&(author_id, post_id, "comment".to_string()))
+                {
+                    self.gems.push(GemRecord {
+                        user_id: author_id,
+                        post_id,
+                        from_user_id: commenter_id,
+                        gems: COMMENT_GEM_RETURN,
+                        action: "comment".into(),
+                        created_at: format!("{now}T00:00:00Z"),
+                    });
+                    count += 1;
+                }
+            }
+        }
+
+        count
+    }
+
+    /// Distribute tokens from gems for a specific date.
+    pub fn distribute_gems_to_tokens(
+        &mut self,
+        date: &str,
+        daily_token_amount: f64,
+    ) -> Option<(crate::types::admin_gems::GemstersData, i32)> {
+        use crate::types::admin_gems::*;
+
+        // Gather user gems for the date
+        let mut user_gems: std::collections::HashMap<Uuid, f64> = std::collections::HashMap::new();
+        for g in &self.gems {
+            if g.created_at.starts_with(date) {
+                *user_gems.entry(g.user_id).or_default() += g.gems;
+            }
+        }
+
+        if user_gems.is_empty() {
+            return None;
+        }
+
+        let total_gems: f64 = user_gems.values().sum();
+        if total_gems <= 0.0 {
+            return None;
+        }
+
+        let gemsintoken = daily_token_amount / total_gems;
+
+        let mut user_statuses = Vec::new();
+        for (&uid, &gems) in &user_gems {
+            let tokens = gems * gemsintoken;
+            let percentage = if total_gems > 0.0 {
+                (gems / total_gems) * 100.0
+            } else {
+                0.0
+            };
+
+            let token_dec = Decimal::from_f64_retain(tokens).unwrap_or(Decimal::ZERO);
+            *self.wallets.entry(uid).or_insert(Decimal::ZERO) += token_dec;
+            *self
+                .wallets
+                .entry(SYSTEM_MINT_ACCOUNT)
+                .or_insert(Decimal::ZERO) -= token_dec;
+
+            // Get gem details for this user on this date
+            let details: Vec<GemstersUserStatusDetails> = self
+                .gems
+                .iter()
+                .filter(|g| g.user_id == uid && g.created_at.starts_with(date))
+                .map(|g| GemstersUserStatusDetails {
+                    gemid: Some(Uuid::new_v4().to_string().into()),
+                    userid: Some(g.user_id.to_string().into()),
+                    postid: Some(g.post_id.to_string().into()),
+                    fromid: Some(g.from_user_id.to_string().into()),
+                    gems: Some(Decimal::from_f64_retain(g.gems).unwrap_or(Decimal::ZERO)),
+                    numbers: Some(Decimal::from(1)),
+                    whereby: Some(Decimal::from_f64_retain(g.gems).unwrap_or(Decimal::ZERO)),
+                    createdat: Some(g.created_at.clone()),
+                })
+                .collect();
+
+            user_statuses.push(GemstersUserStatus {
+                userid: Some(uid.to_string().into()),
+                gems: Some(Decimal::from_f64_retain(gems).unwrap_or(Decimal::ZERO)),
+                tokens: Some(token_dec),
+                percentage: Some(Decimal::from_f64_retain(percentage).unwrap_or(Decimal::ZERO)),
+                details: if details.is_empty() {
+                    None
+                } else {
+                    Some(details)
+                },
+            });
+        }
+
+        let counter = user_statuses.len() as i32;
+
+        let data = GemstersData {
+            win_status: Some(WinStatus {
+                total_gems: Decimal::from_f64_retain(total_gems).unwrap_or(Decimal::ZERO),
+                gemsintoken: Decimal::from_f64_retain(gemsintoken).unwrap_or(Decimal::ZERO),
+                bestatigung: Decimal::from(1),
+            }),
+            user_status: Some(user_statuses),
+        };
+
+        Some((data, counter))
     }
 }
 
@@ -960,4 +1637,22 @@ pub fn today_date_string() -> String {
 /// Check if an advertisement is currently active.
 pub fn is_ad_active(ad: &AdvertisementRecord, today: &str) -> bool {
     ad.start_date.as_str() <= today && today <= ad.end_date.as_str()
+}
+
+/// Convert DayFilterType to a YYYY-MM-DD date string.
+pub fn day_filter_to_date(day: &crate::types::wallet::DayFilterType) -> String {
+    use crate::types::wallet::DayFilterType;
+    let today = chrono::Utc::now().date_naive();
+    let target = match day {
+        DayFilterType::D0 => today,
+        DayFilterType::D1 => today - chrono::Duration::days(1),
+        DayFilterType::D2 => today - chrono::Duration::days(2),
+        DayFilterType::D3 => today - chrono::Duration::days(3),
+        DayFilterType::D4 => today - chrono::Duration::days(4),
+        DayFilterType::D5 => today - chrono::Duration::days(5),
+        DayFilterType::D6 => today - chrono::Duration::days(6),
+        DayFilterType::D7 => today - chrono::Duration::days(7),
+        DayFilterType::W0 | DayFilterType::M0 | DayFilterType::Y0 => today,
+    };
+    target.format("%Y-%m-%d").to_string()
 }

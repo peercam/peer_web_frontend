@@ -1,4 +1,4 @@
-use async_graphql::{Enum, InputObject, SimpleObject, ID};
+use async_graphql::{Enum, ID, InputObject, SimpleObject};
 use serde::{Deserialize, Serialize};
 
 use super::post::Post;

@@ -99,26 +99,26 @@ tests/mock_backend/src/
 
 ### Phase 3 Completion
 
-- [ ] Posts exist in `MockState` (moderation targets posts)
-- [ ] `PostRecord` type is available with `id`, `visibility_status` fields
-- [ ] Post reporting (`postAction(REPORT)`) is implemented
-- [ ] Comment reporting is implemented (Phase 4)
-- [ ] User reporting (`reportUser`) is implemented (Phase 2)
+- [x] Posts exist in `MockState` (moderation targets posts)
+- [x] `PostRecord` type is available with `id`, `visibility_status` fields
+- [x] Post reporting (`postAction(REPORT)`) is implemented
+- [x] Comment reporting is implemented (Phase 4)
+- [x] User reporting (`reportUser`) is implemented (Phase 2)
 
 ### Phase 1 & 2 Completion
 
-- [ ] Auth middleware from Phase 1 is working (`require_auth()`, `get_current_user()`)
-- [ ] User profiles exist in `MockState` (admin user search, reporter info)
-- [ ] `DefaultResponse` type is available from Phase 0
-- [ ] `BasicUserInfo` type is available from Phase 2
+- [x] Auth middleware from Phase 1 is working (`require_auth()`, `get_current_user()`)
+- [x] User profiles exist in `MockState` (admin user search, reporter info)
+- [x] `DefaultResponse` type is available from Phase 0
+- [x] `BasicUserInfo` type is available from Phase 2
 
 ### Phase 5 Completion
 
-- [ ] Wallets exist in `MockState` (admin user search shows `liquidity`)
-- [ ] Gem records exist in `MockState` (admin gem queries read from these)
-- [ ] `GemRecord` struct is available
-- [ ] Mint account exists as a system constant
-- [ ] `daily_actions_used` tracking is in place
+- [x] Wallets exist in `MockState` (admin user search shows `liquidity`)
+- [x] Gem records exist in `MockState` (admin gem queries read from these)
+- [x] `GemRecord` struct is available
+- [x] Mint account exists as a system constant
+- [x] `daily_actions_used` tracking is in place
 
 ### API Reference
 
@@ -1790,28 +1790,28 @@ pub struct MutationRoot(
 
 ### Phase 6 gate
 
-- [ ] `RoleGuard` correctly blocks unauthenticated (`60501`) and unauthorized (`62101`) access
-- [ ] `moderationStats` returns accurate ticket counts by status
-- [ ] `moderationItems` returns filtered, paginated tickets with resolved `TargetContent`, `reporters`, and `moderatedBy`
-- [ ] `performModeration` transitions ticket status and updates `content_visibility` for hide/restore/illegal actions
-- [ ] Content visibility states (`NORMAL`, `HIDDEN`, `ILLEGAL`) are respected in Phase 3/4 list queries
-- [ ] Report actions (Phase 2/3/4) create or update moderation tickets with proper deduplication
-- [ ] `listUsersAdminV2` returns extended user data with email, IP, verified, roles_mask, liquidity
-- [ ] `listUsersAdminV2` validates all inputs (UUID format, IP format, userid+username exclusivity)
-- [ ] `allfriends` returns all follow relationships with pagination
-- [ ] `postcomments` returns comments with subcomments and visibility fields
-- [ ] `generateLeaderboard` validates date range and returns mock CSV link
-- [ ] `gemster` and `dailygemstatus` return gem aggregations by time period (d0–d7, w0, m0, y0)
-- [ ] `dailygemsresults` returns per-user gem breakdown for a specific day
-- [ ] `getMintAccount` returns mint account balance
-- [ ] `globalwins` converts pending interactions to gem records
-- [ ] `distributeTokensForGems` / `gemsters` distribute tokens proportional to gems, prevent duplicate minting
-- [ ] `alphaMint` credits non-system users once, rejects duplicate runs
-- [ ] `POST /reset` clears all moderation and admin state back to seed data
-- [ ] `cargo clippy -- -D warnings` passes
-- [ ] `cargo fmt --check` passes
-- [ ] ≥46 integration tests pass (14 moderation + 6 visibility + 12 admin + 10 gem/mint + 4 cross-cutting)
-- [ ] All Phase 0–5 tests still pass (regression)
+- [x] `RoleGuard` correctly blocks unauthenticated (`60501`) and unauthorized (`62101`) access
+- [x] `moderationStats` returns accurate ticket counts by status
+- [x] `moderationItems` returns filtered, paginated tickets with resolved `TargetContent`, `reporters`, and `moderatedBy`
+- [x] `performModeration` transitions ticket status and updates `content_visibility` for hide/restore/illegal actions
+- [x] Content visibility states (`NORMAL`, `HIDDEN`, `ILLEGAL`) are respected in Phase 3/4 list queries
+- [x] Report actions (Phase 2/3/4) create or update moderation tickets with proper deduplication
+- [x] `listUsersAdminV2` returns extended user data with email, IP, verified, roles_mask, liquidity
+- [x] `listUsersAdminV2` validates all inputs (UUID format, IP format, userid+username exclusivity)
+- [x] `allfriends` returns all follow relationships with pagination
+- [x] `postcomments` returns comments with subcomments and visibility fields
+- [x] `generateLeaderboard` validates date range and returns mock CSV link
+- [x] `gemster` and `dailygemstatus` return gem aggregations by time period (d0–d7, w0, m0, y0)
+- [x] `dailygemsresults` returns per-user gem breakdown for a specific day
+- [x] `getMintAccount` returns mint account balance
+- [x] `globalwins` converts pending interactions to gem records
+- [x] `distributeTokensForGems` / `gemsters` distribute tokens proportional to gems, prevent duplicate minting
+- [x] `alphaMint` credits non-system users once, rejects duplicate runs
+- [x] `POST /reset` clears all moderation and admin state back to seed data
+- [x] `cargo clippy -- -D warnings` passes
+- [x] `cargo fmt --check` passes
+- [x] ≥46 integration tests pass (14 moderation + 6 visibility + 12 admin + 10 gem/mint + 4 cross-cutting) — **47 actual**
+- [x] All Phase 0–5 tests still pass (regression)
 
 ### Response code summary
 

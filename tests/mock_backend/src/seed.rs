@@ -1,13 +1,13 @@
+use rust_decimal::Decimal;
 use std::collections::{HashMap, HashSet};
 use uuid::{Uuid, uuid};
-use rust_decimal::Decimal;
 
 use crate::state::{
-    AdvertisementRecord, ChatMessageRecord, ChatRecord, CommentRecord, ContentVisibilityState,
-    GemRecord, MockState, PostRecord, ShopDeliveryRecord, ShopOrderRecord, TransactionFeesRecord,
-    TransactionRecord, User, UserPreferencesState, SYSTEM_BURN_ACCOUNT, SYSTEM_PEER_ACCOUNT,
-    SYSTEM_SHOP_ACCOUNT, SYSTEM_MINT_ACCOUNT, LIKE_GEM_RETURN, VIEW_GEM_RETURN,
-    COMMENT_GEM_RETURN,
+    AdvertisementRecord, COMMENT_GEM_RETURN, ChatMessageRecord, ChatRecord, CommentRecord,
+    ContentVisibilityState, GemRecord, LIKE_GEM_RETURN, MockState, ModerationTicketRecord,
+    PostRecord, SYSTEM_BURN_ACCOUNT, SYSTEM_MINT_ACCOUNT, SYSTEM_PEER_ACCOUNT, SYSTEM_SHOP_ACCOUNT,
+    ShopDeliveryRecord, ShopOrderRecord, TransactionFeesRecord, TransactionRecord, User,
+    UserPreferencesState, VIEW_GEM_RETURN,
 };
 use crate::types::ad::AdvertisementType;
 use crate::types::wallet::TransactionCategory;
@@ -71,6 +71,18 @@ pub const SEED_AD_1: Uuid = uuid!("60000000-0000-4000-a000-000000000001");
 pub const SEED_SHOP_ORDER_1: Uuid = uuid!("70000000-0000-4000-a000-000000000001");
 pub const SEED_SHOP_TX_1: Uuid = uuid!("70000000-0000-4000-a000-000000000002");
 
+// --- Phase 6 seed admin/moderator user UUIDs ---
+pub const SEED_USER_ADMIN: Uuid = uuid!("ad000000-0000-4000-a000-000000000001");
+pub const SEED_USER_MODERATOR: Uuid = uuid!("ad000000-0000-4000-a000-000000000002");
+
+// --- Phase 6 seed moderation ticket UUIDs ---
+pub const SEED_MOD_TICKET_POST: Uuid = uuid!("ad000000-0000-4000-a000-00000000e001");
+pub const SEED_MOD_TICKET_COMMENT: Uuid = uuid!("ad000000-0000-4000-a000-00000000e002");
+pub const SEED_MOD_TICKET_USER: Uuid = uuid!("ad000000-0000-4000-a000-00000000e003");
+
+/// Mint initial balance constant.
+pub const MINT_INITIAL_BALANCE: Decimal = Decimal::from_parts(50_000_000, 0, 0, false, 1); // 5_000_000.0
+
 /// Default token balance for seeded users.
 pub const DEFAULT_USER_BALANCE: Decimal = Decimal::from_parts(10000, 0, 0, false, 1); // 1000.0
 
@@ -105,6 +117,16 @@ pub mod credentials_phase2 {
     pub const DAVE_USERNAME: &str = "dave_peer";
 }
 
+pub mod credentials_phase6 {
+    pub const ADMIN_EMAIL: &str = "admin@peerapp.de";
+    pub const ADMIN_PASSWORD: &str = "Admin1234";
+    pub const ADMIN_USERNAME: &str = "admin";
+
+    pub const MOD_EMAIL: &str = "mod@peerapp.de";
+    pub const MOD_PASSWORD: &str = "Mod1234";
+    pub const MOD_USERNAME: &str = "moderator";
+}
+
 impl Default for MockState {
     fn default() -> Self {
         use credentials::*;
@@ -136,6 +158,7 @@ impl Default for MockState {
                 img: None,
                 biography: None,
                 visibility_status: ContentVisibilityState::Normal,
+                ip: Some("192.168.1.2".to_string()),
                 created_at: "2025-01-01T00:00:00Z".to_string(),
                 updated_at: "2025-01-01T00:00:00Z".to_string(),
             },
@@ -157,6 +180,7 @@ impl Default for MockState {
                 img: None,
                 biography: None,
                 visibility_status: ContentVisibilityState::Normal,
+                ip: Some("192.168.1.3".to_string()),
                 created_at: "2025-01-02T00:00:00Z".to_string(),
                 updated_at: "2025-01-02T00:00:00Z".to_string(),
             },
@@ -182,6 +206,7 @@ impl Default for MockState {
                 img: Some("https://via.placeholder.com/96/alice".to_string()),
                 biography: Some("data:text/plain;base64,SGVsbG8gSSdtIEFsaWNl".to_string()),
                 visibility_status: ContentVisibilityState::Normal,
+                ip: Some("192.168.1.4".to_string()),
                 created_at: "2025-01-15T10:00:00Z".to_string(),
                 updated_at: "2025-06-01T12:00:00Z".to_string(),
             },
@@ -204,6 +229,7 @@ impl Default for MockState {
                 img: Some("https://via.placeholder.com/96/bob".to_string()),
                 biography: None,
                 visibility_status: ContentVisibilityState::Normal,
+                ip: Some("192.168.1.5".to_string()),
                 created_at: "2025-02-01T10:00:00Z".to_string(),
                 updated_at: "2025-05-15T08:00:00Z".to_string(),
             },
@@ -226,6 +252,7 @@ impl Default for MockState {
                 img: None,
                 biography: Some("data:text/plain;base64,Q2Fyb2wgaGVyZQ==".to_string()),
                 visibility_status: ContentVisibilityState::Normal,
+                ip: Some("192.168.1.6".to_string()),
                 created_at: "2025-03-01T10:00:00Z".to_string(),
                 updated_at: "2025-04-01T10:00:00Z".to_string(),
             },
@@ -248,6 +275,7 @@ impl Default for MockState {
                 img: None,
                 biography: None,
                 visibility_status: ContentVisibilityState::Normal,
+                ip: Some("192.168.1.7".to_string()),
                 created_at: "2025-04-01T10:00:00Z".to_string(),
                 updated_at: "2025-04-01T10:00:00Z".to_string(),
             },
@@ -255,6 +283,57 @@ impl Default for MockState {
         user_passwords.insert(SEED_USER_DAVE, DAVE_PASSWORD.to_string());
         registered_emails.insert(DAVE_EMAIL.to_string());
         verified_users.insert(SEED_USER_DAVE);
+
+        // ====================================================================
+        // Phase 6 seed admin & moderator users
+        // ====================================================================
+        use credentials_phase6::*;
+
+        // Admin user
+        users.insert(
+            SEED_USER_ADMIN,
+            User {
+                uid: SEED_USER_ADMIN,
+                email: ADMIN_EMAIL.to_string(),
+                username: ADMIN_USERNAME.to_string(),
+                slug: "admin".to_string(),
+                slug_num: 10007,
+                role: 16,
+                status: 0,
+                img: None,
+                biography: None,
+                visibility_status: ContentVisibilityState::Normal,
+                ip: Some("192.168.1.1".to_string()),
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                updated_at: "2025-01-01T00:00:00Z".to_string(),
+            },
+        );
+        user_passwords.insert(SEED_USER_ADMIN, ADMIN_PASSWORD.to_string());
+        registered_emails.insert(ADMIN_EMAIL.to_string());
+        verified_users.insert(SEED_USER_ADMIN);
+
+        // Moderator user
+        users.insert(
+            SEED_USER_MODERATOR,
+            User {
+                uid: SEED_USER_MODERATOR,
+                email: MOD_EMAIL.to_string(),
+                username: MOD_USERNAME.to_string(),
+                slug: "moderator".to_string(),
+                slug_num: 10008,
+                role: 256,
+                status: 0,
+                img: None,
+                biography: None,
+                visibility_status: ContentVisibilityState::Normal,
+                ip: Some("192.168.1.2".to_string()),
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                updated_at: "2025-01-01T00:00:00Z".to_string(),
+            },
+        );
+        user_passwords.insert(SEED_USER_MODERATOR, MOD_PASSWORD.to_string());
+        registered_emails.insert(MOD_EMAIL.to_string());
+        verified_users.insert(SEED_USER_MODERATOR);
 
         // ====================================================================
         // Phase 2 seed relationships
@@ -279,6 +358,8 @@ impl Default for MockState {
             SEED_USER_BOB,
             SEED_USER_CAROL,
             SEED_USER_DAVE,
+            SEED_USER_ADMIN,
+            SEED_USER_MODERATOR,
         ] {
             preferences.insert(uid, UserPreferencesState::default());
         }
@@ -323,12 +404,17 @@ impl Default for MockState {
                 SEED_USER_BOB,
                 SEED_USER_CAROL,
                 SEED_USER_DAVE,
+                SEED_USER_ADMIN,
+                SEED_USER_MODERATOR,
             ]),
             transactions: seed_transactions(SEED_USER_VERIFIED, SEED_USER_ALICE),
             daily_actions_used: HashMap::new(),
             gems: seed_gems(SEED_USER_VERIFIED, SEED_USER_ALICE),
             minted_dates: HashSet::new(),
             shop_orders: seed_shop_orders(SEED_USER_ALICE),
+            moderation_tickets: seed_moderation_tickets(),
+            content_visibility: seed_content_visibility(),
+            alpha_minted: false,
         }
     }
 }
@@ -645,9 +731,15 @@ fn seed_chat_messages(verified_user: Uuid, user2: Uuid) -> Vec<ChatMessageRecord
 fn seed_wallets(users: &[Uuid]) -> HashMap<Uuid, Decimal> {
     let mut wallets = HashMap::new();
     for &uid in users {
-        wallets.insert(uid, DEFAULT_USER_BALANCE);
+        if uid == SEED_USER_ADMIN {
+            wallets.insert(uid, Decimal::from_parts(100_000, 0, 0, false, 1)); // 10000.0
+        } else if uid == SEED_USER_MODERATOR {
+            wallets.insert(uid, Decimal::from_parts(50_000, 0, 0, false, 1)); // 5000.0
+        } else {
+            wallets.insert(uid, DEFAULT_USER_BALANCE);
+        }
     }
-    wallets.insert(SYSTEM_MINT_ACCOUNT, Decimal::from_parts(50_000_000, 0, 0, false, 1));
+    wallets.insert(SYSTEM_MINT_ACCOUNT, MINT_INITIAL_BALANCE);
     wallets.insert(SYSTEM_PEER_ACCOUNT, Decimal::ZERO);
     wallets.insert(SYSTEM_BURN_ACCOUNT, Decimal::ZERO);
     wallets.insert(SYSTEM_SHOP_ACCOUNT, Decimal::ZERO);
@@ -664,11 +756,11 @@ fn seed_transactions(user1: Uuid, user2: Uuid) -> Vec<TransactionRecord> {
             transaction_type: "CREDIT".into(),
             sender_id: user1,
             recipient_id: user2,
-            token_amount: Decimal::from_parts(500, 0, 0, false, 1),   // 50.0
+            token_amount: Decimal::from_parts(500, 0, 0, false, 1), // 50.0
             net_token_amount: Decimal::from_parts(500, 0, 0, false, 1),
             message: Some("Great post!".into()),
             fees: Some(TransactionFeesRecord {
-                total: Decimal::from_parts(20, 0, 0, false, 1),  // 2.0
+                total: Decimal::from_parts(20, 0, 0, false, 1), // 2.0
                 burn: Decimal::from_parts(5, 0, 0, false, 1),   // 0.5
                 peer: Decimal::from_parts(10, 0, 0, false, 1),  // 1.0
                 inviter: Some(Decimal::from_parts(5, 0, 0, false, 1)), // 0.5
@@ -683,7 +775,7 @@ fn seed_transactions(user1: Uuid, user2: Uuid) -> Vec<TransactionRecord> {
             transaction_type: "DEBIT".into(),
             sender_id: user1,
             recipient_id: SYSTEM_PEER_ACCOUNT,
-            token_amount: Decimal::from_parts(30, 0, 0, false, 1),  // 3.0
+            token_amount: Decimal::from_parts(30, 0, 0, false, 1), // 3.0
             net_token_amount: Decimal::from_parts(30, 0, 0, false, 1),
             message: None,
             fees: None,
@@ -754,4 +846,53 @@ fn seed_shop_orders(user2: Uuid) -> Vec<ShopOrderRecord> {
         },
         created_at: "2025-04-13T15:00:00Z".into(),
     }]
+}
+
+// ============================================================================
+// Phase 6: Seed Moderation Data
+// ============================================================================
+
+fn seed_moderation_tickets() -> Vec<ModerationTicketRecord> {
+    vec![
+        // Post ticket: waiting_for_review, reported by verified user
+        ModerationTicketRecord {
+            id: SEED_MOD_TICKET_POST,
+            target_content_id: SEED_POST_1,
+            target_type: "post".into(),
+            reporter_ids: vec![SEED_USER_ALICE],
+            reports_count: 1,
+            status: "waiting_for_review".into(),
+            moderated_by: None,
+            created_at: "2025-04-10T10:00:00Z".into(),
+        },
+        // Comment ticket: waiting_for_review, reported by bob
+        ModerationTicketRecord {
+            id: SEED_MOD_TICKET_COMMENT,
+            target_content_id: SEED_COMMENT_1,
+            target_type: "comment".into(),
+            reporter_ids: vec![SEED_USER_BOB],
+            reports_count: 1,
+            status: "waiting_for_review".into(),
+            moderated_by: None,
+            created_at: "2025-04-10T11:00:00Z".into(),
+        },
+        // User ticket: hidden, moderated by moderator, reported by alice and bob
+        ModerationTicketRecord {
+            id: SEED_MOD_TICKET_USER,
+            target_content_id: SEED_USER_DAVE,
+            target_type: "user".into(),
+            reporter_ids: vec![SEED_USER_ALICE, SEED_USER_BOB],
+            reports_count: 2,
+            status: "hidden".into(),
+            moderated_by: Some(SEED_USER_MODERATOR),
+            created_at: "2025-04-09T08:00:00Z".into(),
+        },
+    ]
+}
+
+fn seed_content_visibility() -> HashMap<Uuid, String> {
+    let mut map = HashMap::new();
+    // Dave is hidden (matching user ticket 3)
+    map.insert(SEED_USER_DAVE, "HIDDEN".into());
+    map
 }

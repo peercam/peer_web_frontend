@@ -35,9 +35,10 @@ impl ShopQuery {
 
         let state = ctx.data_unchecked::<SharedState>().read().await;
 
-        let order = state.shop_orders.iter().find(|o| {
-            o.transaction_id.to_string() == transaction_id && o.buyer_id == user_id
-        });
+        let order = state
+            .shop_orders
+            .iter()
+            .find(|o| o.transaction_id.to_string() == transaction_id && o.buyer_id == user_id);
 
         match order {
             Some(o) => ShopOrderDetailsResponse {
@@ -45,12 +46,9 @@ impl ShopQuery {
                 affected_rows: Some(vec![ShopOrderDetails {
                     shop_order_id: o.id.to_string(),
                     shop_item_id: o.shop_item_id.clone(),
-                    shop_item_specs: o
-                        .item_specs
-                        .as_ref()
-                        .map(|s| ShopItemSpecs {
-                            size: Some(s.clone()),
-                        }),
+                    shop_item_specs: o.item_specs.as_ref().map(|s| ShopItemSpecs {
+                        size: Some(s.clone()),
+                    }),
                     delivery_details: Some(ShopOrderDeliveryDetails {
                         name: Some(o.delivery.name.clone()),
                         email: Some(o.delivery.email.clone()),

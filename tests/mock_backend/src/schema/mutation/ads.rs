@@ -1,12 +1,12 @@
-use async_graphql::{Context, Object, ID};
+use async_graphql::{Context, ID, Object};
 use chrono::{NaiveDate, Utc};
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use crate::require_auth;
 use crate::state::{
-    is_ad_active, today_date_string, AdvertisementRecord, SharedState, TransactionRecord,
-    AD_BASIC_DAILY_PRICE, AD_PINNED_PRICE, SYSTEM_PEER_ACCOUNT,
+    AD_BASIC_DAILY_PRICE, AD_PINNED_PRICE, AdvertisementRecord, SYSTEM_PEER_ACCOUNT, SharedState,
+    TransactionRecord, is_ad_active, today_date_string,
 };
 use crate::types::ad::*;
 use crate::types::registration::DefaultResponse;
@@ -53,10 +53,7 @@ impl AdMutation {
             Some(p) if p.author_id == user_id => {}
             _ => {
                 return ListAdvertisementData {
-                    meta: DefaultResponse::error(
-                        "31510",
-                        "Post not found or not owned by you",
-                    ),
+                    meta: DefaultResponse::error("31510", "Post not found or not owned by you"),
                     affected_rows: None,
                 };
             }
@@ -186,10 +183,7 @@ impl AdMutation {
             Some(p) if p.author_id == user_id => {}
             _ => {
                 return ListAdvertisementData {
-                    meta: DefaultResponse::error(
-                        "31510",
-                        "Post not found or not owned by you",
-                    ),
+                    meta: DefaultResponse::error("31510", "Post not found or not owned by you"),
                     affected_rows: None,
                 };
             }

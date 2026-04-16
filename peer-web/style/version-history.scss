@@ -1,0 +1,134 @@
+// Version History page styles
+// Two-panel layout: version list (left) + version details (right)
+
+// ============================================================================
+// Layout
+// ============================================================================
+
+.version-history-layout {
+  .site_main_versionHistory {
+    padding: 1rem;
+  }
+}
+
+// ============================================================================
+// Version List (Left Panel)
+// ============================================================================
+
+.left_versionHistory {
+  a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+    text-decoration: none;
+    padding: 0 30px;
+    line-height: 80px;
+    border-radius: 50px;
+    transition: all 0.3s ease-in-out;
+    cursor: pointer;
+    margin: 0 0 20px 0;
+
+    &.active,
+    &:hover {
+      background-color: var(--bg-filter);
+    }
+
+    &.active::after {
+      content: "";
+      display: inline-block;
+      background-image: url(/svgnew/angle-small-right.svg);
+      background-repeat: no-repeat;
+      background-size: contain;
+      width: 25px;
+      height: 25px;
+      vertical-align: middle;
+    }
+  }
+}
+
+// ============================================================================
+// Version Detail (Right Panel)
+// ============================================================================
+
+.right_versionHistory {
+  .releaseVersion_content {
+    margin-top: 45px;
+  }
+
+  .releaseVersion_btns {
+    margin-top: auto;
+    display: flex;
+    gap: 20px;
+  }
+}
+
+.releaseVersion_header {
+  display: flex;
+  align-items: first baseline;
+  justify-content: space-between;
+
+  span {
+    color: var(--white-opacity-50);
+  }
+}
+
+.releaseVersion_btns .button.btn-transparent.Versionbtn-link {
+  width: 100%;
+  margin-top: 60px;
+}
+
+// ============================================================================
+// Responsive — 4K scaled layout (matches legacy min-width: 1000px breakpoint)
+// ============================================================================
+
+@media screen and (min-width: 1000px) {
+  .left_versionHistory a {
+    padding: 0 50px;
+    line-height: 150px;
+    border-radius: 100px;
+
+    &.active::after {
+      width: 54px;
+      height: 54px;
+    }
+  }
+}
+
+// ============================================================================
+// Loading & Error States
+// ============================================================================
+
+.loading-text {
+  padding: 2rem;
+  text-align: center;
+  color: var(--white-opacity-50);
+}
+
+.error-state {
+  padding: 2rem;
+  text-align: center;
+
+  .error-detail {
+    color: var(--white-opacity-50);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+  }
+}
+
+// ============================================================================
+// Responsive
+// ============================================================================
+
+@media screen and (min-width: 1000px) {
+  .left_versionHistory a {
+    padding: 0 50px;
+    line-height: 150px;
+    border-radius: 100px;
+
+    &.active::after {
+      width: 54px;
+      height: 54px;
+    }
+  }
+}

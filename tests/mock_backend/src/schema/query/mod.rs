@@ -1,18 +1,24 @@
+pub mod admin;
+pub mod admin_gems;
 pub mod ads;
 pub mod chat;
 pub mod comments;
 pub mod health;
+pub mod moderation;
 pub mod posts;
 pub mod shop;
 pub mod tokenomics;
 pub mod users;
 pub mod wallet;
 
-use async_graphql::MergedObject;
+use admin::AdminQuery;
+use admin_gems::AdminGemQuery;
 use ads::AdQuery;
+use async_graphql::MergedObject;
 use chat::ChatQuery;
 use comments::CommentQuery;
 use health::HealthQuery;
+use moderation::ModerationQuery;
 use posts::PostQuery;
 use shop::ShopQuery;
 use tokenomics::TokenomicsQuery;
@@ -30,4 +36,7 @@ pub struct QueryRoot(
     TokenomicsQuery,
     AdQuery,
     ShopQuery,
+    ModerationQuery,
+    AdminQuery,
+    AdminGemQuery,
 );

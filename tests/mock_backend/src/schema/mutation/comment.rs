@@ -3,7 +3,7 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use crate::require_auth;
-use crate::state::{CommentRecord, GemRecord, SharedState, COMMENT_GEM_RETURN};
+use crate::state::{COMMENT_GEM_RETURN, CommentRecord, GemRecord, SharedState};
 use crate::types::comment::*;
 use crate::types::registration::DefaultResponse;
 
@@ -249,6 +249,9 @@ impl CommentMutation {
         }
 
         state.comment_reports.insert((user_id, comment_uuid));
+
+        // Create or update moderation ticket
+        let _ = state.report_content(comment_uuid, "comment", user_id);
 
         DefaultResponse::success("11604", "Comment reported")
     }

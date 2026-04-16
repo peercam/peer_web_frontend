@@ -132,6 +132,9 @@ impl ProfileMutation {
             created_at: chrono::Utc::now().to_rfc3339(),
         });
 
+        // Create or update moderation ticket
+        let _ = state_write.report_content(target, "user", me);
+
         DefaultResponse::success("11012", "User reported")
     }
 

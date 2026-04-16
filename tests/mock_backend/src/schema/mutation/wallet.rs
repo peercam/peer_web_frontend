@@ -1,13 +1,13 @@
-use async_graphql::{Context, Object, ID};
+use async_graphql::{Context, ID, Object};
 use chrono::Utc;
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use crate::require_auth;
 use crate::state::{
-    SharedState, TransactionFeesRecord, TransactionRecord, BURN_FEE_RATE, INVITER_FEE_RATE,
-    PEER_FEE_RATE, SYSTEM_BURN_ACCOUNT, SYSTEM_MINT_ACCOUNT, SYSTEM_PEER_ACCOUNT,
-    SYSTEM_SHOP_ACCOUNT,
+    BURN_FEE_RATE, INVITER_FEE_RATE, PEER_FEE_RATE, SYSTEM_BURN_ACCOUNT, SYSTEM_MINT_ACCOUNT,
+    SYSTEM_PEER_ACCOUNT, SYSTEM_SHOP_ACCOUNT, SharedState, TransactionFeesRecord,
+    TransactionRecord,
 };
 use crate::types::registration::DefaultResponse;
 use crate::types::wallet::*;
@@ -117,7 +117,11 @@ impl WalletMutation {
         let total_deduction = numberoftokens + total_fee;
 
         // Check balance
-        let sender_balance = state.wallets.get(&user_id).copied().unwrap_or(Decimal::ZERO);
+        let sender_balance = state
+            .wallets
+            .get(&user_id)
+            .copied()
+            .unwrap_or(Decimal::ZERO);
         if sender_balance < total_deduction {
             return TransferTokenResponse {
                 meta: DefaultResponse::error("51301", "Insufficient balance"),
@@ -132,10 +136,7 @@ impl WalletMutation {
         // Deduct from sender
         *state.wallets.entry(user_id).or_insert(Decimal::ZERO) -= total_deduction;
         // Credit recipient
-        *state
-            .wallets
-            .entry(recipient_uuid)
-            .or_insert(Decimal::ZERO) += numberoftokens;
+        *state.wallets.entry(recipient_uuid).or_insert(Decimal::ZERO) += numberoftokens;
         // Credit fee accounts
         *state
             .wallets

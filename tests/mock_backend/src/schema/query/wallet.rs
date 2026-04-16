@@ -3,8 +3,8 @@ use rust_decimal::Decimal;
 
 use crate::require_auth;
 use crate::state::{
-    today_date_string, GemRecord, SharedState, TransactionRecord, VIEW_GEM_RETURN,
-    LIKE_GEM_RETURN, DISLIKE_GEM_RETURN, COMMENT_GEM_RETURN,
+    COMMENT_GEM_RETURN, DISLIKE_GEM_RETURN, GemRecord, LIKE_GEM_RETURN, SharedState,
+    TransactionRecord, VIEW_GEM_RETURN, today_date_string,
 };
 use crate::types::registration::DefaultResponse;
 use crate::types::wallet::*;
@@ -28,7 +28,11 @@ impl WalletQuery {
         };
 
         let state = ctx.data_unchecked::<SharedState>().read().await;
-        let balance = state.wallets.get(&user_id).copied().unwrap_or(Decimal::ZERO);
+        let balance = state
+            .wallets
+            .get(&user_id)
+            .copied()
+            .unwrap_or(Decimal::ZERO);
 
         CurrentLiquidity {
             meta: DefaultResponse::success("11204", "Balance retrieved"),
@@ -320,10 +324,7 @@ impl WalletQuery {
                 token: Some(t.token_amount.to_string()),
                 userid: Some(t.sender_id.to_string()),
                 postid: None,
-                action: t
-                    .category
-                    .as_ref()
-                    .map(|c| format!("{:?}", c)),
+                action: t.category.as_ref().map(|c| format!("{:?}", c)),
                 numbers: Some(t.token_amount),
                 createdat: Some(t.created_at.clone()),
             })
@@ -354,10 +355,7 @@ impl WalletQuery {
     }
 
     /// Get today's interactions summary on the user's posts.
-    async fn list_todays_interactions(
-        &self,
-        ctx: &Context<'_>,
-    ) -> ListTodaysInteractionsResponse {
+    async fn list_todays_interactions(&self, ctx: &Context<'_>) -> ListTodaysInteractionsResponse {
         let user_id = match require_auth(ctx) {
             Ok(uid) => uid,
             Err(_) => {
@@ -386,14 +384,8 @@ impl WalletQuery {
 
         let views = todays_gems.iter().filter(|g| g.action == "view").count() as f64;
         let likes = todays_gems.iter().filter(|g| g.action == "like").count() as f64;
-        let dislikes = todays_gems
-            .iter()
-            .filter(|g| g.action == "dislike")
-            .count() as f64;
-        let comments = todays_gems
-            .iter()
-            .filter(|g| g.action == "comment")
-            .count() as f64;
+        let dislikes = todays_gems.iter().filter(|g| g.action == "dislike").count() as f64;
+        let comments = todays_gems.iter().filter(|g| g.action == "comment").count() as f64;
 
         let views_score = views * VIEW_GEM_RETURN;
         let likes_score = likes * LIKE_GEM_RETURN;

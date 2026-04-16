@@ -49,7 +49,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Admin Dashboard | `admin/index.php` | ❌ Not Started | Content moderation |
 | **Misc** ||||
 | Download | `download.php` | ❌ Not Started | App download page |
-| Version History | `version_history.php` | ❌ Not Started | Release notes |
+| Version History | `version_history.php` | ✅ Implemented | Release notes ([docs](plans/version-history/version-history-implementation.md)) |
 | 404 Page | `404.php` | ✅ Implemented | Fallback route in router |
 
 ---
@@ -131,8 +131,8 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 | 2 — Users & Profiles | 10 queries + 8 mutations: getProfile, searchUser, listUsersV2, getUser, follow/block/report, preferences, profile edits, referrals — 40 new tests (73 total), 6 seeded users, content filtering pipeline | [phase-2](plans/mock-backend/phase-2-users-and-profiles.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — [implementation notes](plans/mock-backend/phase-2-implementation.md) |
 | 3 — Posts & Content | listPosts, guestListPost, postAction, createPost, searchTags, ads | [phase-3](plans/mock-backend/phase-3-posts-content.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 121 total tests (48+ new), 0 clippy warnings |
 | 4 — Social (Comments, Chat) | listComments, createComment, like/unlike, listChats, sendMessage, createChat | [phase-4](plans/mock-backend/phase-4-social-comments-chat.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 170 total tests (49 new), 0 clippy warnings |
-| 5 — Economy (Wallet, Shop, Ads) | balance, transferTokens, transactionHistory, shopOrderDetails, ads | [phase-5](plans/mock-backend/phase-5-economy-wallet-tokenomics-shop-ads.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
-| 6 — Admin & Moderation | RBAC, moderation tickets/stats, hide/restore/illegal actions, admin user search, leaderboard, gem/mint ops | [phase-6](plans/mock-backend/phase-6-admin-moderation.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
+| 5 — Economy (Wallet, Shop, Ads) | balance, transferTokens, transactionHistory, shopOrderDetails, ads | [phase-5](plans/mock-backend/phase-5-economy-wallet-tokenomics-shop-ads.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 219 total tests (49 new), 0 clippy warnings |
+| 6 — Admin & Moderation | RBAC, moderation tickets/stats, hide/restore/illegal actions, admin user search, leaderboard, gem/mint ops | [phase-6](plans/mock-backend/phase-6-admin-moderation.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 266 total tests (47 new), 0 clippy warnings |
 | CI — Integration | Build/test pipeline, Leptos E2E integration, schema snapshots, Node.js replacement | [phase-ci](plans/mock-backend/phase-ci-integration.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
 | Acceptance Criteria | Per-phase gates, cross-cutting quality reqs, automated verification, sign-off checklist | [acceptance](plans/mock-backend/acceptance-criteria.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
 
@@ -154,12 +154,39 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 11. 🟡 My Ads — In progress (Phases 1–4 done), boost modal wiring + basic ad flow remaining ([docs](plans/my-ads/my-ads-implementation.md))
 12. ✅ ~~Invite~~ — Complete, deep-link relay page ([docs](plans/invite/invite-implementation.md))
 13. 🟡 Peer Shop — Core implemented (Phases 1–4), Firebase integration + polish remaining ([docs](plans/peer-shop/peer-shop-implementation.md))
-14. ⬜ Admin — Moderation tools (plan exists, not started) ([docs](plans/mock-backend/phase-6-admin-moderation.md))
-15. ⬜ Remaining pages — Download, Version History (no plans yet)
+14. 🟡 Admin — Mock backend Phases 5+6 complete (RBAC, moderation, gem/mint ops); Leptos admin page not started ([docs](plans/mock-backend/phase-6-admin-moderation.md))
+15. ✅ ~~Version History~~ — Complete, auth-guarded two-panel layout, static JSON fetch, responsive styles ([docs](plans/version-history/version-history-implementation.md))
+16. ⬜ Download — App download page (no plan yet)
 
 ---
 
 ## Changelog
+
+### 2026-04-16 (Mock Backend Phases 5 & 6 Complete)
+- **Phase 5 — Economy (Wallet, Tokenomics, Shop, Ads)** marked ✅ Done — 219 total tests (49 new for Phase 5), 0 clippy warnings
+  - 16 wallet tests: balance, transferTokens with fee calculation (burn 1%, peer 2%, inviter 1%), transaction history
+  - 8 tokenomics tests: action prices, daily free status, gems, minting
+  - 12 ads tests: basic/pinned creation, listing, history, cost calculation
+  - 8 shop tests: performShopOrder, shopOrderDetails, delivery validation
+  - Token deduction integrated into Phase 3/4 action resolvers with daily free action logic
+  - New files: `types/wallet.rs`, `types/tokenomics.rs`, `types/ad.rs`, `types/shop.rs`, `schema/query/wallet.rs`, `schema/mutation/wallet.rs`, `schema/query/tokenomics.rs`, `schema/query/ads.rs`, `schema/mutation/ads.rs`, `schema/mutation/shop.rs`, `schema/query/shop.rs`
+- **Phase 6 — Admin & Moderation** marked ✅ Done — 266 total tests (47 new for Phase 6), 0 clippy warnings
+  - `RoleGuard` implementing async-graphql `Guard` trait with bitmask checking (ADMIN=16, MODERATOR=256)
+  - Moderation: `moderationStats`, `moderationItems` (filtered/paginated), `performModeration` (hide/restore/illegal)
+  - Admin: `listUsersAdminV2` (extended search by email/IP/verified/roles), `allfriends`, `postcomments`, `generateLeaderboard`
+  - Admin gems: `gemster`, `dailygemstatus`, `dailygemsresults`, `getMintAccount`, `globalwins`, `distributeTokensForGems`, `gemsters`, `alphaMint`
+  - Content visibility integration: hidden/illegal content filtered from Phase 3/4 list queries
+  - Report-to-ticket integration: `reportUser`, `postAction(REPORT)`, `reportComment` auto-create moderation tickets
+  - New files: `guards.rs`, `types/moderation.rs`, `types/admin.rs`, `types/admin_gems.rs`, `schema/query/moderation.rs`, `schema/mutation/moderation.rs`, `schema/query/admin.rs`, `schema/query/admin_gems.rs`, `schema/mutation/admin_gems.rs`
+- **Admin migration priority** updated from ⬜ Not Started to 🟡 (mock backend complete, Leptos admin page not started)
+
+### 2026-04-16 (Version History Implemented)
+- **Version History fully implemented** — all 6 phases complete, auth-guarded two-panel layout with static JSON fetch ([docs](plans/version-history/version-history-implementation.md))
+- **New files:** `src/models/version.rs`, `src/api/version.rs`, `src/pages/version_history.rs`, `src/components/version_history/` (3 files), `style/version-history.scss`
+- **Server function** fetches from `json/version_releases.json` (with path fallback), proper error handling
+- **Responsive breakpoints** ported from legacy `settings.css` (`@media min-width: 1000px`)
+- **Security:** external links include `rel="noopener noreferrer"` (improvement over legacy)
+- **No backend changes needed** — uses static JSON data, no GraphQL operations required
 
 ### 2026-04-16 (Profile Completion Sprint + Code Quality Pass)
 - **4 features promoted to ✅ Implemented:** My Profile, View Profile, Edit Profile, Settings — bumps convergence from ~64% to ~79%

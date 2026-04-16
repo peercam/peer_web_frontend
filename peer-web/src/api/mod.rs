@@ -13,6 +13,7 @@ pub mod referral;
 pub mod registration;
 pub mod settings;
 pub mod shop;
+pub mod version;
 pub mod wallet;
 
 #[cfg(feature = "ssr")]
