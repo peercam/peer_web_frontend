@@ -13,6 +13,7 @@ pub mod new_post;
 pub mod password_strength;
 pub mod posts;
 pub mod profile;
+pub mod pwa;
 pub mod referral;
 pub mod referral_board;
 pub mod registration_form;

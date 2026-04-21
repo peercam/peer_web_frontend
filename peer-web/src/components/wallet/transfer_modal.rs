@@ -322,16 +322,18 @@ fn UserSelector(
 
     // Debounced search using gloo-timers
     #[cfg(feature = "hydrate")]
-    let search_timeout = RwSignal::new(Option::<gloo_timers::callback::Timeout>::None);
+    let search_timeout = StoredValue::new_local(Option::<gloo_timers::callback::Timeout>::None);
 
     let on_search_input = move |query: String| {
         search_query.set(query.clone());
 
         // Cancel previous timeout
         #[cfg(feature = "hydrate")]
-        if let Some(timeout) = search_timeout.get() {
-            drop(timeout);
-        }
+        search_timeout.update_value(|t| {
+            if let Some(timeout) = t.take() {
+                drop(timeout);
+            }
+        });
 
         if query.len() < 2 {
             search_results.set(vec![]);
@@ -361,7 +363,7 @@ fn UserSelector(
                 });
             });
 
-            search_timeout.set(Some(timeout));
+            search_timeout.set_value(Some(timeout));
         }
 
         // Fallback for SSR (shouldn't trigger but for safety)

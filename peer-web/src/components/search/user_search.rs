@@ -3,6 +3,10 @@
 use leptos::prelude::*;
 
 use crate::models::post::UserSearchResult;
+#[cfg(feature = "hydrate")]
+use crate::api::posts::search_users;
+#[cfg(feature = "hydrate")]
+use wasm_bindgen_futures::spawn_local;
 
 /// User search input with dropdown results.
 #[component]

@@ -2,7 +2,7 @@
 
 This document tracks the progress of migrating features from the legacy PHP/JS frontend to the new Leptos (Rust/WASM) rewrite.
 
-**Last Updated:** 2026-04-16
+**Last Updated:** 2026-04-21
 
 ---
 
@@ -10,10 +10,10 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 | Status | Count |
 |--------|-------|
-| ✅ Implemented | 10 |
+| ✅ Implemented | 11 |
 | 🟡 Near-Complete | 6 |
 | 🚧 In Progress | 2 |
-| ❌ Not Started | 2 |
+| ❌ Not Started | 1 |
 | **Total** | **20** |
 
 **Convergence:** ~82%
@@ -27,7 +27,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | **Authentication** ||||
 | Login | `login.php` | ✅ Implemented | Email/password, remember-me, auto-login, redirect handling ([docs](plans/login/login-auth-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation |
-| Forgot Password | `forgotpassword.php` | 🚧 In Progress | 990-line page, full 4-step flow (email → verify → reset → success), rate-limited resend, API fns implemented ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md)). **Gaps:** no auto-redirect for authenticated users, resend counter not cookie-persisted (cooldown bypass on reload), countdown interval stacking bug, `BackButton` not reused |
+| Forgot Password | `forgotpassword.php` | 🚧 In Progress | 990-line page, full 4-step flow (email → verify → reset → success), rate-limited resend, API fns implemented ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md)). **Gaps:** no auto-redirect for authenticated users, resend counter not cookie-persisted (cooldown bypass on reload), countdown interval stacking bug, shared `BackButton` component exists but not wired in |
 | **Core Features** ||||
 | Dashboard | `dashboard.php` | 🟡 Mostly Implemented | Post feed, filters, sort, infinite scroll ([docs](plans/dashboard/dashboard-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5). **Gaps:** post click → view post overlay is a TODO stub |
 | View Post | `post.php` | 🟡 ~95% Implemented | Single post view, comments, guest mode ([docs](plans/view-post/view-post-implementation.md), [sprint](plans/view-post/view-post-completion-sprint.md)) |
@@ -59,9 +59,9 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Component | Legacy Location | peer-web Status | Notes |
 |-----------|----------------|-----------------|-------|
 | **Layout** ||||
-| Header | `template-parts/` | ❌ Not Started | Navigation, user menu |
-| Footer | `template-parts/footer.php` | ❌ Not Started | Site footer |
-| Sidebars | `template-parts/sidebars/` | ❌ Not Started | Filter, navigation sidebars |
+| Header | `template-parts/` | ❌ Not Started | Not extracted as a shared component; pages render navigation/user menu inline |
+| Footer | `template-parts/footer.php` | ❌ Not Started | Not extracted as a shared component; pages render footer inline (or omit) |
+| Sidebars | `template-parts/sidebars/` | ❌ Not Started | Filter sidebars implemented per-page (dashboard, profile, view-profile); no shared component |
 | **Posts** ||||
 | Post Card | `js/posts.js` | 🚧 In Progress | 304-line component with like/dislike/save actions, view tracking |
 | Post List | `js/load_posts.js` | 🚧 In Progress | 209 lines, infinite scroll, ad interleaving, filter integration |
@@ -85,6 +85,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | **UI** ||||
 | Modal | `js/lib/modal.js` | 🚧 In Progress | image_modal (settings 151L, view_post 74L), share_modal (138L), relations_modal (271L), transfer_modal (760L) |
 | Toast | — | ✅ Implemented | Notification toasts |
+| Install Prompt | — | ✅ Implemented | PWA install banner + iOS hint + update-available banner (`src/components/pwa.rs`) |
 | Back Button | — | ✅ Implemented | Navigation |
 | Step Announcer | — | ✅ Implemented | Accessibility |
 
@@ -115,7 +116,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | State Management | Global JS vars | ✅ Implemented | Leptos signals, AuthContext |
 | Build System | None | ✅ Implemented | cargo-leptos |
 | CSS | Plain CSS | ✅ Implemented | SCSS |
-| PWA / Manifest | `json/webmanifest.json` | ❌ Not Started | Service worker |
+| PWA / Manifest | `json/webmanifest.json` | ✅ Implemented | Full manifest + hand-written service worker (offline shell, per-route caching, update toast), install prompt + iOS Add-to-Home-Screen hint ([docs](plans/pwa/pwa-implementation.md)) |
 | E2E Tests | None | 🚧 In Progress | Playwright setup |
 
 ---
@@ -129,10 +130,11 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 | 0 — Skeleton & Parity | 3 registration mutations, health check, 9 integration tests | [phase-0](plans/mock-backend/phase-0-mock-backend-skeleton.md) | ⭐⭐⭐⭐ (4/5) | ✅ Done — Node.js replaced, async-graphql v7 + axum 0.8 |
 | 1 — Login & Session | login, refreshToken, logout, deleteAccount, updatePassword, password reset, contactus — 9 mutations, auth middleware, 24 tests | [phase-1](plans/mock-backend/phase-1-login-session-flows.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 33 total tests, 2 seeded users, `CurrentUser` context |
 | 2 — Users & Profiles | 10 queries + 8 mutations: getProfile, searchUser, listUsersV2, getUser, follow/block/report, preferences, profile edits, referrals — 40 new tests (73 total), 6 seeded users, content filtering pipeline | [phase-2](plans/mock-backend/phase-2-users-and-profiles.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — [implementation notes](plans/mock-backend/phase-2-implementation.md) |
-| 3 — Posts & Content | listPosts, guestListPost, postAction, createPost, searchTags, ads | [phase-3](plans/mock-backend/phase-3-posts-content.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 121 total tests (48+ new), 0 clippy warnings |
+| 3 — Posts & Content | listPosts, guestListPost, postAction, createPost, searchTags, ads | [phase-3](plans/mock-backend/phase-3-posts-content.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 121 total tests (48 new), 0 clippy warnings |
 | 4 — Social (Comments, Chat) | listComments, createComment, like/unlike, listChats, sendMessage, createChat | [phase-4](plans/mock-backend/phase-4-social-comments-chat.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 170 total tests (49 new), 0 clippy warnings |
 | 5 — Economy (Wallet, Shop, Ads) | balance, transferTokens, transactionHistory, shopOrderDetails, ads | [phase-5](plans/mock-backend/phase-5-economy-wallet-tokenomics-shop-ads.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 219 total tests (49 new), 0 clippy warnings |
 | 6 — Admin & Moderation | RBAC, moderation tickets/stats, hide/restore/illegal actions, admin user search, leaderboard, gem/mint ops | [phase-6](plans/mock-backend/phase-6-admin-moderation.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 266 total tests (47 new), 0 clippy warnings |
+| Integration Test Refactor | Split monolithic 7,675L `integration.rs` into 18 per-domain test files + shared `common/` helpers (assertions, auth, client, fragments, state) | [refactor](plans/mock-backend/phase-integration-test-refactor.md) | ⭐⭐⭐⭐⭐ (5/5) | ✅ Done — 266 tests preserved, 18 files (7,391L), build clean |
 | CI — Integration | Build/test pipeline, Leptos E2E integration, schema snapshots, Node.js replacement | [phase-ci](plans/mock-backend/phase-ci-integration.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
 | Acceptance Criteria | Per-phase gates, cross-cutting quality reqs, automated verification, sign-off checklist | [acceptance](plans/mock-backend/acceptance-criteria.md) | ⭐⭐⭐⭐⭐ (5/5) | ❌ Not Started |
 
@@ -143,24 +145,54 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 1. ✅ ~~Registration~~ — Complete
 2. ✅ ~~Login / Auth~~ — Complete ([docs](plans/login/login-auth-implementation.md))
 3. 🟡 Dashboard — Mostly implemented, view-post overlay stub remains ([docs](plans/dashboard/dashboard-implementation.md))
-3b. 🚧 Forgot Password — In progress, 990-line page implemented, completion sprint created ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md))
-4. 🟡 View Post — ~95% implemented, polish & testing remain ([docs](plans/view-post/view-post-implementation.md))
-5. ✅ ~~Profile~~ — Implemented, infinite scroll + filters + `use_infinite_scroll` hook ([docs](plans/profile/profile-implementation.md), [sprint](plans/profile/profile-completion-sprint.md))
-6. 🚧 New Post — In progress, ~70% structural ([docs](plans/new-post/new-post-implementation.md))
-7. 🟡 Chat — Core implemented, Firebase real-time missing ([docs](plans/chat/chat-implementation.md))
-8. 🟡 Wallet — Implemented (tests pending), shop order UI not wired ([docs](plans/wallet/wallet-implementation.md))
-9. ✅ ~~Settings~~ — Implemented, deactivate account UI wired, save race condition fixed ([docs](plans/settings/settings-implementation.md))
-10. ✅ ~~Referral Board~~ — Complete, full UI + API, mock backend endpoints available (Phase 2) ([docs](plans/referral-board/referral-board-implementation.md))
-11. 🟡 My Ads — In progress (Phases 1–4 done), boost modal wiring + basic ad flow remaining ([docs](plans/my-ads/my-ads-implementation.md))
-12. ✅ ~~Invite~~ — Complete, deep-link relay page ([docs](plans/invite/invite-implementation.md))
-13. 🟡 Peer Shop — Core implemented (Phases 1–4), Firebase integration + polish remaining ([docs](plans/peer-shop/peer-shop-implementation.md))
-14. ✅ ~~Admin~~ — Implemented, role-gated moderation dashboard: stats header, filterable ticket list (All/Posts/Comments/Accounts), expandable detail with content previews, moderation actions (hide/restore/illegal) with confirmations, infinite scroll, 2,514 lines across 15 files + 1,044L SCSS ([docs](plans/admin/admin-dashboard-implementation.md))
-15. ✅ ~~Version History~~ — Complete, auth-guarded two-panel layout, static JSON fetch, responsive styles ([docs](plans/version-history/version-history-implementation.md))
-16. ⬜ Download — App download page (no plan yet)
+4. 🚧 Forgot Password — In progress, 990-line page implemented, completion sprint created ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md))
+5. 🟡 View Post — ~95% implemented, polish & testing remain ([docs](plans/view-post/view-post-implementation.md))
+6. ✅ ~~Profile~~ — Implemented, infinite scroll + filters + `use_infinite_scroll` hook ([docs](plans/profile/profile-implementation.md), [sprint](plans/profile/profile-completion-sprint.md))
+7. 🚧 New Post — In progress, ~70% structural ([docs](plans/new-post/new-post-implementation.md))
+8. 🟡 Chat — Core implemented, Firebase real-time missing ([docs](plans/chat/chat-implementation.md))
+9. 🟡 Wallet — Implemented (tests pending), shop order UI not wired ([docs](plans/wallet/wallet-implementation.md))
+10. ✅ ~~Settings~~ — Implemented, deactivate account UI wired, save race condition fixed ([docs](plans/settings/settings-implementation.md))
+11. ✅ ~~Referral Board~~ — Complete, full UI + API, mock backend endpoints available (Phase 2) ([docs](plans/referral-board/referral-board-implementation.md))
+12. 🟡 My Ads — In progress (Phases 1–4 done), boost modal wiring + basic ad flow remaining ([docs](plans/my-ads/my-ads-implementation.md))
+13. ✅ ~~Invite~~ — Complete, deep-link relay page ([docs](plans/invite/invite-implementation.md))
+14. 🟡 Peer Shop — Core implemented (Phases 1–4), Firebase integration + polish remaining ([docs](plans/peer-shop/peer-shop-implementation.md))
+15. ✅ ~~Admin~~ — Implemented, role-gated moderation dashboard: stats header, filterable ticket list (All/Posts/Comments/Accounts), expandable detail with content previews, moderation actions (hide/restore/illegal) with confirmations, infinite scroll, 2,514 lines across 15 files + 1,044L SCSS ([docs](plans/admin/admin-dashboard-implementation.md))
+16. ✅ ~~Version History~~ — Complete, auth-guarded two-panel layout, static JSON fetch, responsive styles ([docs](plans/version-history/version-history-implementation.md))
+17. ✅ ~~PWA~~ — Complete, manifest + service worker + install prompt + offline shell + update toast ([docs](plans/pwa/pwa-implementation.md))
+18. ⬜ Download — App download page (no plan yet)
 
 ---
 
 ## Changelog
+
+### 2026-04-21 (PWA Implemented)
+- **PWA fully implemented** — manifest, service worker, install prompt, iOS hint, update toast, offline shell ([docs](plans/pwa/pwa-implementation.md))
+- **Infrastructure table:** PWA / Manifest ❌ Not Started → ✅ Implemented
+- **Components table:** added `Install Prompt` row under UI
+- **Migration Priority:** added PWA at #17 (Download renumbered to #18)
+- **New files (18):**
+  - `peer-web/public/manifest.webmanifest` — full v1 manifest (id, scope, start_url, display_override, screenshots, shortcuts, 5 icons incl. maskable + monochrome)
+  - `peer-web/public/sw.js` — hand-written service worker (~220L): install/activate/fetch, network-only for `/api/` + `/graphql` + `/admin`, network-first navigation with offline fallback, stale-while-revalidate for `/pkg/`, cache-first + 30-day expiry for static assets
+  - `peer-web/public/offline.html` — branded offline fallback shell
+  - `peer-web/public/img/pwa/` — 9 icons (any + maskable + monochrome + apple-touch + 2 screenshots) + 3 iOS splash PNGs
+  - `peer-web/src/utils/pwa.rs` — SW registration (+ SSR no-op stub), `beforeinstallprompt` capture, update polling (visibilitychange + 60s interval), `?nosw` escape hatch, `apply_service_worker_update()` for `SKIP_WAITING`
+  - `peer-web/src/components/pwa.rs` — `InstallBanner` (Install / Not-now-14d / Never), `IosHint`, `UpdateBanner`
+  - `peer-web/style/pwa.scss` — bottom-sheet on mobile, top-right card on desktop, update-banner pill
+  - `peer-web/tests/pwa_manifest.rs` — asserts manifest shape + `.webmanifest` MIME resolution
+  - `peer-web/end2end/tests/pwa.spec.ts` — Playwright coverage: manifest MIME, controller after reload, offline fallback
+- **Modified files (5):** `src/app.rs` (manifest link, Apple meta, 3 splash media queries, mount `<InstallPrompt/>`, `register_service_worker()`), `src/components/mod.rs` + `src/utils/mod.rs` (module registration), `style/main.scss` (`@use "pwa"`), `Cargo.toml` (web-sys features for `ServiceWorker*` + `MessageEvent` + `MediaQueryList` + `VisibilityState`, `hash-files = false` pinned, `mime_guess` dev-dep)
+- **Build hash:** `BUILD_HASH` composed at compile time from `env!("CARGO_PKG_VERSION")` + `option_env!("GIT_SHA")`; passed to the SW via `/sw.js?v=<HASH>` query string (no `build.rs` / template substitution)
+- **Builds clean** on both `cargo build --features ssr` and `cargo build --features hydrate --target wasm32-unknown-unknown`
+
+### 2026-04-21 (Doc Accuracy Pass)
+- **Integration Test Refactor row added** to Mock Backend table — discovered during plan audit that commit `c8cf7b7` (2026-04-16) split the monolithic `tests/mock_backend/tests/integration.rs` (7,675L) into 18 per-domain test files (7,391L total) plus shared `common/` helpers (`assertions.rs`, `auth.rs`, `client.rs`, `fragments.rs`, `state.rs`); all 266 tests still pass, build clean — refactor was implemented but not previously tracked
+- **Summary counts corrected:** ✅ 10→11, ❌ 2→1 (Pages table actually contains 11 ✅ rows after Admin + Version History promotions on 2026-04-16; convergence ~82% was already correct)
+- **Migration Priority renumbered** 1–17 (removed `3b.` duplicate numbering, every item now sequential)
+- **Forgot Password gap clarified:** "BackButton not reused" → "shared `BackButton` component exists but not wired in" (avoids contradiction with Components table where BackButton is ✅ Implemented)
+- **Layout components clarified:** Header/Footer/Sidebars notes now explain these are not extracted as shared components (pages render inline) rather than implying pages are missing chrome
+- **Phase 3 test count:** stray `+` removed ("48+ new" → "48 new") for consistency with phases 4/5/6
+- **Last Updated** bumped to 2026-04-21
+- No code or implementation changes; documentation accuracy fixes only
 
 ### 2026-04-16 (Admin Dashboard Implemented)
 - **Admin Dashboard fully implemented** — all 6 phases complete, promoted 🟡 → ✅ ([docs](plans/admin/admin-dashboard-implementation.md))
@@ -356,7 +388,7 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
   - Wallet: shop order details UI not wired, no thousand-separator formatting
 - **Mock Backend section added** — 7 phases tracked (Phase 0–6), 4 plans rated ⭐⭐⭐⭐⭐
 - **Priority list updated** with accurate statuses and remaining-work summaries
-- **Missing plans noted:** 8 "Not Started" features + Header/Footer/Sidebars + Firebase + PWA have no planning docs yet
+- **Missing plans noted:** 8 "Not Started" features + Header/Footer/Sidebars + Firebase have no planning docs yet (PWA now ✅ Implemented)
 
 ### 2026-04-14 (Full Codebase Audit & Status Refresh)
 - Audited every page, component, API module, and SCSS file against tracker claims

@@ -49,6 +49,9 @@
 /* Import Version History styles */
 @import "version-history";
 
+/* Import PWA install banner / iOS hint styles */
+@import "pwa";
+
 /* Loading spinner for buttons */
 .spinner {
     display: inline-block;

@@ -15,6 +15,7 @@ Modern Leptos (Rust/WASM) rewrite of the Peer Network web frontend, replacing th
 - ✅ **Protected Routes** — AuthGuard component with redirect preservation
 - ✅ **Toast Notifications** — User feedback system
 - ✅ **Accessibility** — Screen reader support, keyboard navigation
+- ✅ **Progressive Web App** — Installable manifest, offline shell, update-available toast, iOS Add-to-Home-Screen hint ([plan](../docs/plans/pwa/pwa-implementation.md))
 
 ## Project Structure
 
@@ -98,6 +99,40 @@ export LEPTOS_ENV="production"
 - [Feature Convergence Tracker](../docs/feature-convergence.md) — Migration progress
 - [Login Implementation](../docs/plans/login/login-auth-implementation.md) — Auth details
 - [Leptos Rewrite Study](../docs/leptos-rewrite-study.md) — Architecture decisions
+- [PWA Implementation](../docs/plans/pwa/pwa-implementation.md) — Manifest, service worker, install prompt
+
+## Service Worker — Dev Gotchas
+
+The service worker (`public/sw.js`) is registered on hydrate by
+`src/utils/pwa.rs` at `/sw.js?v=<BUILD_HASH>`. The cache name keys off that
+query string (`peer-shell-v{HASH}`), so a fresh `cargo leptos watch` run
+against the same `CARGO_PKG_VERSION` **reuses** the previous cache. A few
+practical tips:
+
+- **Update on reload** — In Chrome DevTools, open *Application → Service
+  Workers* and tick **“Update on reload”**. Every page reload then forces
+  a fresh SW install + activate cycle, which is what you want while
+  iterating on frontend code.
+- **Full unregister via `?nosw`** — Append `?nosw` to any URL (e.g.
+  `http://localhost:3000/dashboard?nosw`). The registration module calls
+  `getRegistrations()` and unregisters each one instead of registering a
+  new worker. Reload once more to confirm `navigator.serviceWorker.controller`
+  is `null`.
+- **`GIT_SHA`** — CI sets `GIT_SHA=$(git rev-parse --short HEAD)` before
+  `cargo leptos build` so every deploy gets its own cache bucket. Local
+  dev falls back to `CARGO_PKG_VERSION`; combined with “Update on reload”
+  this is fine.
+- **iOS limitations** — iOS Safari does **not** fire `beforeinstallprompt`;
+  the install path is the system **Share → Add to Home Screen** flow. The
+  `IosHint` component shows a one-shot nudge on iPhone/iPad UAs when the
+  site isn’t already running standalone.
+- **HTTPS required** — Service workers are disabled outside of `localhost`
+  and `https://`. Production is HTTPS, but any staging/dev deploy over
+  plain HTTP will silently have no SW + no install prompt.
+- **Auth-sensitive routes are never cached** — `/api/*`, `/graphql`, and
+  `/admin/*` bypass the cache entirely. If you add a new authenticated
+  route, route it through those prefixes or extend the network-only list
+  in `sw.js`.
 
 ## License
 

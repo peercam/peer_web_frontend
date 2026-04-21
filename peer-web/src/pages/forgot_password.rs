@@ -497,8 +497,14 @@ fn VerifyCodeStep(
                 });
             });
 
-            // Store interval handle to prevent early drop
-            leptos::on_cleanup(move || drop(interval));
+            // Store interval handle in local storage to keep it alive.
+            // It will be dropped (cancelling the timer) when the component unmounts.
+            let stored = StoredValue::new_local(Some(interval));
+            on_cleanup(move || {
+                stored.update_value(|v| {
+                    v.take();
+                });
+            });
         }
     };
 

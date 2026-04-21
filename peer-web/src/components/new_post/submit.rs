@@ -3,7 +3,7 @@
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 
-use crate::api::posts::{check_post_eligibility, create_post};
+use crate::api::posts::{check_post_eligibility, create_post, upload_post_files};
 use crate::components::toast::{use_toast, ToastType};
 use crate::pages::new_post::NewPostContext;
 

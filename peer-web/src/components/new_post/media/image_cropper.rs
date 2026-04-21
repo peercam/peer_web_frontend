@@ -61,7 +61,7 @@ pub fn ImageCropper(
         // Load image and draw initial state
         let img_src = image_src.clone();
         Effect::new(move |_| {
-            use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
+            use web_sys::HtmlImageElement;
 
             let Some(canvas) = canvas_ref.get() else {
                 return;

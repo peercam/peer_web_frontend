@@ -42,7 +42,6 @@ pub fn use_infinite_scroll(
     {
         let load_fn = load_fn.clone();
         Effect::new(move |_| {
-            use std::sync::{Arc, Mutex};
             use wasm_bindgen::prelude::*;
             use wasm_bindgen::JsCast;
 
@@ -70,16 +69,15 @@ pub fn use_infinite_scroll(
             ) {
                 observer.observe(&el);
 
-                // Store both the observer and the closure so we can clean up both.
-                let obs_and_cb: Arc<Mutex<Option<(web_sys::IntersectionObserver, Closure<dyn Fn(js_sys::Array)>)>>> =
-                    Arc::new(Mutex::new(Some((observer, callback))));
+                // Store both the observer and the closure in local (non-Send) storage
+                // so they can be dropped on cleanup. Single-threaded wasm guarantees
+                // safety here.
+                let obs_and_cb = StoredValue::new_local(Some((observer, callback)));
 
                 on_cleanup(move || {
-                    if let Ok(mut guard) = obs_and_cb.lock() {
-                        if let Some((obs, _cb)) = guard.take() {
-                            obs.disconnect();
-                            // _cb is dropped here, freeing the JS closure memory
-                        }
+                    if let Some((obs, _cb)) = obs_and_cb.try_update_value(|v| v.take()).flatten() {
+                        obs.disconnect();
+                        // _cb is dropped here, freeing the JS closure memory
                     }
                 });
             }

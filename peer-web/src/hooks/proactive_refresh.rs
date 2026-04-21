@@ -38,11 +38,10 @@ pub fn use_proactive_refresh() {
     {
         let auth = use_auth();
 
-        use std::cell::Cell;
-        use std::rc::Rc;
+        use std::sync::{Arc, Mutex};
 
         // Track the current timeout handle so we can cancel it
-        let timeout_handle: Rc<Cell<Option<i32>>> = Rc::new(Cell::new(None));
+        let timeout_handle: Arc<Mutex<Option<i32>>> = Arc::new(Mutex::new(None));
         let timeout_handle_clone = timeout_handle.clone();
 
         // Schedule refresh when authenticated
@@ -50,11 +49,12 @@ pub fn use_proactive_refresh() {
             let is_auth = auth.is_authenticated.get();
 
             // Clear any existing timeout
-            if let Some(handle) = timeout_handle.get() {
-                if let Some(window) = web_sys::window() {
-                    window.clear_timeout_with_handle(handle);
+            if let Ok(mut guard) = timeout_handle.lock() {
+                if let Some(handle) = guard.take() {
+                    if let Some(window) = web_sys::window() {
+                        window.clear_timeout_with_handle(handle);
+                    }
                 }
-                timeout_handle.set(None);
             }
 
             if is_auth {
@@ -64,9 +64,11 @@ pub fn use_proactive_refresh() {
 
         // Cleanup on unmount
         on_cleanup(move || {
-            if let Some(handle) = timeout_handle_clone.get() {
-                if let Some(window) = web_sys::window() {
-                    window.clear_timeout_with_handle(handle);
+            if let Ok(mut guard) = timeout_handle_clone.lock() {
+                if let Some(handle) = guard.take() {
+                    if let Some(window) = web_sys::window() {
+                        window.clear_timeout_with_handle(handle);
+                    }
                 }
             }
         });
@@ -77,7 +79,7 @@ pub fn use_proactive_refresh() {
 #[cfg(feature = "hydrate")]
 fn schedule_refresh(
     auth: crate::state::auth::AuthContext,
-    timeout_handle: std::rc::Rc<std::cell::Cell<Option<i32>>>,
+    timeout_handle: std::sync::Arc<std::sync::Mutex<Option<i32>>>,
 ) {
     use wasm_bindgen::closure::Closure;
     use wasm_bindgen::JsCast;
@@ -101,7 +103,9 @@ fn schedule_refresh(
         REFRESH_INTERVAL_MS as i32,
     ) {
         Ok(handle) => {
-            timeout_handle.set(Some(handle));
+            if let Ok(mut guard) = timeout_handle.lock() {
+                *guard = Some(handle);
+            }
         }
         Err(e) => {
             leptos::logging::error!("Failed to schedule token refresh: {:?}", e);
