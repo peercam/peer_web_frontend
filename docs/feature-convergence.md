@@ -10,13 +10,13 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 | Status | Count |
 |--------|-------|
-| ✅ Implemented | 11 |
+| ✅ Implemented | 12 |
 | 🟡 Near-Complete | 6 |
 | 🚧 In Progress | 2 |
-| ❌ Not Started | 1 |
+| ❌ Not Started | 0 |
 | **Total** | **20** |
 
-**Convergence:** ~82%
+**Convergence:** ~87%
 
 ---
 
@@ -48,7 +48,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | **Admin** ||||
 | Admin Dashboard | `admin/index.php` | ✅ Implemented | Content moderation — role-gated, stats header, filterable ticket list, expandable detail, moderation actions, infinite scroll, 1,044L SCSS ([docs](plans/admin/admin-dashboard-implementation.md)) |
 | **Misc** ||||
-| Download | `download.php` | ❌ Not Started | App download page |
+| Download | `download.php` | ✅ Implemented | Force-download media proxy — Axum `/download` route with HTTPS-only host allow-list, streaming body, byte/time caps, RFC 5987 filename sanitisation ([docs](plans/download/download-implementation.md)). **Note:** legacy row description said "App download page" — that was incorrect; `download.php` was always a media proxy, and this port preserves that behaviour.
 | Version History | `version_history.php` | ✅ Implemented | Release notes ([docs](plans/version-history/version-history-implementation.md)) |
 | 404 Page | `404.php` | ✅ Implemented | Fallback route in router |
 
@@ -159,11 +159,30 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 15. ✅ ~~Admin~~ — Implemented, role-gated moderation dashboard: stats header, filterable ticket list (All/Posts/Comments/Accounts), expandable detail with content previews, moderation actions (hide/restore/illegal) with confirmations, infinite scroll, 2,514 lines across 15 files + 1,044L SCSS ([docs](plans/admin/admin-dashboard-implementation.md))
 16. ✅ ~~Version History~~ — Complete, auth-guarded two-panel layout, static JSON fetch, responsive styles ([docs](plans/version-history/version-history-implementation.md))
 17. ✅ ~~PWA~~ — Complete, manifest + service worker + install prompt + offline shell + update toast ([docs](plans/pwa/pwa-implementation.md))
-18. ⬜ Download — App download page (no plan yet)
+18. ✅ ~~Download~~ — Force-download media proxy: HTTPS-only host allow-list, streaming body, byte + time caps, sanitised `Content-Disposition` ([docs](plans/download/download-implementation.md))
 
 ---
 
 ## Changelog
+
+### 2026-04-21 (Download Proxy Implemented)
+- **Download force-download media proxy implemented** — Axum `/download` route ported from legacy `download.php` with hardened URL validation, streaming, and filename sanitisation ([docs](plans/download/download-implementation.md))
+- **Pages table:** Download ❌ Not Started → ✅ Implemented; row description corrected ("App download page" was wrong — `download.php` has always been a force-download media proxy, and the new implementation matches that real behaviour)
+- **Summary counts:** ✅ 11 → 12, ❌ 1 → 0; convergence ~82% → ~87% (**100% Started**)
+- **Migration Priority:** #18 complete
+- **New files (3):**
+  - `peer-web/src/server/mod.rs` — new `server` module (sibling to `api`) for SSR-only HTTP routes outside Leptos
+  - `peer-web/src/server/download.rs` — handler, config, URL validator, filename sanitiser, streaming adapter, 24 unit tests (~470L incl. tests)
+  - `peer-web/tests/download_proxy.rs` — integration tests (7 cases: scheme/host/userinfo validation, upstream unreachable, error content-type)
+- **Modified files (4):**
+  - `peer-web/Cargo.toml` — added ssr-only direct deps: `percent-encoding`, `futures-util`, `bytes`; reqwest gained `stream` feature
+  - `peer-web/src/lib.rs` — `#[cfg(feature = "ssr")] pub mod server;`
+  - `peer-web/src/main.rs` — constructs `DownloadConfig::from_env()`, mounts `/download` *before* `leptos_routes` so it cannot be shadowed
+  - `docs/feature-convergence.md` — this entry
+- **Security posture:** HTTPS-only + host allow-list (closes SSRF), no redirect following, no userinfo, `Cache-Control: private, no-store`, forced `application/octet-stream` + `X-Content-Type-Options: nosniff`, RFC 5987 `Content-Disposition` with ASCII fallback, per-request connect + total timeouts, streaming body with hard byte cap that aborts mid-response if upstream exceeds the limit
+- **Configuration (env vars, read once at server start):** `DOWNLOAD_ALLOWED_HOSTS` (default `media.peer.network,cdn.peer.network` — **confirm against production CDN before shipping**), `DOWNLOAD_MAX_BYTES` (default 256 MiB), `DOWNLOAD_TIMEOUT_SECS` (default 300)
+- **Deliberately deferred (per plan Open Question #5):** the WASM `force_download()` client helper. The legacy caller in `js/global.js` is commented out, so there is no live consumer today; the helper will ship with the first feature that actually needs a "Save to device" action (candidates: post media menu, audio/video players, wallet receipts)
+- **Not implemented (documented in plan):** range / resumable downloads, auth-gated downloads, rate limiting (**must be enforced at the reverse proxy / WAF before production** — documented as a hard prerequisite)
 
 ### 2026-04-21 (PWA Implemented)
 - **PWA fully implemented** — manifest, service worker, install prompt, iOS hint, update toast, offline shell ([docs](plans/pwa/pwa-implementation.md))

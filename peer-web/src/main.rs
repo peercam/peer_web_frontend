@@ -7,6 +7,7 @@ async fn main() {
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use peer_web::app::*;
+    use peer_web::server::download::{download_handler, DownloadConfig};
 
     // Log GraphQL endpoint configuration
     let graphql_endpoint = std::env::var("GRAPHQL_ENDPOINT")
@@ -19,7 +20,15 @@ async fn main() {
     // Generate the list of routes in your Leptos App
     let routes = generate_route_list(App);
 
+    let download_config = DownloadConfig::from_env();
+
     let app = Router::new()
+        // Register /download BEFORE leptos_routes so it cannot be shadowed by a
+        // future Leptos page at the same path. Uses its own state type.
+        .route(
+            "/download",
+            axum::routing::get(download_handler).with_state(download_config),
+        )
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();
             move || shell(leptos_options.clone())

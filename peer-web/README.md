@@ -44,7 +44,24 @@ export GRAPHQL_ENDPOINT="https://api.peer.network/graphql"
 
 # Production mode (enables Secure cookie flag)
 export LEPTOS_ENV="production"
+
+# Download proxy (`/download` route)
+# Comma-separated host allow-list of upstream CDN hosts the proxy may fetch from.
+# The endpoint ONLY accepts `https://` URLs whose host is in this list — this
+# closes the SSRF hole in the legacy `download.php`.
+export DOWNLOAD_ALLOWED_HOSTS="media.peer.network,cdn.peer.network"
+
+# Optional: hard byte cap on proxied downloads (default 256 MiB).
+export DOWNLOAD_MAX_BYTES="268435456"
+
+# Optional: total request deadline in seconds (default 300).
+export DOWNLOAD_TIMEOUT_SECS="300"
 ```
+
+> **Operational note on `/download`:** this endpoint streams bytes from an
+> allow-listed upstream to anonymous clients. It **must be rate-limited at the
+> reverse proxy / WAF layer** (nginx `limit_req`, Cloudflare, etc.) before
+> production deployment — there is no application-level rate limit.
 
 ## Prerequisites
 

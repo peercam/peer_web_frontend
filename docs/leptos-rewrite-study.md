@@ -45,7 +45,7 @@ The app is a **blockchain-based social network** with the following pages:
 | Peer Shop | `viewPeerShop.php` | Yes | Shop view |
 | Referral Board | `referralBoard.php` | Yes | Referral tracking |
 | Invite | `invite.php` | Yes | Invite generation |
-| Download | `download.php` | No | App download page |
+| Download | `download.php` | Yes | Force-download media proxy (Axum route) — [plan](plans/download/download-implementation.md) |
 | Admin / Moderation | `admin/index.php` | Yes (admin role) | Content moderation dashboard |
 | Version History | `version_history.php` | No | Release notes |
 

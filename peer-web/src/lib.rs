@@ -9,6 +9,9 @@ pub mod pages;
 pub mod state;
 pub mod utils;
 
+#[cfg(feature = "ssr")]
+pub mod server;
+
 // Re-export commonly used types
 pub use models::common::ApiError;
 pub use models::user::{RegistrationInput, RegisterResponse, ReferralVerifyResponse, VerifyAccountResponse};
