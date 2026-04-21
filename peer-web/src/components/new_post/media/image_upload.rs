@@ -4,7 +4,6 @@ use leptos::prelude::*;
 
 use super::image_cropper::ImageCropper;
 use super::image_slider::ImageSlider;
-use crate::models::post::MediaFile;
 use crate::pages::new_post::NewPostContext;
 
 /// Image upload area with multi-image support and cropping.
@@ -12,11 +11,11 @@ use crate::pages::new_post::NewPostContext;
 pub fn ImageUpload() -> impl IntoView {
     let ctx = NewPostContext::use_context();
     let input_ref = NodeRef::<leptos::html::Input>::new();
-    
+
     // State for cropping
     let (crop_image_src, set_crop_image_src) = signal(Option::<String>::None);
-    let (pending_file_name, set_pending_file_name) = signal(String::new());
-    let (_pending_file_type, set_pending_file_type) = signal(String::new());
+    #[cfg_attr(not(feature = "hydrate"), allow(unused_variables))]
+    let pending_file_name = RwSignal::new(String::new());
 
     let has_images = move || !ctx.media_files.get().is_empty();
     let can_add_more = move || ctx.media_files.get().len() < 5;
@@ -49,8 +48,7 @@ pub fn ImageUpload() -> impl IntoView {
 
                         if let Ok(url) = web_sys::Url::create_object_url_with_blob(&file) {
                             set_crop_image_src.set(Some(url));
-                            set_pending_file_name.set(name);
-                            set_pending_file_type.set(mime_type);
+                            pending_file_name.set(name);
                             break; // Only process first image for cropping
                         }
                     }
@@ -65,14 +63,14 @@ pub fn ImageUpload() -> impl IntoView {
         {
             use base64::{Engine, engine::general_purpose::STANDARD};
 
+            use crate::models::post::MediaFile;
+
             if let Some(base64_data) = cropped_data_url.strip_prefix("data:image/png;base64,") {
                 if let Ok(data) = STANDARD.decode(base64_data) {
-                    let file = MediaFile::new(
-                        pending_file_name.get(),
-                        "image/png".to_string(),
-                        data,
-                    ).with_preview(cropped_data_url.clone());
-                    
+                    let file =
+                        MediaFile::new(pending_file_name.get(), "image/png".to_string(), data)
+                            .with_preview(cropped_data_url.clone());
+
                     ctx.add_media(file);
                 }
             }

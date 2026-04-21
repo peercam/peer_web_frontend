@@ -5,7 +5,7 @@ use leptos::task::spawn_local;
 use leptos::web_sys;
 
 use crate::api::settings::update_username;
-use crate::components::toast::{use_toast, ToastType};
+use crate::components::toast::{ToastType, use_toast};
 
 /// Panel for changing the user's username.
 ///
@@ -45,8 +45,10 @@ pub fn ChangeUsernamePanel(
                     toast.show("Username updated!", ToastType::Success);
                     username.set(String::new());
                     password.set(String::new());
-                    response_msg
-                        .set(Some(("Username changed successfully. Page will reload.".to_string(), true)));
+                    response_msg.set(Some((
+                        "Username changed successfully. Page will reload.".to_string(),
+                        true,
+                    )));
 
                     // Reload after short delay to reflect changes
                     #[cfg(feature = "hydrate")]
@@ -54,8 +56,7 @@ pub fn ChangeUsernamePanel(
                         use std::time::Duration;
                         set_timeout(
                             move || {
-                                let _ = web_sys::window()
-                                    .map(|w| w.location().reload());
+                                let _ = web_sys::window().map(|w| w.location().reload());
                             },
                             Duration::from_millis(1500),
                         );

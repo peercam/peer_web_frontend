@@ -9,7 +9,8 @@ use leptos_meta::Title;
 use crate::api::profile::get_profile;
 use crate::components::auth_guard::AuthGuard;
 use crate::components::settings::{
-    ContentSettings, DeactivateAccountPanel, NotificationSettings, PreferencesSettings, ProfileSettings, SettingsMenu,
+    ContentSettings, DeactivateAccountPanel, NotificationSettings, PreferencesSettings,
+    ProfileSettings, SettingsMenu,
 };
 use crate::components::widgets::{MainMenu, ProfileWidget, VersionWidget};
 

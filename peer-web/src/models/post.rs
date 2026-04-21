@@ -418,11 +418,7 @@ impl CreatePostInput {
 /// Check if a tag name is valid (alphanumeric/underscores, 2-53 chars).
 pub fn is_valid_tag(tag: &str) -> bool {
     let len = tag.len();
-    len >= 2
-        && len <= 53
-        && tag
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_')
+    len >= 2 && len <= 53 && tag.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
 }
 
 /// Post eligibility response.
@@ -472,7 +468,9 @@ impl UploadPostResponse {
 
     /// Get the uploaded file names.
     pub fn uploaded_files(&self) -> Option<&str> {
-        self.affected_rows.as_ref().map(|a| a.uploaded_files.as_str())
+        self.affected_rows
+            .as_ref()
+            .map(|a| a.uploaded_files.as_str())
     }
 }
 
@@ -573,6 +571,10 @@ impl MediaFile {
     #[cfg(feature = "hydrate")]
     pub fn to_data_url(&self) -> String {
         use base64::{Engine, engine::general_purpose::STANDARD};
-        format!("data:{};base64,{}", self.mime_type, STANDARD.encode(&self.data))
+        format!(
+            "data:{};base64,{}",
+            self.mime_type,
+            STANDARD.encode(&self.data)
+        )
     }
 }

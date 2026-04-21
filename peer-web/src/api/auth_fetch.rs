@@ -84,10 +84,14 @@ where
                     // Token refreshed, retry the original request
                     request().await
                 }
-                Ok(_) => Err(ApiError::Unauthorized("Session expired. Please log in again.".into())),
+                Ok(_) => Err(ApiError::Unauthorized(
+                    "Session expired. Please log in again.".into(),
+                )),
                 Err(e) => {
                     leptos::logging::warn!("Token refresh failed: {:?}", e);
-                    Err(ApiError::Unauthorized("Session expired. Please log in again.".into()))
+                    Err(ApiError::Unauthorized(
+                        "Session expired. Please log in again.".into(),
+                    ))
                 }
             }
         }
@@ -110,8 +114,8 @@ fn is_unauthorized_api(error: &ApiError) -> bool {
 pub async fn get_access_token_from_cookies() -> Result<String, ServerFnError> {
     use http::request::Parts;
 
-    let parts = use_context::<Parts>()
-        .ok_or_else(|| ServerFnError::new("No request context available"))?;
+    let parts =
+        use_context::<Parts>().ok_or_else(|| ServerFnError::new("No request context available"))?;
 
     parts
         .headers
@@ -143,7 +147,9 @@ mod tests {
         assert!(is_unauthorized(&ServerFnError::new("HTTP 401")));
         assert!(is_unauthorized(&ServerFnError::new("Token expired")));
         assert!(is_unauthorized(&ServerFnError::new("invalid token")));
-        assert!(!is_unauthorized(&ServerFnError::new("Internal server error")));
+        assert!(!is_unauthorized(&ServerFnError::new(
+            "Internal server error"
+        )));
         assert!(!is_unauthorized(&ServerFnError::new("Network error")));
     }
 }

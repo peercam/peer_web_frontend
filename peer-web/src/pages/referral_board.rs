@@ -8,9 +8,7 @@ use leptos_meta::Title;
 
 use crate::api::referral::{get_referral_info, get_referral_list};
 use crate::components::auth_guard::AuthGuard;
-use crate::components::referral_board::{
-    ReferralHeader, ReferralHeaderSkeleton, ReferralTabs,
-};
+use crate::components::referral_board::{ReferralHeader, ReferralHeaderSkeleton, ReferralTabs};
 use crate::components::widgets::{MainMenu, ProfileWidget, VersionWidget};
 
 /// Active tab in the referral board.

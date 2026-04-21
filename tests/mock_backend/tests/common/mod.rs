@@ -14,7 +14,7 @@ pub mod prelude {
     // Re-export commonly used external types
     pub use mock_backend::seed::*;
     pub use mock_backend::{app, app_with_state, state::MockState};
-    pub use serde_json::{json, Value};
+    pub use serde_json::{Value, json};
     pub use std::sync::Arc;
     pub use tokio::sync::RwLock;
 }

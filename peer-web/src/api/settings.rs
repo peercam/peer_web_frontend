@@ -19,7 +19,7 @@ use leptos::prelude::*;
 #[server(UpdateProfileImage, "/api")]
 pub async fn update_profile_image(img: String) -> Result<(), ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, UpdateProfileImageData, UPDATE_PROFILE_IMAGE_MUTATION};
+    use crate::api::graphql::{UPDATE_PROFILE_IMAGE_MUTATION, UpdateProfileImageData, mutate};
 
     let token = get_access_token_from_cookies()
         .await
@@ -54,9 +54,9 @@ pub async fn update_profile_image(img: String) -> Result<(), ServerFnError> {
 /// - `60501`: Not authenticated
 #[server(UpdateBio, "/api")]
 pub async fn update_bio(biography: String) -> Result<(), ServerFnError> {
-    use base64::Engine;
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, UpdateBioData, UPDATE_BIO_MUTATION};
+    use crate::api::graphql::{UPDATE_BIO_MUTATION, UpdateBioData, mutate};
+    use base64::Engine;
 
     let token = get_access_token_from_cookies()
         .await
@@ -98,7 +98,7 @@ pub async fn update_bio(biography: String) -> Result<(), ServerFnError> {
 #[server(UpdateUsername, "/api")]
 pub async fn update_username(username: String, password: String) -> Result<(), ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, UpdateUsernameData, UPDATE_USERNAME_MUTATION};
+    use crate::api::graphql::{UPDATE_USERNAME_MUTATION, UpdateUsernameData, mutate};
     use crate::api::validation::validate_username;
 
     // Server-side validation
@@ -109,8 +109,7 @@ pub async fn update_username(username: String, password: String) -> Result<(), S
         .map_err(|_| ServerFnError::new("Not authenticated"))?;
 
     let vars = serde_json::json!({ "username": username, "password": password });
-    let data: UpdateUsernameData =
-        mutate(UPDATE_USERNAME_MUTATION, vars, Some(&token)).await?;
+    let data: UpdateUsernameData = mutate(UPDATE_USERNAME_MUTATION, vars, Some(&token)).await?;
 
     if data.update_username.is_success() {
         Ok(())
@@ -141,7 +140,7 @@ pub async fn update_password(
     old_password: String,
 ) -> Result<(), ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, UpdatePasswordData, UPDATE_PASSWORD_MUTATION};
+    use crate::api::graphql::{UPDATE_PASSWORD_MUTATION, UpdatePasswordData, mutate};
     use crate::api::validation::validate_password;
 
     // Server-side validation
@@ -152,8 +151,7 @@ pub async fn update_password(
         .map_err(|_| ServerFnError::new("Not authenticated"))?;
 
     let vars = serde_json::json!({ "password": new_password, "expassword": old_password });
-    let data: UpdatePasswordData =
-        mutate(UPDATE_PASSWORD_MUTATION, vars, Some(&token)).await?;
+    let data: UpdatePasswordData = mutate(UPDATE_PASSWORD_MUTATION, vars, Some(&token)).await?;
 
     if data.update_password.is_success() {
         Ok(())
@@ -183,7 +181,7 @@ pub async fn update_password(
 #[server(UpdateEmail, "/api")]
 pub async fn update_email(email: String, password: String) -> Result<(), ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, UpdateEmailData, UPDATE_EMAIL_MUTATION};
+    use crate::api::graphql::{UPDATE_EMAIL_MUTATION, UpdateEmailData, mutate};
     use crate::api::validation::validate_email;
 
     // Server-side validation
@@ -219,7 +217,7 @@ pub async fn update_email(email: String, password: String) -> Result<(), ServerF
 #[server(UpdateContentPreferences, "/api")]
 pub async fn update_content_preferences(severity_level: String) -> Result<(), ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, UpdatePreferencesData, UPDATE_PREFERENCES_MUTATION};
+    use crate::api::graphql::{UPDATE_PREFERENCES_MUTATION, UpdatePreferencesData, mutate};
 
     let token = get_access_token_from_cookies()
         .await
@@ -261,15 +259,14 @@ pub async fn update_content_preferences(severity_level: String) -> Result<(), Se
 #[server(DeleteAccount, "/api")]
 pub async fn delete_account(password: String) -> Result<(), ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, DeleteAccountData, DELETE_ACCOUNT_MUTATION};
+    use crate::api::graphql::{DELETE_ACCOUNT_MUTATION, DeleteAccountData, mutate};
 
     let token = get_access_token_from_cookies()
         .await
         .map_err(|_| ServerFnError::new("Not authenticated"))?;
 
     let vars = serde_json::json!({ "password": password });
-    let data: DeleteAccountData =
-        mutate(DELETE_ACCOUNT_MUTATION, vars, Some(&token)).await?;
+    let data: DeleteAccountData = mutate(DELETE_ACCOUNT_MUTATION, vars, Some(&token)).await?;
 
     if data.delete_account.is_success() {
         Ok(())

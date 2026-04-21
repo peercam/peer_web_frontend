@@ -16,9 +16,8 @@ pub fn PasswordStrengthMeter(
     visible: Memo<bool>,
 ) -> impl IntoView {
     // Derived: CSS class for the strength fill bar
-    let fill_class = Memo::new(move |_| {
-        format!("strength-fill {}", validation.get().strength.css_class())
-    });
+    let fill_class =
+        Memo::new(move |_| format!("strength-fill {}", validation.get().strength.css_class()));
 
     // Derived: which strength label to show
     let strength_label = Memo::new(move |_| validation.get().strength.label());

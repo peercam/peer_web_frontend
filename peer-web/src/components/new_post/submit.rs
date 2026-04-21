@@ -3,8 +3,11 @@
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 
-use crate::api::posts::{check_post_eligibility, create_post, upload_post_files};
-use crate::components::toast::{use_toast, ToastType};
+use crate::api::posts::check_post_eligibility;
+#[cfg(feature = "hydrate")]
+use crate::api::posts::upload_post_files;
+use crate::api::posts::create_post;
+use crate::components::toast::{ToastType, use_toast};
 use crate::pages::new_post::NewPostContext;
 
 /// Submit button with loading state and submission logic.
@@ -55,6 +58,8 @@ pub fn SubmitButton() -> impl IntoView {
                     return Err(err);
                 }
             };
+            #[cfg(not(feature = "hydrate"))]
+            let _ = token;
 
             // Step 2: Upload files (if any)
             let media_files = ctx.media_files.get();
@@ -125,20 +130,17 @@ pub fn SubmitButton() -> impl IntoView {
                     if resp.is_success() {
                         ctx.set_is_submitting.set(false);
                         toast.show("Post created successfully!", ToastType::Success);
-                        
+
                         // Navigate to profile or post
                         if let Some(post_id) = resp.post_id() {
                             navigate(&format!("/post/{}", post_id), Default::default());
                         } else {
                             navigate("/profile", Default::default());
                         }
-                        
+
                         Ok(())
                     } else {
-                        let err = format!(
-                            "Failed to create post: {}",
-                            resp.meta.response_message
-                        );
+                        let err = format!("Failed to create post: {}", resp.meta.response_message);
                         ctx.set_error.set(Some(err.clone()));
                         ctx.set_is_submitting.set(false);
                         toast.show(&err, ToastType::Error);

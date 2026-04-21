@@ -18,13 +18,13 @@ use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::time::Duration;
 
+use axum::Router;
 use axum::body::Body;
 use axum::extract::Path;
-use axum::http::{header, StatusCode};
+use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use axum::Router;
-use peer_web::server::download::{download_handler, DownloadConfig};
+use peer_web::server::download::{DownloadConfig, download_handler};
 use tokio::net::TcpListener;
 
 // ---------------------------------------------------------------------------
@@ -94,9 +94,8 @@ async fn start_mock_upstream() -> SocketAddr {
     async fn lying() -> Response {
         use futures_util::stream;
         // Advertise 1 KiB, actually emit 512 KiB in 1 KiB chunks.
-        let chunks = (0..512).map(|_| {
-            Ok::<_, std::io::Error>(bytes::Bytes::from(vec![0x42u8; 1024]))
-        });
+        let chunks =
+            (0..512).map(|_| Ok::<_, std::io::Error>(bytes::Bytes::from(vec![0x42u8; 1024])));
         let s = stream::iter(chunks);
         Response::builder()
             .status(StatusCode::OK)
@@ -268,10 +267,7 @@ async fn happy_path_streams_bytes_and_shapes_headers() {
         headers.get(header::CACHE_CONTROL).unwrap(),
         "private, no-store",
     );
-    assert_eq!(
-        headers.get("x-content-type-options").unwrap(),
-        "nosniff",
-    );
+    assert_eq!(headers.get("x-content-type-options").unwrap(), "nosniff",);
     let cd = headers
         .get(header::CONTENT_DISPOSITION)
         .unwrap()
@@ -384,7 +380,8 @@ async fn name_override_is_sanitised_into_content_disposition() {
     let file_url = format!("http://{upstream}/ok/16");
     let mut url = build_download_url(proxy, &file_url);
     // Path-separators and control chars MUST be stripped.
-    url.query_pairs_mut().append_pair("name", "../../etc/passwd");
+    url.query_pairs_mut()
+        .append_pair("name", "../../etc/passwd");
     let resp = reqwest::Client::new().get(url).send().await.unwrap();
 
     assert_eq!(resp.status(), StatusCode::OK);

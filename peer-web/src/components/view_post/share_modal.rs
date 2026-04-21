@@ -48,7 +48,8 @@ where
                 let url = url_for_copy.clone();
                 leptos::task::spawn_local(async move {
                     use wasm_bindgen_futures::JsFuture;
-                    if let Some(clipboard) = web_sys::window().and_then(|w| Some(w.navigator().clipboard()))
+                    if let Some(clipboard) =
+                        web_sys::window().and_then(|w| Some(w.navigator().clipboard()))
                     {
                         if JsFuture::from(clipboard.write_text(&url)).await.is_ok() {
                             copied.set(true);

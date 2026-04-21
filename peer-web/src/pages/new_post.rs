@@ -143,22 +143,14 @@ impl NewPostContext {
             title: self.title.get(),
             mediadescription: {
                 let desc = self.description.get();
-                if desc.is_empty() {
-                    None
-                } else {
-                    Some(desc)
-                }
+                if desc.is_empty() { None } else { Some(desc) }
             },
             contenttype: self.content_type.get(),
             media: None, // Set after upload
             cover: None, // Set after upload
             tags: {
                 let tags = self.tags.get();
-                if tags.is_empty() {
-                    None
-                } else {
-                    Some(tags)
-                }
+                if tags.is_empty() { None } else { Some(tags) }
             },
             uploaded_files: None, // Set after upload
         }

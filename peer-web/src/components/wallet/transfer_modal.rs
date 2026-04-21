@@ -10,9 +10,11 @@ use leptos::task::spawn_local;
 use leptos::wasm_bindgen::JsCast;
 use rust_decimal::Decimal;
 
-use crate::api::wallet::{get_balance, list_transfer_recipients, search_transfer_recipient, transfer_tokens};
-use crate::models::profile::BasicUserInfo;
+use crate::api::wallet::{
+    get_balance, list_transfer_recipients, search_transfer_recipient, transfer_tokens,
+};
 use crate::models::post::UserSearchResult;
+use crate::models::profile::BasicUserInfo;
 use crate::models::transaction::{calculate_fees, calculate_total_with_fees, format_decimal};
 
 /// Transfer modal steps.
@@ -63,12 +65,10 @@ where
     });
 
     // Handle back navigation
-    let on_back = Callback::new(move |_: ()| {
-        match step.get() {
-            TransferStep::EnterAmount => step.set(TransferStep::SelectUser),
-            TransferStep::Confirm => step.set(TransferStep::EnterAmount),
-            _ => {}
-        }
+    let on_back = Callback::new(move |_: ()| match step.get() {
+        TransferStep::EnterAmount => step.set(TransferStep::SelectUser),
+        TransferStep::Confirm => step.set(TransferStep::EnterAmount),
+        _ => {}
     });
 
     // Handle continue to confirmation
@@ -110,7 +110,9 @@ where
     // Handle transfer submission
     let on_success_clone = on_success.clone();
     let submit_transfer = Callback::new(move |_: ()| {
-        let Some(user) = selected_user.get() else { return };
+        let Some(user) = selected_user.get() else {
+            return;
+        };
         let amt: Decimal = amount.get().parse().unwrap_or_default();
         let msg = message.get();
 
@@ -129,8 +131,9 @@ where
                     #[cfg(feature = "hydrate")]
                     gloo_timers::callback::Timeout::new(1500, move || {
                         on_success();
-                    }).forget();
-                    
+                    })
+                    .forget();
+
                     #[cfg(not(feature = "hydrate"))]
                     on_success();
                 }
@@ -293,9 +296,7 @@ impl RecipientUser {
 
 /// User selector component (friends list + search).
 #[component]
-fn UserSelector(
-    on_select: Callback<RecipientUser>,
-) -> impl IntoView {
+fn UserSelector(on_select: Callback<RecipientUser>) -> impl IntoView {
     let search_query = RwSignal::new(String::new());
     let friends = RwSignal::new(Vec::<RecipientUser>::new());
     let search_results = RwSignal::new(Vec::<RecipientUser>::new());
@@ -349,10 +350,8 @@ fn UserSelector(
                 spawn_local(async move {
                     match search_transfer_recipient(q).await {
                         Ok(users) => {
-                            let results: Vec<RecipientUser> = users
-                                .into_iter()
-                                .map(RecipientUser::from)
-                                .collect();
+                            let results: Vec<RecipientUser> =
+                                users.into_iter().map(RecipientUser::from).collect();
                             search_results.set(results);
                         }
                         Err(e) => {
@@ -373,10 +372,8 @@ fn UserSelector(
             spawn_local(async move {
                 match search_transfer_recipient(q).await {
                     Ok(users) => {
-                        let results: Vec<RecipientUser> = users
-                            .into_iter()
-                            .map(RecipientUser::from)
-                            .collect();
+                        let results: Vec<RecipientUser> =
+                            users.into_iter().map(RecipientUser::from).collect();
                         search_results.set(results);
                     }
                     Err(e) => {
@@ -472,10 +469,7 @@ fn UserSelector(
 
 /// Single user item in the list.
 #[component]
-fn UserListItem(
-    user: RecipientUser,
-    on_click: Callback<()>,
-) -> impl IntoView {
+fn UserListItem(user: RecipientUser, on_click: Callback<()>) -> impl IntoView {
     let avatar = user.avatar_url();
     let username = user.username.clone();
     let slug = user.slug.clone();
@@ -560,7 +554,12 @@ fn AmountForm(
 
         // Amount input
         <div class="amount-input">
-            <label class="amtlabel md_font_size txt-color-gray">"Enter amount"</label>
+            <label class="amtlabel md_font_size txt-color-gray">
+                "Enter amount"
+                <span class="available-balance txt-color-gray">
+                    " (Available: " {format_decimal(balance)} ")"
+                </span>
+            </label>
             <input
                 type="number"
                 step="0.00000001"
@@ -742,9 +741,7 @@ fn ConfirmTransfer(
 
 /// Success screen after transfer.
 #[component]
-fn SuccessScreen(
-    on_close: Callback<()>,
-) -> impl IntoView {
+fn SuccessScreen(on_close: Callback<()>) -> impl IntoView {
     view! {
         <div class="success-screen">
             <div class="success-icon">

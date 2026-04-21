@@ -2,9 +2,9 @@
 
 use leptos::prelude::*;
 
-use crate::models::post::UserSearchResult;
 #[cfg(feature = "hydrate")]
 use crate::api::posts::search_users;
+use crate::models::post::UserSearchResult;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen_futures::spawn_local;
 
@@ -23,8 +23,8 @@ pub fn UserSearch() -> impl IntoView {
     // Debounced search effect
     #[cfg(feature = "hydrate")]
     Effect::new(move |_| {
-        use wasm_bindgen::prelude::*;
         use wasm_bindgen::JsCast;
+        use wasm_bindgen::prelude::*;
 
         let q = query.get();
 
@@ -81,8 +81,8 @@ pub fn UserSearch() -> impl IntoView {
         // Small delay to allow click on dropdown items
         #[cfg(feature = "hydrate")]
         {
-            use wasm_bindgen::prelude::*;
             use wasm_bindgen::JsCast;
+            use wasm_bindgen::prelude::*;
 
             let closure = Closure::once(Box::new(move || {
                 is_open.set(false);
@@ -162,7 +162,10 @@ fn UserDropdownItem(
     #[prop(into)] on_select: Callback<()>,
 ) -> impl IntoView {
     let profile_url = format!("/profile/{}", user.slug);
-    let img_src = user.img.clone().unwrap_or_else(|| "/svg/noname.svg".to_string());
+    let img_src = user
+        .img
+        .clone()
+        .unwrap_or_else(|| "/svg/noname.svg".to_string());
     let username = user.username.clone();
     #[allow(unused)]
     let slug = user.slug.clone();

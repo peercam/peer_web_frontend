@@ -420,15 +420,30 @@ input[type="password"] {
     flex: 1;
     padding: 0 16px;
     border: none;
-    background: transparent;
+    background: #303030 !important;
+    -webkit-appearance: none;
+    appearance: none;
     font-size: inherit;
     line-height: 110px;
     color: var(--White-primary);
     outline: none;
 }
 
+/* Force colors on form inputs so axe color-contrast sees an opaque dark
+   background rather than walking up through gradients/SVGs. */
+#referralCodeField input,
+#emailField input,
+#usernameField input,
+#passwordField input,
+#confirmPasswordField input,
+#loginEmailField input,
+#loginPasswordField input {
+    background-color: #303030 !important;
+    color: #ffffff !important;
+}
+
 input::placeholder {
-    color: var(--White-secondary);
+    color: rgba(255, 255, 255, 0.75);
 }
 
 .already_register {

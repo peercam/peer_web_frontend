@@ -22,15 +22,18 @@ pub struct GraphQLErrorLocation {
 }
 
 /// Standard response envelope for Peer API mutations.
-/// 
-/// This matches the `DefaultResponse` type from the GraphQL schema.
-/// Most mutations return this inside a `meta` field.
+///
+/// This matches the `DefaultResponse` type from the GraphQL schema:
+/// `status` is lowercase while `RequestId`, `ResponseCode`, and
+/// `ResponseMessage` are PascalCase.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct DefaultResponse {
     pub status: String,
+    #[serde(rename = "RequestId")]
     pub request_id: String,
+    #[serde(rename = "ResponseCode")]
     pub response_code: String,
+    #[serde(rename = "ResponseMessage")]
     pub response_message: String,
 }
 
@@ -132,7 +135,7 @@ pub mod response_codes {
 }
 
 /// Map response codes to user-friendly messages.
-/// 
+///
 /// This mirrors the logic in `js/global.js` `userfriendlymsg()` function
 /// and the `json/response-codes.json` file.
 pub fn user_friendly_message(code: &str) -> &'static str {
@@ -145,10 +148,14 @@ pub fn user_friendly_message(code: &str) -> &'static str {
         // Registration errors
         "30301" => "Please fill in all required fields.",
         "30601" => "This email is already registered.",
-        "30202" => "Invalid username format. Use 3-23 characters with letters, numbers, underscores, or hyphens.",
+        "30202" => {
+            "Invalid username format. Use 3-23 characters with letters, numbers, underscores, or hyphens."
+        }
         "30103" => "Invalid input format.",
         "31007" => "Invalid referral code. The referrer could not be found.",
-        "31010" => "Hmm\u{2026} that referral code doesn't seem to work. Ask your friend to send you a new link, or use a Peer code.",
+        "31010" => {
+            "Hmm\u{2026} that referral code doesn't seem to work. Ask your friend to send you a new link, or use a Peer code."
+        }
 
         // Already verified
         "30701" => "This account has already been verified.",

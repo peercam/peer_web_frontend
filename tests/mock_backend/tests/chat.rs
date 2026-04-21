@@ -462,3 +462,227 @@ async fn test_sent_message_appears_in_list() {
         .any(|m| m["content"].as_str().unwrap() == "new visible msg");
     assert!(has_new);
 }
+
+// --- listChatMessages tests (polling transport) ---
+
+#[tokio::test]
+async fn test_list_chat_messages_returns_all_when_no_since() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{
+                listChatMessages(chatid: "{}") {{
+                    meta {{ ResponseCode }}
+                    affectedRows {{ id senderid chatid content createdat }}
+                }}
+            }}"#,
+            SEED_CHAT_PRIVATE
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["listChatMessages"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "11805");
+    let rows = data["affectedRows"].as_array().unwrap();
+    assert!(!rows.is_empty());
+    // Ascending by createdat
+    let times: Vec<&str> = rows
+        .iter()
+        .map(|m| m["createdat"].as_str().unwrap())
+        .collect();
+    let mut sorted = times.clone();
+    sorted.sort();
+    assert_eq!(times, sorted);
+}
+
+#[tokio::test]
+async fn test_list_chat_messages_since_filter() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // First fetch all to pick a `since` anchor.
+    let all = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{ listChatMessages(chatid: "{}") {{ affectedRows {{ createdat }} }} }}"#,
+            SEED_CHAT_PRIVATE
+        ),
+        &token,
+    )
+    .await;
+    let rows = all["data"]["listChatMessages"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    assert!(rows.len() >= 2);
+    let first_ts = rows[0]["createdat"].as_str().unwrap().to_string();
+
+    // Now fetch with since = first message's timestamp → should skip it.
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{
+                listChatMessages(chatid: "{}", since: "{}") {{
+                    meta {{ ResponseCode }}
+                    affectedRows {{ createdat }}
+                }}
+            }}"#,
+            SEED_CHAT_PRIVATE, first_ts
+        ),
+        &token,
+    )
+    .await;
+    let filtered = res["data"]["listChatMessages"]["affectedRows"]
+        .as_array()
+        .unwrap();
+    assert_eq!(filtered.len(), rows.len() - 1);
+    for m in filtered {
+        assert!(m["createdat"].as_str().unwrap() > first_ts.as_str());
+    }
+}
+
+#[tokio::test]
+async fn test_list_chat_messages_not_participant() {
+    let state = default_shared_state();
+    // carol is not a participant in SEED_CHAT_PRIVATE
+    let token = login_as(&state, "carol@peer.com", "CarolPass123").await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"query {{
+                listChatMessages(chatid: "{}") {{
+                    meta {{ ResponseCode }}
+                    affectedRows {{ id }}
+                }}
+            }}"#,
+            SEED_CHAT_PRIVATE
+        ),
+        &token,
+    )
+    .await;
+
+    let code = res["data"]["listChatMessages"]["meta"]["ResponseCode"]
+        .as_str()
+        .unwrap();
+    // Expect non-success (either forbidden or not-found class).
+    assert_ne!(code, "11805");
+}
+
+// --- markChatRead tests ---
+
+#[tokio::test]
+async fn test_mark_chat_read_success() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{
+                markChatRead(chatid: "{}") {{
+                    meta {{ ResponseCode }}
+                    lastReadAt
+                }}
+            }}"#,
+            SEED_CHAT_PRIVATE
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["markChatRead"];
+    assert_eq!(data["meta"]["ResponseCode"].as_str().unwrap(), "11806");
+    assert!(data["lastReadAt"].as_str().unwrap().len() > 0);
+}
+
+#[tokio::test]
+async fn test_mark_chat_read_not_participant() {
+    let state = default_shared_state();
+    let token = login_as(&state, "carol@peer.com", "CarolPass123").await;
+
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{
+                markChatRead(chatid: "{}") {{
+                    meta {{ ResponseCode }}
+                }}
+            }}"#,
+            SEED_CHAT_PRIVATE
+        ),
+        &token,
+    )
+    .await;
+
+    let code = res["data"]["markChatRead"]["meta"]["ResponseCode"]
+        .as_str()
+        .unwrap();
+    assert_ne!(code, "11806");
+}
+
+// --- unreadCount integration ---
+
+#[tokio::test]
+async fn test_list_chats_includes_unread_count() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listChats {
+                affectedRows { id unreadCount lastReadAt }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+
+    let rows = res["data"]["listChats"]["affectedRows"].as_array().unwrap();
+    // Seed data places at least one unread message from the peer in each
+    // chat; verifier should see unreadCount > 0 somewhere.
+    let total: i64 = rows
+        .iter()
+        .map(|r| r["unreadCount"].as_i64().unwrap_or(0))
+        .sum();
+    assert!(total > 0, "expected at least one unread seeded message");
+}
+
+#[tokio::test]
+async fn test_mark_chat_read_clears_unread_count() {
+    let state = default_shared_state();
+    let token = login_default(&state).await;
+
+    // Mark private chat as read.
+    graphql_with_auth(
+        &state,
+        &format!(
+            r#"mutation {{ markChatRead(chatid: "{}") {{ meta {{ ResponseCode }} }} }}"#,
+            SEED_CHAT_PRIVATE
+        ),
+        &token,
+    )
+    .await;
+
+    // Now verify listChats reports 0 unread for that chat.
+    let res = graphql_with_auth(
+        &state,
+        r#"query {
+            listChats {
+                affectedRows { id unreadCount }
+            }
+        }"#,
+        &token,
+    )
+    .await;
+    let rows = res["data"]["listChats"]["affectedRows"].as_array().unwrap();
+    let private = rows
+        .iter()
+        .find(|r| r["id"].as_str().unwrap() == SEED_CHAT_PRIVATE.to_string())
+        .unwrap();
+    assert_eq!(private["unreadCount"].as_i64().unwrap(), 0);
+}

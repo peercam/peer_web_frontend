@@ -6,7 +6,7 @@ use leptos::web_sys;
 
 use crate::api::settings::update_password;
 use crate::components::password_strength::PasswordStrengthMeter;
-use crate::components::toast::{use_toast, ToastType};
+use crate::components::toast::{ToastType, use_toast};
 use crate::components::validation::validate_password;
 
 /// Panel for changing the user's password.
@@ -68,7 +68,8 @@ pub fn ChangePasswordPanel(
                 Err(e) => {
                     let msg = e.to_string();
                     if msg.contains("31001") {
-                        response_msg.set(Some(("Current password is incorrect.".to_string(), false)));
+                        response_msg
+                            .set(Some(("Current password is incorrect.".to_string(), false)));
                     } else {
                         response_msg.set(Some((msg, false)));
                     }

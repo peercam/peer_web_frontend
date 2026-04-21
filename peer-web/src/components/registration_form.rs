@@ -7,6 +7,9 @@ use leptos::prelude::*;
 use leptos::web_sys;
 
 use crate::components::password_strength::PasswordStrengthMeter;
+use crate::components::registration_gate::{
+    CheckboxError, RegistrationFields, can_submit_registration, validate_checkboxes,
+};
 use crate::components::validation::{
     is_valid_email, is_valid_username, passwords_match, validate_password,
 };
@@ -105,9 +108,8 @@ pub fn RegistrationStep(
 
     // Password validation
     let password_validation = Memo::new(move |_| validate_password(&password.get()));
-    let is_password_valid = Memo::new(move |_| {
-        password_validation.get().requirements.is_sufficient()
-    });
+    let is_password_valid =
+        Memo::new(move |_| password_validation.get().requirements.is_sufficient());
     let password_visible = Memo::new(move |_| !password.get().is_empty());
     let password_field_class = Memo::new(move |_| {
         let p = password.get();
@@ -121,9 +123,8 @@ pub fn RegistrationStep(
     });
 
     // Confirm password validation
-    let is_confirm_valid = Memo::new(move |_| {
-        passwords_match(&password.get(), &confirm_password.get())
-    });
+    let is_confirm_valid =
+        Memo::new(move |_| passwords_match(&password.get(), &confirm_password.get()));
     let confirm_message = Memo::new(move |_| {
         let c = confirm_password.get();
         if c.is_empty() || is_confirm_valid.get() {
@@ -147,40 +148,33 @@ pub fn RegistrationStep(
     let checkbox_message = RwSignal::new(String::new());
     let checkbox_error_shown = Memo::new(move |_| !checkbox_message.get().is_empty());
 
-    // Overall form validity (for submit button)
+    // Overall form validity (for submit button) — delegates to the
+    // pure gate so the predicate is unit-testable without a browser.
+    // See `registration_gate::can_submit_registration` and its tests.
     let is_form_valid = Memo::new(move |_| {
-        is_email_valid.get()
-            && is_username_valid.get()
-            && is_password_valid.get()
-            && is_confirm_valid.get()
-            && privacy_accepted.get()
-            && eula_accepted.get()
+        can_submit_registration(RegistrationFields {
+            email: &email.get(),
+            username: &username.get(),
+            password: &password.get(),
+            confirm_password: &confirm_password.get(),
+            privacy_accepted: privacy_accepted.get(),
+            eula_accepted: eula_accepted.get(),
+        })
     });
 
     // Handle form submission
     let handle_submit = move |ev: web_sys::SubmitEvent| {
         ev.prevent_default();
 
-        // Validate checkboxes (set message if not checked)
-        if !privacy_accepted.get() && !eula_accepted.get() {
-            checkbox_message.set(
-                "Please accept both the Privacy Policy and EULA".to_string(),
-            );
-            return;
-        } else if !privacy_accepted.get() {
-            checkbox_message.set(
-                "Please accept the Privacy Policy to continue".to_string(),
-            );
-            return;
-        } else if !eula_accepted.get() {
-            checkbox_message.set(
-                "Please accept the End User License Agreement (EULA) to continue".to_string(),
-            );
+        // Inspect the legal-checkboxes via the pure validator. This
+        // mirrors the message-selection logic exercised in tests.
+        let cb = validate_checkboxes(privacy_accepted.get(), eula_accepted.get());
+        if cb.has_error() {
+            checkbox_message.set(cb.message().to_string());
             return;
         }
-
-        // Clear checkbox message if both are checked
         checkbox_message.set(String::new());
+        let _ = CheckboxError::None; // keep the import alive for clarity
 
         // Validate all fields
         if !is_form_valid.get() {

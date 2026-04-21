@@ -397,6 +397,7 @@ impl Default for MockState {
             comment_reports: HashSet::new(),
             chats: seed_chats(SEED_USER_VERIFIED, SEED_USER_ALICE, SEED_USER_BOB),
             chat_messages: seed_chat_messages(SEED_USER_VERIFIED, SEED_USER_ALICE),
+            chat_last_read_at: HashMap::new(),
             wallets: seed_wallets(&[
                 SEED_USER_VERIFIED,
                 SEED_USER_UNVERIFIED,

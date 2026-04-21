@@ -54,8 +54,7 @@ pub fn AdCard(
     let content_type = ad.post.contenttype;
 
     // Thumbnail: use cover or media, fallback to placeholder
-    let thumbnail_url = ad.post.cover.clone()
-        .or_else(|| ad.post.media.clone());
+    let thumbnail_url = ad.post.cover.clone().or_else(|| ad.post.media.clone());
 
     let start_date = format_ad_date(&ad.timeframe_start);
     let end_date = format_ad_date(&ad.timeframe_end);

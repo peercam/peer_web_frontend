@@ -7,11 +7,11 @@ use leptos::prelude::*;
 use rust_decimal::Decimal;
 use serde::Serialize;
 
+use crate::models::post::UserSearchResult;
+use crate::models::profile::FriendsResponse;
 use crate::models::transaction::{
     BalanceResponse, Transaction, TransactionHistoryResponse, TransferResponse,
 };
-use crate::models::profile::FriendsResponse;
-use crate::models::post::UserSearchResult;
 
 /// Variables for the transactionHistory query.
 #[allow(dead_code)]
@@ -45,7 +45,7 @@ struct SearchUserVars {
 #[server(GetBalance, "/api")]
 pub async fn get_balance() -> Result<Decimal, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, BalanceData, BALANCE_QUERY};
+    use crate::api::graphql::{BALANCE_QUERY, BalanceData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -60,7 +60,7 @@ pub async fn get_balance() -> Result<Decimal, ServerFnError> {
 #[server(GetBalanceResponse, "/api")]
 pub async fn get_balance_response() -> Result<BalanceResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, BalanceData, BALANCE_QUERY};
+    use crate::api::graphql::{BALANCE_QUERY, BalanceData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -87,15 +87,14 @@ pub async fn get_transaction_history(
     limit: i32,
 ) -> Result<Vec<Transaction>, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, TransactionHistoryData, TRANSACTION_HISTORY_QUERY};
+    use crate::api::graphql::{TRANSACTION_HISTORY_QUERY, TransactionHistoryData, query};
 
     let token = get_access_token_from_cookies()
         .await
         .map_err(|_| ServerFnError::new("Not authenticated"))?;
 
     let vars = TransactionHistoryVars { offset, limit };
-    let data: TransactionHistoryData =
-        query(TRANSACTION_HISTORY_QUERY, vars, Some(&token)).await?;
+    let data: TransactionHistoryData = query(TRANSACTION_HISTORY_QUERY, vars, Some(&token)).await?;
 
     Ok(data.transaction_history.transactions())
 }
@@ -107,15 +106,14 @@ pub async fn get_transaction_history_response(
     limit: i32,
 ) -> Result<TransactionHistoryResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, TransactionHistoryData, TRANSACTION_HISTORY_QUERY};
+    use crate::api::graphql::{TRANSACTION_HISTORY_QUERY, TransactionHistoryData, query};
 
     let token = get_access_token_from_cookies()
         .await
         .map_err(|_| ServerFnError::new("Not authenticated"))?;
 
     let vars = TransactionHistoryVars { offset, limit };
-    let data: TransactionHistoryData =
-        query(TRANSACTION_HISTORY_QUERY, vars, Some(&token)).await?;
+    let data: TransactionHistoryData = query(TRANSACTION_HISTORY_QUERY, vars, Some(&token)).await?;
 
     Ok(data.transaction_history)
 }
@@ -126,7 +124,7 @@ pub async fn get_transaction_history_response(
 #[server(ListTransferRecipients, "/api")]
 pub async fn list_transfer_recipients() -> Result<FriendsResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ListFriendsData, LIST_FRIENDS_QUERY};
+    use crate::api::graphql::{LIST_FRIENDS_QUERY, ListFriendsData, query};
     use serde::Serialize;
 
     #[derive(Serialize)]
@@ -165,9 +163,11 @@ pub async fn list_transfer_recipients() -> Result<FriendsResponse, ServerFnError
 ///
 /// List of matching users.
 #[server(SearchTransferRecipient, "/api")]
-pub async fn search_transfer_recipient(username: String) -> Result<Vec<UserSearchResult>, ServerFnError> {
+pub async fn search_transfer_recipient(
+    username: String,
+) -> Result<Vec<UserSearchResult>, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, SearchUserData, SEARCH_USERS_QUERY};
+    use crate::api::graphql::{SEARCH_USERS_QUERY, SearchUserData, query};
     use serde::Serialize;
 
     #[derive(Serialize)]
@@ -203,7 +203,7 @@ pub async fn transfer_tokens(
     message: Option<String>,
 ) -> Result<TransferResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, TransferData, TRANSFER_MUTATION};
+    use crate::api::graphql::{TRANSFER_MUTATION, TransferData, mutate};
 
     // Validate amount
     let min_amount = Decimal::new(1, 6); // 0.000001

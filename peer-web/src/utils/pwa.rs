@@ -111,11 +111,11 @@ pub fn apply_service_worker_update() {
 
 #[cfg(feature = "hydrate")]
 mod hydrate_impl {
-    use super::{InstallPromptEvent, ServiceWorkerUpdate, BUILD_HASH};
+    use super::{BUILD_HASH, InstallPromptEvent, ServiceWorkerUpdate};
     use leptos::prelude::*;
-    use wasm_bindgen::{closure::Closure, JsCast, JsValue};
-    use wasm_bindgen_futures::{spawn_local, JsFuture};
-    use web_sys::{window, Event, ServiceWorkerRegistration, ServiceWorkerState};
+    use wasm_bindgen::{JsCast, JsValue, closure::Closure};
+    use wasm_bindgen_futures::{JsFuture, spawn_local};
+    use web_sys::{Event, ServiceWorkerRegistration, ServiceWorkerState, window};
 
     pub(super) fn wire_install_listeners(ctx: InstallPromptEvent) {
         let Some(win) = window() else { return };
@@ -126,10 +126,8 @@ mod hydrate_impl {
             e.prevent_default();
             stash.set(Some(JsValue::from(e)));
         });
-        let _ = win.add_event_listener_with_callback(
-            "beforeinstallprompt",
-            cb.as_ref().unchecked_ref(),
-        );
+        let _ = win
+            .add_event_listener_with_callback("beforeinstallprompt", cb.as_ref().unchecked_ref());
         cb.forget();
 
         // `appinstalled` — mark installed and clear the stash.
@@ -139,10 +137,7 @@ mod hydrate_impl {
             installed.set(true);
             stash.set(None);
         });
-        let _ = win.add_event_listener_with_callback(
-            "appinstalled",
-            cb.as_ref().unchecked_ref(),
-        );
+        let _ = win.add_event_listener_with_callback("appinstalled", cb.as_ref().unchecked_ref());
         cb.forget();
     }
 
@@ -157,15 +152,12 @@ mod hydrate_impl {
         // `?nosw` — dev escape hatch: unregister everything and bail.
         if search.contains("nosw") {
             spawn_local(async move {
-                let Ok(regs_val) =
-                    JsFuture::from(container.get_registrations()).await
-                else {
+                let Ok(regs_val) = JsFuture::from(container.get_registrations()).await else {
                     return;
                 };
                 let regs = js_sys::Array::from(&regs_val);
                 for reg in regs.iter() {
-                    if let Ok(reg) = reg.dyn_into::<ServiceWorkerRegistration>()
-                    {
+                    if let Ok(reg) = reg.dyn_into::<ServiceWorkerRegistration>() {
                         let _ = reg.unregister();
                     }
                 }
@@ -179,9 +171,7 @@ mod hydrate_impl {
 
         spawn_local(async move {
             let Ok(reg_val) = JsFuture::from(promise).await else {
-                web_sys::console::warn_1(
-                    &"[pwa] service worker registration failed".into(),
-                );
+                web_sys::console::warn_1(&"[pwa] service worker registration failed".into());
                 return;
             };
             let Ok(reg) = reg_val.dyn_into::<ServiceWorkerRegistration>() else {
@@ -196,10 +186,7 @@ mod hydrate_impl {
         });
     }
 
-    fn wire_update_detection(
-        reg: &ServiceWorkerRegistration,
-        ctx: ServiceWorkerUpdate,
-    ) {
+    fn wire_update_detection(reg: &ServiceWorkerRegistration, ctx: ServiceWorkerUpdate) {
         // If a controller already exists and the reg already has a waiting
         // worker (e.g. after a tab switch), surface the update immediately.
         if reg.waiting().is_some() && has_controller() {
@@ -217,15 +204,11 @@ mod hydrate_impl {
                 // Fire exactly once per update, when the new worker has
                 // finished installing AND an old controller exists (i.e.
                 // this is an update, not a first-time install).
-                if worker.state() == ServiceWorkerState::Installed
-                    && has_controller()
-                {
+                if worker.state() == ServiceWorkerState::Installed && has_controller() {
                     ctx.update_available.set(true);
                 }
             });
-            installing.set_onstatechange(Some(
-                cb_state.as_ref().unchecked_ref(),
-            ));
+            installing.set_onstatechange(Some(cb_state.as_ref().unchecked_ref()));
             cb_state.forget();
         });
         reg.set_onupdatefound(Some(cb.as_ref().unchecked_ref()));
@@ -251,10 +234,8 @@ mod hydrate_impl {
             }
         });
         if let Some(doc) = win.document() {
-            let _ = doc.add_event_listener_with_callback(
-                "visibilitychange",
-                cb.as_ref().unchecked_ref(),
-            );
+            let _ = doc
+                .add_event_listener_with_callback("visibilitychange", cb.as_ref().unchecked_ref());
         }
         cb.forget();
 

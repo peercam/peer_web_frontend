@@ -40,6 +40,28 @@ pub struct Chat {
     pub updatedat: String,
     pub chatmessages: Vec<ChatMessage>,
     pub chatparticipants: Vec<ChatParticipant>,
+    /// Number of messages not yet seen by the viewer.
+    pub unread_count: i32,
+    /// Viewer's last-read timestamp for this chat (RFC3339), if any.
+    pub last_read_at: Option<String>,
+}
+
+/// Response for `listChatMessages` query.
+#[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
+#[graphql(rename_fields = "camelCase")]
+pub struct ListChatMessagesResponse {
+    pub meta: DefaultResponse,
+    #[graphql(name = "affectedRows")]
+    pub affected_rows: Option<Vec<ChatMessage>>,
+}
+
+/// Response for `markChatRead` mutation.
+#[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
+#[graphql(rename_fields = "camelCase")]
+pub struct MarkChatReadResponse {
+    pub meta: DefaultResponse,
+    /// Timestamp recorded as the new last-read marker.
+    pub last_read_at: Option<String>,
 }
 
 /// Response for `listChats` query.

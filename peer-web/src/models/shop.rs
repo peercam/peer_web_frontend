@@ -19,10 +19,7 @@ pub struct ShopProduct {
 impl ShopProduct {
     /// Whether this product has selectable sizes.
     pub fn has_sizes(&self) -> bool {
-        self.sizes
-            .as_ref()
-            .map(|s| !s.is_empty())
-            .unwrap_or(false)
+        self.sizes.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
     }
 
     /// Whether this is a one-size product.

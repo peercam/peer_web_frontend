@@ -13,6 +13,11 @@ use crate::models::auth::AuthPayload;
 pub struct AuthContext {
     /// Whether the user is currently authenticated.
     pub is_authenticated: RwSignal<bool>,
+    /// Whether the initial session check has resolved.
+    /// Components should avoid making auth-based redirect decisions until
+    /// this is `true`, otherwise authenticated users will briefly be
+    /// treated as unauthenticated on first paint.
+    pub is_session_checked: RwSignal<bool>,
     /// The login action — dispatched with (email, password).
     pub login_action: Action<(String, String), Result<AuthPayload, ServerFnError>>,
     /// The logout action.
@@ -26,13 +31,17 @@ pub struct AuthContext {
 /// Call this once in `App` or a top-level provider component.
 pub fn provide_auth_context() {
     let is_authenticated = RwSignal::new(false);
+    let is_session_checked = RwSignal::new(false);
 
     // Check existing session on mount
     let session_check = Resource::new(|| (), |_| async move { check_session().await.ok() });
 
     Effect::new(move |_| {
-        if let Some(Some(has_session)) = session_check.get() {
-            is_authenticated.set(has_session);
+        if let Some(maybe_session) = session_check.get() {
+            if let Some(has_session) = maybe_session {
+                is_authenticated.set(has_session);
+            }
+            is_session_checked.set(true);
         }
     });
 
@@ -46,6 +55,7 @@ pub fn provide_auth_context() {
     Effect::new(move |_| {
         if let Some(Ok(payload)) = login_action.value().get() {
             is_authenticated.set(payload.is_success());
+            is_session_checked.set(true);
         }
     });
 
@@ -69,6 +79,7 @@ pub fn provide_auth_context() {
 
     let ctx = AuthContext {
         is_authenticated,
+        is_session_checked,
         login_action,
         logout_action,
         refresh_action,

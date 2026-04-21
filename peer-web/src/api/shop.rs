@@ -51,7 +51,7 @@ pub async fn perform_shop_order(
     size: Option<String>,
 ) -> Result<PerformShopOrderResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, PerformShopOrderData, PERFORM_SHOP_ORDER_MUTATION};
+    use crate::api::graphql::{PERFORM_SHOP_ORDER_MUTATION, PerformShopOrderData, mutate};
 
     // Server-side validation (Defense in Depth)
     if name.trim().len() < 2 {
@@ -114,15 +114,14 @@ pub async fn get_shop_order_details(
     transaction_id: String,
 ) -> Result<ShopOrderDetailsResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ShopOrderDetailsData, SHOP_ORDER_DETAILS_QUERY};
+    use crate::api::graphql::{SHOP_ORDER_DETAILS_QUERY, ShopOrderDetailsData, query};
 
     let token = get_access_token_from_cookies()
         .await
         .map_err(|_| ServerFnError::new("Not authenticated"))?;
 
     let vars = ShopOrderDetailsVars { transaction_id };
-    let data: ShopOrderDetailsData =
-        query(SHOP_ORDER_DETAILS_QUERY, vars, Some(&token)).await?;
+    let data: ShopOrderDetailsData = query(SHOP_ORDER_DETAILS_QUERY, vars, Some(&token)).await?;
 
     Ok(data.shop_order_details)
 }

@@ -5,7 +5,7 @@
 use leptos::prelude::*;
 use leptos::wasm_bindgen::JsCast;
 
-use crate::models::transaction::{format_decimal, Transaction, TransactionCategory};
+use crate::models::transaction::{Transaction, TransactionCategory, format_decimal};
 
 /// Single transaction item with expandable details.
 #[component]

@@ -77,7 +77,7 @@ pub fn TagInput() -> impl IntoView {
     view! {
         <div class="tags-section">
             <label class="form-label">"Tags"</label>
-            
+
             // Selected tags
             <TagList/>
 
@@ -98,11 +98,11 @@ pub fn TagInput() -> impl IntoView {
                             {
                                 use leptos::wasm_bindgen::closure::Closure;
                                 use leptos::wasm_bindgen::JsCast;
-                                
+
                                 let closure = Closure::once(move || {
                                     set_show_suggestions.set(false);
                                 });
-                                
+
                                 if let Some(window) = leptos::web_sys::window() {
                                     let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
                                         closure.as_ref().unchecked_ref(),
@@ -117,7 +117,7 @@ pub fn TagInput() -> impl IntoView {
                             }
                         }
                     />
-                    
+
                     // Loading indicator
                     <Show when=is_loading>
                         <span class="loading-indicator">

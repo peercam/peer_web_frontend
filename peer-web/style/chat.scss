@@ -849,3 +849,122 @@
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Unread badge + filtered empty + connection banner + failed bubble + retry
+// ---------------------------------------------------------------------------
+
+.message-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  .message-preview {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--color-accent, #3366ff);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.menu-unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 0.5rem;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--color-accent, #3366ff);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.filtered-empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--color-text-muted, #888);
+  font-size: 0.9rem;
+}
+
+.connection-lost-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #fff4ce;
+  color: #5c4400;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 0.875rem;
+
+  .retry-btn {
+    background: transparent;
+    border: 1px solid currentColor;
+    color: inherit;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.05);
+    }
+  }
+}
+
+.message.sending {
+  opacity: 0.6;
+}
+
+.message.failed {
+  .bubble {
+    background: #ffe6e6;
+    border: 1px solid #ff8888;
+  }
+
+  .failed-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: #c62828;
+
+    .retry-btn {
+      background: transparent;
+      border: 1px solid #c62828;
+      color: #c62828;
+      padding: 0.1rem 0.5rem;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.75rem;
+
+      &:hover {
+        background: #c62828;
+        color: #fff;
+      }
+    }
+  }
+}

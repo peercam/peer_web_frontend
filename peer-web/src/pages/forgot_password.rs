@@ -22,7 +22,7 @@ use crate::api::forgot_password::{request_password_reset, reset_password, verify
 use crate::components::left_panel::LeftPanel;
 use crate::components::password_strength::PasswordStrengthMeter;
 use crate::components::step_announcer::StepAnnouncer;
-use crate::components::toast::{use_toast, ToastType};
+use crate::components::toast::{ToastType, use_toast};
 use crate::components::validation::{is_valid_email, passwords_match, validate_password};
 use crate::utils::response_codes::user_friendly_msg;
 
@@ -132,21 +132,19 @@ pub fn ForgotPasswordPage() -> impl IntoView {
     let resend_count = RwSignal::new(0u32);
 
     // Back button handler
-    let handle_back = move |_: web_sys::MouseEvent| {
-        match current_step.get() {
-            ForgotStep::Email => {
-                navigate_to("/login");
-            }
-            ForgotStep::VerifyCode => {
-                current_step.set(ForgotStep::Email);
-                announcement.set(ForgotStep::Email.announcement().into());
-            }
-            ForgotStep::NewPassword => {
-                current_step.set(ForgotStep::VerifyCode);
-                announcement.set(ForgotStep::VerifyCode.announcement().into());
-            }
-            ForgotStep::Success => {}
+    let handle_back = move |_: web_sys::MouseEvent| match current_step.get() {
+        ForgotStep::Email => {
+            navigate_to("/login");
         }
+        ForgotStep::VerifyCode => {
+            current_step.set(ForgotStep::Email);
+            announcement.set(ForgotStep::Email.announcement().into());
+        }
+        ForgotStep::NewPassword => {
+            current_step.set(ForgotStep::VerifyCode);
+            announcement.set(ForgotStep::VerifyCode.announcement().into());
+        }
+        ForgotStep::Success => {}
     };
 
     // Back button visibility
@@ -561,9 +559,9 @@ fn VerifyCodeStep(
 
                     // Escalating cooldowns
                     let cooldown = match count {
-                        0 => 60,    // First resend: 60 seconds
-                        1 => 600,   // Second resend: 10 minutes
-                        _ => 0,     // 3+ should be locked
+                        0 => 60,  // First resend: 60 seconds
+                        1 => 600, // Second resend: 10 minutes
+                        _ => 0,   // 3+ should be locked
                     };
                     if cooldown > 0 {
                         start_countdown(cooldown);
@@ -708,15 +706,13 @@ fn NewPasswordStep(
 
     // Password validation
     let password_validation = Memo::new(move |_| validate_password(&password.get()));
-    let is_password_valid = Memo::new(move |_| {
-        password_validation.get().requirements.is_sufficient()
-    });
+    let is_password_valid =
+        Memo::new(move |_| password_validation.get().requirements.is_sufficient());
     let password_visible = Memo::new(move |_| !password.get().is_empty());
 
     // Confirm password validation
-    let is_confirm_valid = Memo::new(move |_| {
-        passwords_match(&password.get(), &confirm_password.get())
-    });
+    let is_confirm_valid =
+        Memo::new(move |_| passwords_match(&password.get(), &confirm_password.get()));
 
     // Backend error
     let backend_error = RwSignal::new(Option::<String>::None);
@@ -755,9 +751,8 @@ fn NewPasswordStep(
     });
 
     // Form validity
-    let can_submit = Memo::new(move |_| {
-        is_password_valid.get() && is_confirm_valid.get() && !pending.get()
-    });
+    let can_submit =
+        Memo::new(move |_| is_password_valid.get() && is_confirm_valid.get() && !pending.get());
 
     // Submit handler
     let on_success = on_success.clone();

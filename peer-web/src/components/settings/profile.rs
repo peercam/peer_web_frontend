@@ -11,7 +11,7 @@ use crate::api::settings::{update_bio, update_profile_image};
 use crate::components::settings::{
     ChangeEmailPanel, ChangePasswordPanel, ChangeUsernamePanel, ImageUploadModal,
 };
-use crate::components::toast::{use_toast, ToastContext, ToastType};
+use crate::components::toast::{ToastContext, ToastType, use_toast};
 use crate::models::profile::Profile;
 
 /// Active sub-panel within profile settings.

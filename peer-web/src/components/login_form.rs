@@ -36,9 +36,8 @@ pub fn LoginForm() -> impl IntoView {
 
     // Derived validation
     let is_email_valid = Memo::new(move |_| is_valid_email(&email.get()));
-    let has_email_error = Memo::new(move |_| {
-        email_touched.get() && !email.get().is_empty() && !is_email_valid.get()
-    });
+    let has_email_error =
+        Memo::new(move |_| email_touched.get() && !email.get().is_empty() && !is_email_valid.get());
     let email_field_class = Memo::new(move |_| {
         if has_email_error.get() {
             "input-field invalid"
@@ -49,9 +48,8 @@ pub fn LoginForm() -> impl IntoView {
         }
     });
 
-    let has_password_error = Memo::new(move |_| {
-        password_touched.get() && password.get().is_empty()
-    });
+    let has_password_error =
+        Memo::new(move |_| password_touched.get() && password.get().is_empty());
     let password_field_class = Memo::new(move |_| {
         if has_password_error.get() {
             "input-field invalid"
@@ -63,9 +61,7 @@ pub fn LoginForm() -> impl IntoView {
     });
 
     // Form validity
-    let is_form_valid = Memo::new(move |_| {
-        is_email_valid.get() && !password.get().is_empty()
-    });
+    let is_form_valid = Memo::new(move |_| is_email_valid.get() && !password.get().is_empty());
 
     // Loading state
     let is_loading = Signal::derive(move || auth.login_action.pending().get());
@@ -78,9 +74,7 @@ pub fn LoginForm() -> impl IntoView {
         if let Some(result) = auth.login_action.value().get() {
             match result {
                 Ok(payload) => {
-                    let code = LoginResponseCode::from(
-                        payload.code().unwrap_or(""),
-                    );
+                    let code = LoginResponseCode::from(payload.code().unwrap_or(""));
                     match code {
                         LoginResponseCode::Success => {
                             // Persist remember-me preference
@@ -95,7 +89,7 @@ pub fn LoginForm() -> impl IntoView {
                 }
                 Err(e) => {
                     server_error.set(Some(
-                        "Connection error. Please check your network and try again.".to_string()
+                        "Connection error. Please check your network and try again.".to_string(),
                     ));
                     leptos::logging::error!("Login error: {:?}", e);
                 }
@@ -114,10 +108,8 @@ pub fn LoginForm() -> impl IntoView {
             return;
         }
 
-        auth.login_action.dispatch((
-            email.get_untracked(),
-            password.get_untracked(),
-        ));
+        auth.login_action
+            .dispatch((email.get_untracked(), password.get_untracked()));
     };
 
     view! {

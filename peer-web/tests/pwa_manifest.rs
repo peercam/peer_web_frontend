@@ -23,7 +23,10 @@ fn manifest_file_is_present_and_valid_json() {
     let parsed: serde_json::Value =
         serde_json::from_str(&raw).expect("manifest.webmanifest must be valid JSON");
 
-    assert_eq!(parsed["id"], "/", "stable identity — do not change after launch");
+    assert_eq!(
+        parsed["id"], "/",
+        "stable identity — do not change after launch"
+    );
     assert_eq!(parsed["scope"], "/");
     assert!(
         parsed["start_url"]
@@ -47,4 +50,59 @@ fn webmanifest_extension_resolves_to_application_manifest_json() {
     // 2.0.4 — this test guards against a future dep downgrade.
     let mime = mime_guess::from_ext("webmanifest").first_or_octet_stream();
     assert_eq!(mime.essence_str(), "application/manifest+json");
+}
+
+// Mirrors `end2end/tests/pwa.spec.ts` — "service worker registers" and
+// "offline navigation falls back to the offline shell". The Playwright
+// suite exercises these in the browser; here we guard the *static
+// prerequisites* so a future refactor can't silently drop the files the
+// SW depends on.
+#[test]
+fn service_worker_file_is_present_and_registers_core_routes() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("public")
+        .join("sw.js");
+    let raw = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()));
+
+    // The SW must declare a versioned cache name (cache-busting story in
+    // docs/plans/pwa/pwa-implementation.md) and reference the offline
+    // fallback shell used by the "offline navigation" E2E test.
+    assert!(
+        raw.contains("peer-shell-v"),
+        "service worker must use a versioned cache name (peer-shell-v…)"
+    );
+    assert!(
+        raw.contains("/offline.html"),
+        "service worker must register /offline.html as the nav fallback"
+    );
+}
+
+#[test]
+fn offline_shell_is_present_and_self_contained() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("public")
+        .join("offline.html");
+    let raw = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()));
+
+    // The E2E `offline navigation falls back to the offline shell` test
+    // asserts that the rendered `<h1>` matches /offline/i. Guard that
+    // contract at the asset level so the fallback stays meaningful.
+    let lower = raw.to_lowercase();
+    assert!(
+        lower.contains("<h1") && lower.contains("offline"),
+        "offline.html must include an <h1> heading mentioning 'offline'"
+    );
+}
+
+#[test]
+fn html_extension_resolves_to_text_html() {
+    // `service-worker.js` serves the cached `/offline.html` in response
+    // to a failed navigation; the browser treats it as an HTML document
+    // because ServeDir hands it off to `mime_guess`.
+    let mime = mime_guess::from_ext("html").first_or_octet_stream();
+    assert_eq!(mime.essence_str(), "text/html");
+    let mime = mime_guess::from_ext("js").first_or_octet_stream();
+    assert!(mime.essence_str().contains("javascript"));
 }

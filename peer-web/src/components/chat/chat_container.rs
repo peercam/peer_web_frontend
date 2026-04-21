@@ -1,9 +1,10 @@
 //! Main chat container component.
 
 use leptos::prelude::*;
+use leptos::task::spawn_local;
 
 use crate::components::chat::{ChatInput, ChatMessages};
-use crate::state::chat::use_chat;
+use crate::state::chat::{ConnectionState, poll_active_chat, refresh_chat_list, use_chat};
 
 /// Main chat container with header, messages, and input.
 #[component]
@@ -11,9 +12,23 @@ pub fn ChatContainer() -> impl IntoView {
     let ctx = use_chat();
 
     let has_active_chat = move || ctx.active_chat.get().is_some();
+    let is_lost = move || ctx.connection_state.get() == ConnectionState::Lost;
+
+    let retry_now = move |_| {
+        spawn_local(async move {
+            refresh_chat_list(ctx).await;
+            poll_active_chat(ctx).await;
+        });
+    };
 
     view! {
         <div class="chat-container">
+            <Show when=is_lost>
+                <div class="connection-lost-banner" role="status" aria-live="polite">
+                    <span>"Connection lost. Retrying…"</span>
+                    <button class="retry-btn" on:click=retry_now>"Retry now"</button>
+                </div>
+            </Show>
             <Show
                 when=has_active_chat
                 fallback=|| view! { <NoChatSelected/> }
@@ -62,10 +77,7 @@ fn ActiveChat() -> impl IntoView {
 
 /// Chat header with avatar and name.
 #[component]
-fn ChatHeader(
-    name: String,
-    avatar: String,
-) -> impl IntoView {
+fn ChatHeader(name: String, avatar: String) -> impl IntoView {
     view! {
         <div class="chat-header">
             <div class="header-left">

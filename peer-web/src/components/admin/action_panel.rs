@@ -31,39 +31,31 @@ pub fn ActionPanel(
 
         leptos::task::spawn_local(async move {
             match perform_moderation(tid.clone(), action).await {
-                Ok(response) => {
-                    match response.response_code.as_str() {
-                        response_codes::MODERATION_ACTION_SUCCESS => {
-                            status.set(action.to_string());
-                            on_moderation_action.run((tid, action));
-                            if let Some(toast) = use_context::<ToastContext>() {
-                                toast.show("Moderation action performed", ToastType::Success);
-                            }
-                        }
-                        response_codes::MODERATION_ALREADY_TERMINAL => {
-                            if let Some(toast) = use_context::<ToastContext>() {
-                                toast.show(
-                                    "This ticket has already been resolved",
-                                    ToastType::Info,
-                                );
-                            }
-                        }
-                        response_codes::MODERATION_TICKET_NOT_FOUND => {
-                            if let Some(toast) = use_context::<ToastContext>() {
-                                toast.show("Ticket not found", ToastType::Error);
-                            }
-                        }
-                        _ => {
-                            let msg = &response.response_message;
-                            if let Some(toast) = use_context::<ToastContext>() {
-                                toast.show(
-                                    format!("Error: {}", msg),
-                                    ToastType::Error,
-                                );
-                            }
+                Ok(response) => match response.response_code.as_str() {
+                    response_codes::MODERATION_ACTION_SUCCESS => {
+                        status.set(action.to_string());
+                        on_moderation_action.run((tid, action));
+                        if let Some(toast) = use_context::<ToastContext>() {
+                            toast.show("Moderation action performed", ToastType::Success);
                         }
                     }
-                }
+                    response_codes::MODERATION_ALREADY_TERMINAL => {
+                        if let Some(toast) = use_context::<ToastContext>() {
+                            toast.show("This ticket has already been resolved", ToastType::Info);
+                        }
+                    }
+                    response_codes::MODERATION_TICKET_NOT_FOUND => {
+                        if let Some(toast) = use_context::<ToastContext>() {
+                            toast.show("Ticket not found", ToastType::Error);
+                        }
+                    }
+                    _ => {
+                        let msg = &response.response_message;
+                        if let Some(toast) = use_context::<ToastContext>() {
+                            toast.show(format!("Error: {}", msg), ToastType::Error);
+                        }
+                    }
+                },
                 Err(e) => {
                     if let Some(toast) = use_context::<ToastContext>() {
                         toast.show(format!("Failed: {}", e), ToastType::Error);

@@ -56,7 +56,6 @@ fn base64_url_decode(input: &str) -> Option<Vec<u8>> {
     // Use web-sys for WASM
     #[cfg(feature = "hydrate")]
     {
-        use leptos::wasm_bindgen::JsCast;
         let window = leptos::web_sys::window()?;
         let result = window.atob(&standard).ok()?;
         Some(result.into_bytes())
@@ -111,26 +110,15 @@ pub fn seconds_until_expiry(token: &str) -> Option<i64> {
     {
         let now = (js_sys::Date::now() / 1000.0) as i64;
         let remaining = exp - now;
-        if remaining > 0 {
-            Some(remaining)
-        } else {
-            None
-        }
+        if remaining > 0 { Some(remaining) } else { None }
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
         use std::time::{SystemTime, UNIX_EPOCH};
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .ok()?
-            .as_secs() as i64;
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).ok()?.as_secs() as i64;
         let remaining = exp - now;
-        if remaining > 0 {
-            Some(remaining)
-        } else {
-            None
-        }
+        if remaining > 0 { Some(remaining) } else { None }
     }
 }
 

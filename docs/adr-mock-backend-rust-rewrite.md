@@ -5,6 +5,8 @@
 **Authors:** —  
 **Supersedes:** `tests/mock_backend/` (Node.js + Express + graphql-http)
 
+> **Amendment (2026-04-21) — known divergence.** The mock's chat resolvers (`listChats`, `sendChatMessage`, `createChat`) delivered in Phase 4 are **ahead of the real `peer_backend`**, which has no chat implementation at all (see [adr-chat-realtime-transport.md](adr-chat-realtime-transport.md)). For chat only, the usual "mock mirrors backend" relationship is inverted: the mock is the **authoritative contract** and the backend must catch up. This is a temporary divergence tracked as Track A of [plans/chat/chat-completion-sprint.md](plans/chat/chat-completion-sprint.md).
+
 ---
 
 ## Context

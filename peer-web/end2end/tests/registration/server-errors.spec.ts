@@ -14,6 +14,7 @@ test.describe("Registration — Server Error Handling", () => {
 
   // ── T4: Duplicate email registration ────────────────────────────────────
   test("T4: registering with an already-used email shows backend error", async () => {
+    test.slow(); // stale info toast from step 1 may still be dismissing
     const duplicateEmail = "taken@example.com";
 
     // Pre-register this email in the mock backend
@@ -37,6 +38,7 @@ test.describe("Registration — Server Error Handling", () => {
   });
 
   test("T4b: 'fail@' email triggers server error toast", async () => {
+    test.slow();
     // The mock backend returns a 40601 error for fail@ emails
     await regPage.fillRegistrationForm({ email: "fail@example.com" });
     await regPage.registerButton.click();

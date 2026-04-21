@@ -24,7 +24,7 @@ struct ReferralListVars {
 #[server(GetReferralInfo, "/api")]
 pub async fn get_referral_info() -> Result<ReferralInfoResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, GetReferralInfoData, GET_REFERRAL_INFO_QUERY};
+    use crate::api::graphql::{GET_REFERRAL_INFO_QUERY, GetReferralInfoData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -53,7 +53,7 @@ pub async fn get_referral_list(
     limit: i32,
 ) -> Result<ReferralListResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, GetReferralListData, GET_REFERRAL_LIST_QUERY};
+    use crate::api::graphql::{GET_REFERRAL_LIST_QUERY, GetReferralListData, query};
 
     let token = get_access_token_from_cookies()
         .await

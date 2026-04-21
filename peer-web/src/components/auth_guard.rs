@@ -38,12 +38,24 @@ pub fn AuthGuard(children: ChildrenFn) -> impl IntoView {
         }
     });
 
+    // `children` is `ChildrenFn` (Fn) but the nested `Show` requires the inner
+    // body to itself be `Fn`, which moves `children`. Wrap in `StoredValue` so
+    // both layers can call it without ownership issues.
+    let children = StoredValue::new(children);
+
     view! {
+        // Avoid redirecting before the initial session check resolves —
+        // otherwise authenticated users get bounced to /login on first paint.
         <Show
-            when=move || auth.is_authenticated.get()
-            fallback=move || view! { <Redirect path=redirect_url.get()/> }
+            when=move || auth.is_session_checked.get()
+            fallback=|| view! { <div class="auth-guard-loading" role="status" aria-busy="true"></div> }
         >
-            {children()}
+            <Show
+                when=move || auth.is_authenticated.get()
+                fallback=move || view! { <Redirect path=redirect_url.get()/> }
+            >
+                {children.with_value(|c| c())}
+            </Show>
         </Show>
     }
 }

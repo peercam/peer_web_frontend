@@ -55,8 +55,6 @@ impl FilterState {
     /// Load filter state from localStorage (client-side only).
     #[cfg(feature = "hydrate")]
     pub fn load_from_storage(&self) {
-        use wasm_bindgen::JsCast;
-
         let window = match web_sys::window() {
             Some(w) => w,
             None => return,
@@ -196,7 +194,11 @@ impl FilterState {
             None => return,
         };
 
-        let value = if self.is_collapsed.get() { "true" } else { "false" };
+        let value = if self.is_collapsed.get() {
+            "true"
+        } else {
+            "false"
+        };
         let _ = storage.set_item(storage_keys::IS_COLLAPSED, value);
     }
 
@@ -272,12 +274,12 @@ impl Default for FilterState {
 /// Provide filter state context to the component tree.
 pub fn provide_filter_context() {
     let state = FilterState::new();
-    
+
     // Load from localStorage on mount (client-side only)
     Effect::new(move |_| {
         state.load_from_storage();
     });
-    
+
     provide_context(state);
 }
 

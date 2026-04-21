@@ -29,28 +29,28 @@ struct VerifyData {
 
 #[test]
 fn test_referral_success_fixture() {
-    let json = fs::read_to_string("src/fixtures/referral_success.json")
-        .expect("Failed to read fixture");
-    
+    let json =
+        fs::read_to_string("src/fixtures/referral_success.json").expect("Failed to read fixture");
+
     let response: GraphQLResponse<ReferralData> =
         serde_json::from_str(&json).expect("Failed to deserialize");
-    
+
     let data = response.data.verify_referral_string;
     assert!(data.is_success());
     assert_eq!(data.response_code, "11011");
-    
+
     let referrer = data.referrer().expect("Should have referrer");
     assert_eq!(referrer.username, "peer_referrer");
 }
 
 #[test]
 fn test_referral_invalid_fixture() {
-    let json = fs::read_to_string("src/fixtures/referral_invalid.json")
-        .expect("Failed to read fixture");
-    
+    let json =
+        fs::read_to_string("src/fixtures/referral_invalid.json").expect("Failed to read fixture");
+
     let response: GraphQLResponse<ReferralData> =
         serde_json::from_str(&json).expect("Failed to deserialize");
-    
+
     let data = response.data.verify_referral_string;
     assert!(!data.is_success());
     assert_eq!(data.response_code, "31010");
@@ -59,12 +59,12 @@ fn test_referral_invalid_fixture() {
 
 #[test]
 fn test_register_success_fixture() {
-    let json = fs::read_to_string("src/fixtures/register_success.json")
-        .expect("Failed to read fixture");
-    
+    let json =
+        fs::read_to_string("src/fixtures/register_success.json").expect("Failed to read fixture");
+
     let response: GraphQLResponse<RegisterData> =
         serde_json::from_str(&json).expect("Failed to deserialize");
-    
+
     let data = response.data.register;
     assert!(data.is_success());
     assert_eq!(data.code(), Some("10601"));
@@ -73,12 +73,12 @@ fn test_register_success_fixture() {
 
 #[test]
 fn test_register_duplicate_fixture() {
-    let json = fs::read_to_string("src/fixtures/register_duplicate.json")
-        .expect("Failed to read fixture");
-    
+    let json =
+        fs::read_to_string("src/fixtures/register_duplicate.json").expect("Failed to read fixture");
+
     let response: GraphQLResponse<RegisterData> =
         serde_json::from_str(&json).expect("Failed to deserialize");
-    
+
     let data = response.data.register;
     assert!(!data.is_success());
     assert_eq!(data.code(), Some("30601"));
@@ -87,12 +87,12 @@ fn test_register_duplicate_fixture() {
 
 #[test]
 fn test_verify_success_fixture() {
-    let json = fs::read_to_string("src/fixtures/verify_success.json")
-        .expect("Failed to read fixture");
-    
+    let json =
+        fs::read_to_string("src/fixtures/verify_success.json").expect("Failed to read fixture");
+
     let response: GraphQLResponse<VerifyData> =
         serde_json::from_str(&json).expect("Failed to deserialize");
-    
+
     let data = response.data.verify_account;
     assert!(data.is_success());
     assert_eq!(data.response_code, "10701");

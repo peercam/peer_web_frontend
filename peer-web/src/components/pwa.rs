@@ -6,10 +6,9 @@
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
 
-use crate::components::toast::{use_toast, ToastType};
+use crate::components::toast::{ToastType, use_toast};
 use crate::utils::pwa::{
-    apply_service_worker_update, trigger_install_prompt, InstallPromptEvent,
-    ServiceWorkerUpdate,
+    InstallPromptEvent, ServiceWorkerUpdate, apply_service_worker_update, trigger_install_prompt,
 };
 
 /// LocalStorage key for "Not now" dismissal (14-day cooldown).
@@ -48,17 +47,12 @@ fn UpdateBanner() -> impl IntoView {
     Effect::new(move |prev: Option<bool>| {
         let now_flag = update.update_available.get();
         if now_flag && prev != Some(true) {
-            toast.show(
-                "A new version is available.",
-                ToastType::Info,
-            );
+            toast.show("A new version is available.", ToastType::Info);
         }
         now_flag
     });
 
-    let visible = Memo::new(move |_| {
-        update.update_available.get() && !dismissed.get()
-    });
+    let visible = Memo::new(move |_| update.update_available.get() && !dismissed.get());
 
     let on_update = move |_| apply_service_worker_update();
     let on_dismiss = move |_| dismissed.set(true);

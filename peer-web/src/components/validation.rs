@@ -259,9 +259,7 @@ mod tests {
 
     #[test]
     fn valid_uuid_with_whitespace_trimmed() {
-        assert!(is_valid_uuid(
-            "  85d5f836-b1f5-4c4e-9381-1b058e13df93  "
-        ));
+        assert!(is_valid_uuid("  85d5f836-b1f5-4c4e-9381-1b058e13df93  "));
     }
 
     #[test]
@@ -291,9 +289,7 @@ mod tests {
 
     #[test]
     fn invalid_too_long() {
-        assert!(!is_valid_uuid(
-            "85d5f836-b1f5-4c4e-9381-1b058e13df930"
-        ));
+        assert!(!is_valid_uuid("85d5f836-b1f5-4c4e-9381-1b058e13df930"));
     }
 
     // --- Email tests ---

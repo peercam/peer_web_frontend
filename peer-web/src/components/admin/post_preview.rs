@@ -13,7 +13,10 @@ pub fn PostPreview(post: ModerationPost) -> impl IntoView {
         .as_ref()
         .and_then(|u| u.username.clone())
         .unwrap_or_default();
-    let slug = user.as_ref().and_then(|u| u.slug.clone()).unwrap_or_default();
+    let slug = user
+        .as_ref()
+        .and_then(|u| u.slug.clone())
+        .unwrap_or_default();
     let slug_display = format!("@{}", slug);
     let post_id = post.id.clone().unwrap_or_default();
     let title = post.title.clone().unwrap_or_default();
@@ -25,10 +28,7 @@ pub fn PostPreview(post: ModerationPost) -> impl IntoView {
     let cover_url = post.cover.clone();
     let post_link = format!("/post/{}", post_id);
 
-    let type_class = format!(
-        "post_detail post_type_{}",
-        content_type.to_lowercase()
-    );
+    let type_class = format!("post_detail post_type_{}", content_type.to_lowercase());
 
     let has_description = !description.is_empty();
     let has_tags = !tags.is_empty();
@@ -45,7 +45,8 @@ pub fn PostPreview(post: ModerationPost) -> impl IntoView {
                 <div class="post_media">
                     <img src=src alt="Post media"/>
                 </div>
-            }.into_any()
+            }
+            .into_any()
         }
         "VIDEO" => {
             let src = media_url.unwrap_or_default();
@@ -55,7 +56,8 @@ pub fn PostPreview(post: ModerationPost) -> impl IntoView {
                         <source src=src type="video/mp4"/>
                     </video>
                 </div>
-            }.into_any()
+            }
+            .into_any()
         }
         "AUDIO" => {
             let src = media_url.unwrap_or_default();
@@ -66,7 +68,8 @@ pub fn PostPreview(post: ModerationPost) -> impl IntoView {
                     })}
                     <audio controls src=src></audio>
                 </div>
-            }.into_any()
+            }
+            .into_any()
         }
         _ => view! { <div></div> }.into_any(),
     };

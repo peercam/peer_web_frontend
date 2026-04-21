@@ -2,13 +2,13 @@
 
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use leptos::web_sys;
 use leptos::wasm_bindgen::JsCast;
+use leptos::web_sys;
 
 use crate::api::shop::perform_shop_order;
 use crate::models::post::Post;
 use crate::models::shop::{
-    validate_delivery_form, DeliveryFormData, DeliveryFormErrors, ShopProduct,
+    DeliveryFormData, DeliveryFormErrors, ShopProduct, validate_delivery_form,
 };
 use crate::models::transaction::calculate_fees;
 
@@ -136,11 +136,9 @@ pub fn CheckoutPopup(
         do_next();
     };
 
-    let on_back = move |_: leptos::ev::MouseEvent| {
-        match step.get() {
-            CheckoutStep::ReviewPayment => step.set(CheckoutStep::DeliveryForm),
-            CheckoutStep::DeliveryForm => reset_state(),
-        }
+    let on_back = move |_: leptos::ev::MouseEvent| match step.get() {
+        CheckoutStep::ReviewPayment => step.set(CheckoutStep::DeliveryForm),
+        CheckoutStep::DeliveryForm => reset_state(),
     };
 
     let on_pay = move |_: leptos::ev::MouseEvent| {

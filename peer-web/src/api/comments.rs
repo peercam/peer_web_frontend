@@ -62,7 +62,7 @@ struct GetPostVars {
 /// Fetch a single post for guest viewing (no auth required).
 #[server(GuestGetPost, "/api")]
 pub async fn guest_get_post(post_id: String) -> Result<Post, ServerFnError> {
-    use crate::api::graphql::{query, GuestPostData, GUEST_POST_QUERY};
+    use crate::api::graphql::{GUEST_POST_QUERY, GuestPostData, query};
 
     let vars = GuestPostVars { postid: post_id };
     let data: GuestPostData = query(GUEST_POST_QUERY, vars, None).await?;
@@ -78,7 +78,7 @@ pub async fn guest_get_post(post_id: String) -> Result<Post, ServerFnError> {
 #[server(GetPost, "/api")]
 pub async fn get_post(post_id: String) -> Result<Post, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, GetPostData, GET_POST_QUERY};
+    use crate::api::graphql::{GET_POST_QUERY, GetPostData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -102,7 +102,7 @@ pub async fn list_comments(
     limit: i32,
 ) -> Result<CommentListResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ListCommentsData, LIST_COMMENTS_QUERY};
+    use crate::api::graphql::{LIST_COMMENTS_QUERY, ListCommentsData, query};
 
     let token = get_access_token_from_cookies().await.ok();
 
@@ -124,7 +124,7 @@ pub async fn list_child_comments(
     limit: i32,
 ) -> Result<CommentListResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ListChildCommentsData, LIST_CHILD_COMMENTS_QUERY};
+    use crate::api::graphql::{LIST_CHILD_COMMENTS_QUERY, ListChildCommentsData, query};
 
     let token = get_access_token_from_cookies().await.ok();
 
@@ -147,7 +147,7 @@ pub async fn create_comment(
     parent_id: Option<String>,
 ) -> Result<Comment, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, CreateCommentData, CREATE_COMMENT_MUTATION};
+    use crate::api::graphql::{CREATE_COMMENT_MUTATION, CreateCommentData, mutate};
 
     let token = get_access_token_from_cookies()
         .await
@@ -171,7 +171,7 @@ pub async fn create_comment(
 #[server(LikeComment, "/api")]
 pub async fn like_comment(comment_id: String) -> Result<(), ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, LikeCommentData, LIKE_COMMENT_MUTATION};
+    use crate::api::graphql::{LIKE_COMMENT_MUTATION, LikeCommentData, mutate};
 
     let token = get_access_token_from_cookies()
         .await
@@ -189,7 +189,7 @@ pub async fn like_comment(comment_id: String) -> Result<(), ServerFnError> {
 #[server(UnlikeComment, "/api")]
 pub async fn unlike_comment(comment_id: String) -> Result<(), ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, UnlikeCommentData, UNLIKE_COMMENT_MUTATION};
+    use crate::api::graphql::{UNLIKE_COMMENT_MUTATION, UnlikeCommentData, mutate};
 
     let token = get_access_token_from_cookies()
         .await

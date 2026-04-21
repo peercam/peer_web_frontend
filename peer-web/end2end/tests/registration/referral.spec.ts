@@ -26,11 +26,12 @@ test.describe("Registration — Referral Code Validation", () => {
   });
 
   test("T2b: empty referral code prevents submission", async () => {
-    await regPage.verifyCodeButton.click();
+    // With no code entered, the verify button must be disabled so the form
+    // cannot be submitted at all.
+    await expect(regPage.verifyCodeButton).toBeDisabled();
 
-    // Should remain on step 1 with a validation message
+    // Should remain on step 1
     await regPage.expectActiveStep(1);
-    await expect(regPage.referralValidation).toBeVisible();
   });
 
   // ── T3: Unknown referral code (server rejects) ──────────────────────────

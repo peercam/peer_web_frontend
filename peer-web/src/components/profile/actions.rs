@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::api::profile::{report_user, toggle_block, toggle_follow};
-use crate::components::toast::{use_toast, ToastType};
+use crate::components::toast::{ToastType, use_toast};
 use crate::models::profile::Profile;
 
 /// Actions for viewing your own profile.
@@ -129,7 +129,10 @@ pub fn ViewProfileActions(
                         }
                     }
                     Err(e) => {
-                        toast.show(format!("Failed to update follow status: {}", e), ToastType::Error);
+                        toast.show(
+                            format!("Failed to update follow status: {}", e),
+                            ToastType::Error,
+                        );
                     }
                 }
                 is_loading.set(false);

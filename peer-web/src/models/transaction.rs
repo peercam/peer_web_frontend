@@ -53,7 +53,7 @@ impl TransactionCategory {
     /// Get icon class for this category.
     pub fn icon_class(&self) -> &'static str {
         match self {
-            Self::P2pTransfer => "",  // Uses user avatar
+            Self::P2pTransfer => "", // Uses user avatar
             Self::TokenMint => "peer-icon-daily-mint",
             Self::Like => "peer-icon-like-fill red-text",
             Self::Dislike => "peer-icon-dislike-fill red-text",
@@ -168,7 +168,8 @@ impl Transaction {
 
     /// Get category with fallback.
     pub fn category(&self) -> TransactionCategory {
-        self.transaction_category.unwrap_or(TransactionCategory::Unknown)
+        self.transaction_category
+            .unwrap_or(TransactionCategory::Unknown)
     }
 
     /// Get the counterparty user (sender for incoming, recipient for outgoing).
@@ -182,7 +183,10 @@ impl Transaction {
 
     /// Check if this transaction has a message.
     pub fn has_message(&self) -> bool {
-        self.message.as_ref().map(|m| !m.is_empty()).unwrap_or(false)
+        self.message
+            .as_ref()
+            .map(|m| !m.is_empty())
+            .unwrap_or(false)
     }
 
     /// Get truncated message for preview (max 50 chars).

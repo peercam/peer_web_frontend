@@ -131,8 +131,7 @@ const RELATIONS_PER_PAGE: i32 = 50;
 fn RelationsTabContent(
     user_id: String,
     tab: RwSignal<RelationsTab>,
-    #[allow(unused)]
-    is_own_profile: bool,
+    #[allow(unused)] is_own_profile: bool,
 ) -> impl IntoView {
     // Per-tab state
     let followers = RwSignal::new(Vec::<ProfileUser>::new());
@@ -171,10 +170,13 @@ fn RelationsTabContent(
         spawn_local(async move {
             match current_tab {
                 RelationsTab::Followers | RelationsTab::Following => {
-                    match list_follow_relations(Some(user_id), current_offset, RELATIONS_PER_PAGE).await {
+                    match list_follow_relations(Some(user_id), current_offset, RELATIONS_PER_PAGE)
+                        .await
+                    {
                         Ok(res) => {
                             let relations = res.affected_rows.unwrap_or_default();
-                            let (new_followers, new_following) = (relations.followers, relations.following);
+                            let (new_followers, new_following) =
+                                (relations.followers, relations.following);
                             let got_results = match current_tab {
                                 RelationsTab::Followers => {
                                     let has_new = !new_followers.is_empty();
@@ -276,7 +278,8 @@ fn UserList(users: Vec<ProfileUser>) -> impl IntoView {
             <div class="empty-list">
                 <p>"No users found"</p>
             </div>
-        }.into_any()
+        }
+        .into_any()
     } else {
         view! {
             <div class="user-list">
@@ -286,7 +289,8 @@ fn UserList(users: Vec<ProfileUser>) -> impl IntoView {
                     children=|user| view! { <UserListItem user/> }
                 />
             </div>
-        }.into_any()
+        }
+        .into_any()
     }
 }
 
@@ -298,7 +302,8 @@ fn FriendList(users: Vec<BasicUserInfo>) -> impl IntoView {
             <div class="empty-list">
                 <p>"No peers found"</p>
             </div>
-        }.into_any()
+        }
+        .into_any()
     } else {
         view! {
             <div class="user-list friend-list">
@@ -308,7 +313,8 @@ fn FriendList(users: Vec<BasicUserInfo>) -> impl IntoView {
                     children=|user| view! { <FriendListItem user/> }
                 />
             </div>
-        }.into_any()
+        }
+        .into_any()
     }
 }
 
@@ -318,17 +324,6 @@ fn LoadingSpinner() -> impl IntoView {
     view! {
         <div class="loading-spinner">
             <div class="spinner"></div>
-        </div>
-    }
-}
-
-/// Error message component.
-#[component]
-fn ErrorMessage(message: String) -> impl IntoView {
-    view! {
-        <div class="error-message">
-            <i class="peer-icon peer-icon-alert-circle"></i>
-            <p>{message}</p>
         </div>
     }
 }

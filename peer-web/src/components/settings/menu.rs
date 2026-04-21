@@ -86,10 +86,7 @@ pub fn SettingsMenu(
 
 /// Logout confirmation modal.
 #[component]
-fn LogoutModal(
-    on_cancel: impl Fn() + 'static,
-    on_confirm: impl Fn() + 'static,
-) -> impl IntoView {
+fn LogoutModal(on_cancel: impl Fn() + 'static, on_confirm: impl Fn() + 'static) -> impl IntoView {
     view! {
         <div class="modal-overlay">
             <div class="logOut-pop">

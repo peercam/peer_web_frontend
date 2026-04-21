@@ -37,7 +37,7 @@ struct PerformModerationVars {
 #[server(GetModerationStats, "/api")]
 pub async fn get_moderation_stats() -> Result<ModerationStatsResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ModerationStatsData, MODERATION_STATS_QUERY};
+    use crate::api::graphql::{MODERATION_STATS_QUERY, ModerationStatsData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -58,7 +58,7 @@ pub async fn get_moderation_items(
     limit: i32,
 ) -> Result<ModerationItemListResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ModerationItemsData, MODERATION_ITEMS_QUERY};
+    use crate::api::graphql::{MODERATION_ITEMS_QUERY, ModerationItemsData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -71,8 +71,7 @@ pub async fn get_moderation_items(
         status,
     };
 
-    let data: ModerationItemsData =
-        query(MODERATION_ITEMS_QUERY, vars, Some(&token)).await?;
+    let data: ModerationItemsData = query(MODERATION_ITEMS_QUERY, vars, Some(&token)).await?;
 
     Ok(data.moderation_items)
 }
@@ -84,7 +83,7 @@ pub async fn perform_moderation(
     moderation_action: ModerationAction,
 ) -> Result<DefaultResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, PerformModerationData, PERFORM_MODERATION_MUTATION};
+    use crate::api::graphql::{PERFORM_MODERATION_MUTATION, PerformModerationData, mutate};
 
     let token = get_access_token_from_cookies()
         .await

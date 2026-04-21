@@ -187,4 +187,56 @@ impl ChatMutation {
             affected_rows: Some(response_message),
         }
     }
+
+    /// Mark a chat as read for the authenticated user at the current time.
+    async fn mark_chat_read(&self, ctx: &Context<'_>, chatid: ID) -> MarkChatReadResponse {
+        let user_id = match require_auth(ctx) {
+            Ok(uid) => uid,
+            Err(_) => {
+                return MarkChatReadResponse {
+                    meta: DefaultResponse::error("60501", "Not authenticated"),
+                    last_read_at: None,
+                };
+            }
+        };
+
+        let chat_uuid = match chatid.to_string().parse::<Uuid>() {
+            Ok(u) => u,
+            Err(_) => {
+                return MarkChatReadResponse {
+                    meta: DefaultResponse::error("30303", "Invalid chat UUID"),
+                    last_read_at: None,
+                };
+            }
+        };
+
+        let mut state = ctx.data_unchecked::<SharedState>().write().await;
+
+        let chat = match state.chats.iter().find(|c| c.id == chat_uuid) {
+            Some(c) => c,
+            None => {
+                return MarkChatReadResponse {
+                    meta: DefaultResponse::error("30304", "Chat not found"),
+                    last_read_at: None,
+                };
+            }
+        };
+
+        if !chat.participant_ids.contains(&user_id) {
+            return MarkChatReadResponse {
+                meta: DefaultResponse::error("30305", "Not a participant in this chat"),
+                last_read_at: None,
+            };
+        }
+
+        let now = Utc::now().to_rfc3339();
+        state
+            .chat_last_read_at
+            .insert((user_id, chat_uuid), now.clone());
+
+        MarkChatReadResponse {
+            meta: DefaultResponse::success("11806", "Chat marked as read"),
+            last_read_at: Some(now),
+        }
+    }
 }

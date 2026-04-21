@@ -303,6 +303,8 @@ pub struct MockState {
     // --- Phase 4: Chat ---
     pub chats: Vec<ChatRecord>,
     pub chat_messages: Vec<ChatMessageRecord>,
+    /// Per-user/per-chat last-read timestamp (RFC3339).
+    pub chat_last_read_at: HashMap<(Uuid, Uuid), String>,
 
     // --- Phase 5: Economy ---
     pub wallets: HashMap<Uuid, Decimal>,
@@ -777,7 +779,14 @@ impl MockState {
     // ========================================================================
 
     /// Convert a ChatRecord to the GraphQL Chat type.
-    pub fn chat_record_to_graphql(&self, record: &ChatRecord) -> crate::types::chat::Chat {
+    ///
+    /// `viewer_id` is used to compute viewer-specific fields (`unread_count`,
+    /// `last_read_at`). When `None`, those fields default to 0 / None.
+    pub fn chat_record_to_graphql(
+        &self,
+        record: &ChatRecord,
+        viewer_id: Option<Uuid>,
+    ) -> crate::types::chat::Chat {
         use crate::types::chat::{Chat, ChatMessage, ChatParticipant};
 
         let chatparticipants: Vec<ChatParticipant> = record
@@ -794,7 +803,7 @@ impl MockState {
             })
             .collect();
 
-        let chatmessages: Vec<ChatMessage> = self
+        let mut chatmessages: Vec<ChatMessage> = self
             .chat_messages
             .iter()
             .filter(|m| m.chat_id == record.id)
@@ -806,6 +815,25 @@ impl MockState {
                 createdat: m.created_at.clone(),
             })
             .collect();
+        chatmessages.sort_by(|a, b| a.createdat.cmp(&b.createdat));
+
+        let (unread_count, last_read_at) = match viewer_id {
+            Some(vid) => {
+                let last_read = self.chat_last_read_at.get(&(vid, record.id)).cloned();
+                let last_read_cmp = last_read.clone().unwrap_or_default();
+                let unread = self
+                    .chat_messages
+                    .iter()
+                    .filter(|m| {
+                        m.chat_id == record.id
+                            && m.sender_id != vid
+                            && m.created_at.as_str() > last_read_cmp.as_str()
+                    })
+                    .count() as i32;
+                (unread, last_read)
+            }
+            None => (0, None),
+        };
 
         Chat {
             id: record.id.to_string(),
@@ -815,6 +843,8 @@ impl MockState {
             updatedat: record.updated_at.clone(),
             chatmessages,
             chatparticipants,
+            unread_count,
+            last_read_at,
         }
     }
 

@@ -32,10 +32,7 @@ pub fn AdminPage() -> impl IntoView {
 /// Returns a tri-state: authorized, access denied (redirect), or error.
 #[component]
 fn RoleGuard(children: ChildrenFn) -> impl IntoView {
-    let role_check = Resource::new(
-        || (),
-        |_| async move { check_moderator_role().await },
-    );
+    let role_check = Resource::new(|| (), |_| async move { check_moderator_role().await });
 
     view! {
         <Suspense fallback=move || view! {
@@ -68,7 +65,7 @@ fn RoleGuard(children: ChildrenFn) -> impl IntoView {
 #[server(CheckModeratorRole, "/api")]
 async fn check_moderator_role() -> Result<bool, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ModerationStatsData, MODERATION_STATS_QUERY};
+    use crate::api::graphql::{MODERATION_STATS_QUERY, ModerationStatsData, query};
 
     let token = match get_access_token_from_cookies().await {
         Ok(t) => t,
@@ -94,7 +91,10 @@ async fn check_moderator_role() -> Result<bool, ServerFnError> {
                 Ok(false)
             } else {
                 // Network/server errors → propagate so UI can show retry
-                Err(ServerFnError::new(format!("Permission check failed: {}", msg)))
+                Err(ServerFnError::new(format!(
+                    "Permission check failed: {}",
+                    msg
+                )))
             }
         }
     }

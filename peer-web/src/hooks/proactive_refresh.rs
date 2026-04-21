@@ -81,8 +81,8 @@ fn schedule_refresh(
     auth: crate::state::auth::AuthContext,
     timeout_handle: std::sync::Arc<std::sync::Mutex<Option<i32>>>,
 ) {
-    use wasm_bindgen::closure::Closure;
     use wasm_bindgen::JsCast;
+    use wasm_bindgen::closure::Closure;
 
     let Some(window) = web_sys::window() else {
         return;

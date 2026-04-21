@@ -15,16 +15,18 @@
 
 use leptos::prelude::*;
 use leptos_meta::*;
+use leptos_router::hooks::use_navigate;
 use leptos_router::hooks::use_query_map;
 
 use crate::api::registration::{register_user, verify_account, verify_referral};
 use crate::components::back_button::BackButton;
 use crate::components::referral::{DefaultReferralView, ReferralStep};
-use crate::components::registration_form::{focus_field, RegistrationStep};
+use crate::components::registration_form::{RegistrationStep, focus_field};
 use crate::components::step_announcer::StepAnnouncer;
 use crate::components::success_step::SuccessStep;
-use crate::components::toast::{use_toast, ToastType};
+use crate::components::toast::{ToastType, use_toast};
 use crate::models::user::ReferralUser;
+use crate::state::auth::use_auth;
 use crate::utils::response_codes::user_friendly_msg;
 
 /// Registration step identifier.
@@ -131,8 +133,8 @@ fn focus_first_interactive_in_step(step: RegStep) {
 fn request_animation_frame(f: impl FnOnce() + 'static) {
     #[cfg(feature = "hydrate")]
     {
-        use wasm_bindgen::prelude::*;
         use wasm_bindgen::JsCast;
+        use wasm_bindgen::prelude::*;
         let closure = Closure::once_into_js(f);
         if let Some(window) = web_sys::window() {
             let _ = window.request_animation_frame(closure.as_ref().unchecked_ref());
@@ -151,11 +153,7 @@ fn push_step_to_history(step: RegStep) {
         if let Some(window) = web_sys::window() {
             if let Ok(history) = window.history() {
                 let hash = format!("#step-{}", step.number());
-                let _ = history.push_state_with_url(
-                    &wasm_bindgen::JsValue::NULL,
-                    "",
-                    Some(&hash),
-                );
+                let _ = history.push_state_with_url(&wasm_bindgen::JsValue::NULL, "", Some(&hash));
             }
         }
     }
@@ -170,8 +168,8 @@ fn push_step_to_history(step: RegStep) {
 fn listen_for_popstate(current_step: RwSignal<RegStep>) {
     #[cfg(feature = "hydrate")]
     {
-        use wasm_bindgen::prelude::*;
         use wasm_bindgen::JsCast;
+        use wasm_bindgen::prelude::*;
 
         if let Some(window) = web_sys::window() {
             let closure = Closure::wrap(Box::new(move |_: web_sys::Event| {
@@ -187,10 +185,8 @@ fn listen_for_popstate(current_step: RwSignal<RegStep>) {
                 }
             }) as Box<dyn FnMut(_)>);
 
-            let _ = window.add_event_listener_with_callback(
-                "popstate",
-                closure.as_ref().unchecked_ref(),
-            );
+            let _ = window
+                .add_event_listener_with_callback("popstate", closure.as_ref().unchecked_ref());
             closure.forget(); // leak intentionally — lives for page lifetime
         }
     }
@@ -212,6 +208,15 @@ fn listen_for_popstate(current_step: RwSignal<RegStep>) {
 /// - `?ref=<UUID>` — Pre-fills the referral code input (read on mount)
 #[component]
 pub fn RegisterPage() -> impl IntoView {
+    // ── Auto-redirect if already logged in ──────────────────────────────
+    let auth = use_auth();
+    let navigate_if_authed = use_navigate();
+    Effect::new(move |_| {
+        if auth.is_session_checked.get() && auth.is_authenticated.get() {
+            navigate_if_authed("/dashboard", Default::default());
+        }
+    });
+
     // ── Reactive state ──────────────────────────────────────────────────
     let current_step = RwSignal::new(RegStep::Referral);
     let referral_code = RwSignal::new(String::new());
@@ -277,9 +282,7 @@ pub fn RegisterPage() -> impl IntoView {
             let password_val = password.get();
             let username_val = username.get();
             let referral_val = referral_code.get();
-            async move {
-                register_user(email_val, password_val, username_val, referral_val).await
-            }
+            async move { register_user(email_val, password_val, username_val, referral_val).await }
         }
     });
 
@@ -319,14 +322,15 @@ pub fn RegisterPage() -> impl IntoView {
                         }
                         "30601" => {
                             // Duplicate email
-                            email_backend_error
-                                .set(Some(user_friendly_msg("30601").to_string()));
+                            email_backend_error.set(Some(user_friendly_msg("30601").to_string()));
+                            toast.show(user_friendly_msg("30601"), ToastType::Error);
                             focus_field("email");
                         }
                         "30202" => {
                             // Invalid username
                             username_backend_error
                                 .set(Some(user_friendly_msg("30202").to_string()));
+                            toast.show(user_friendly_msg("30202"), ToastType::Error);
                             focus_field("username");
                         }
                         other => {
@@ -377,10 +381,7 @@ pub fn RegisterPage() -> impl IntoView {
 
                         current_step.set(RegStep::Register);
                     } else {
-                        toast.show(
-                            user_friendly_msg(&response.response_code),
-                            ToastType::Error,
-                        );
+                        toast.show(user_friendly_msg(&response.response_code), ToastType::Error);
                     }
                 }
                 Err(e) => {
@@ -410,9 +411,7 @@ pub fn RegisterPage() -> impl IntoView {
     });
 
     // ── Screen reader step announcement ──────────────────────────────
-    let step_announcement = Memo::new(move |_| {
-        current_step.get().announcement().to_string()
-    });
+    let step_announcement = Memo::new(move |_| current_step.get().announcement().to_string());
 
     // ── Focus management: focus first interactive element on step change ──
     Effect::new(move |_| {
@@ -662,7 +661,11 @@ mod tests {
     #[test]
     fn test_announcements() {
         assert!(RegStep::Referral.announcement().contains("Referral"));
-        assert!(RegStep::DefaultReferral.announcement().contains("Invitation"));
+        assert!(
+            RegStep::DefaultReferral
+                .announcement()
+                .contains("Invitation")
+        );
         assert!(RegStep::Register.announcement().contains("Registration"));
         assert!(RegStep::Success.announcement().contains("successful"));
     }

@@ -127,8 +127,12 @@ export class RegistrationPage {
 
   /** Assert that a toast with the given text (substring) is visible. */
   async expectToast(textSubstring: string | RegExp) {
-    await expect(this.toast).toBeVisible();
-    await expect(this.toast).toContainText(textSubstring);
+    // Toasts auto-dismiss after ~3s; earlier "info" toasts (e.g. "Referral
+    // information loaded.") can linger from a previous step. Poll with a
+    // generous timeout so we wait until the expected toast replaces any
+    // stale one rather than matching the wrong text.
+    await expect(this.toast).toBeVisible({ timeout: 5_000 });
+    await expect(this.toast).toContainText(textSubstring, { timeout: 8_000 });
   }
 
   /** Assert which step is currently active/visible. */

@@ -1,19 +1,23 @@
 use leptos::prelude::*;
-use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
+use leptos_meta::{MetaTags, Stylesheet, Title, provide_meta_context};
 use leptos_router::{
+    StaticSegment,
     components::{Route, Router, Routes},
     hooks::use_navigate,
-    path, StaticSegment,
+    path,
 };
 
 use crate::components::pwa::InstallPrompt;
 use crate::components::toast::ToastProvider;
 use crate::hooks::use_proactive_refresh;
-use crate::pages::{AdminPage, ChatPage, DashboardPage, ForgotPasswordPage, InvitePage, LoginPage, MyAdsPage, MyProfilePage, NewPostPage, PeerShopPage, ReferralBoardPage, RegisterPage, SettingsPage, VersionHistoryPage, ViewPostPage, ViewProfilePage, WalletPage};
+use crate::pages::{
+    AdminPage, ChatPage, DashboardPage, ForgotPasswordPage, InvitePage, LoginPage, MyAdsPage,
+    MyProfilePage, NewPostPage, PeerShopPage, ReferralBoardPage, RegisterPage, SettingsPage,
+    VersionHistoryPage, ViewPostPage, ViewProfilePage, WalletPage,
+};
 use crate::state::auth::provide_auth_context;
 use crate::utils::pwa::{
-    provide_install_prompt_context, provide_sw_update_context,
-    register_service_worker,
+    provide_install_prompt_context, provide_sw_update_context, register_service_worker,
 };
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {

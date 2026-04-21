@@ -91,9 +91,7 @@ pub fn AdList() -> impl IntoView {
         all
     };
 
-    let get_indexed_ads = move || {
-        get_sorted_ads().into_iter().enumerate().collect::<Vec<_>>()
-    };
+    let get_indexed_ads = move || get_sorted_ads().into_iter().enumerate().collect::<Vec<_>>();
 
     view! {
         // Stats header

@@ -76,7 +76,7 @@ fn FullPreview() -> impl IntoView {
                     {move || {
                         let files = ctx.media_files.get();
                         let content_type = ctx.content_type.get();
-                        
+
                         match content_type {
                             CreateContentType::Text => view! {
                                 <div class="text-placeholder">
@@ -182,7 +182,7 @@ fn CardPreview() -> impl IntoView {
                     {move || {
                         let files = ctx.media_files.get();
                         let content_type = ctx.content_type.get();
-                        
+
                         match content_type {
                             CreateContentType::Text => view! {
                                 <div class="text-thumb">

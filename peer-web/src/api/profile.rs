@@ -85,7 +85,7 @@ pub async fn get_profile(
     content_filter_by: Option<ContentFilterType>,
 ) -> Result<Profile, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, GetProfileData, GET_PROFILE_QUERY};
+    use crate::api::graphql::{GET_PROFILE_QUERY, GetProfileData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -120,7 +120,7 @@ pub async fn list_follow_relations(
     limit: i32,
 ) -> Result<FollowRelationsResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ListFollowRelationsData, LIST_FOLLOW_RELATIONS_QUERY};
+    use crate::api::graphql::{LIST_FOLLOW_RELATIONS_QUERY, ListFollowRelationsData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -153,7 +153,7 @@ pub async fn list_friends(
     limit: i32,
 ) -> Result<FriendsResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ListFriendsData, LIST_FRIENDS_QUERY};
+    use crate::api::graphql::{LIST_FRIENDS_QUERY, ListFriendsData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -191,7 +191,7 @@ pub async fn list_user_posts(
     limit: i32,
 ) -> Result<PostListResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ListPostsData, LIST_USER_POSTS_QUERY};
+    use crate::api::graphql::{LIST_USER_POSTS_QUERY, ListPostsData, query};
 
     let token = get_access_token_from_cookies().await.ok();
 
@@ -222,7 +222,7 @@ pub async fn list_user_posts(
 #[server(ToggleFollow, "/api")]
 pub async fn toggle_follow(user_id: String) -> Result<FollowStatusResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, ToggleFollowData, TOGGLE_FOLLOW_MUTATION};
+    use crate::api::graphql::{TOGGLE_FOLLOW_MUTATION, ToggleFollowData, mutate};
 
     let token = get_access_token_from_cookies()
         .await
@@ -245,7 +245,7 @@ pub async fn toggle_follow(user_id: String) -> Result<FollowStatusResponse, Serv
 #[server(ToggleBlock, "/api")]
 pub async fn toggle_block(user_id: String) -> Result<GenericMutationResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, ToggleBlockData, TOGGLE_BLOCK_MUTATION};
+    use crate::api::graphql::{TOGGLE_BLOCK_MUTATION, ToggleBlockData, mutate};
 
     let token = get_access_token_from_cookies()
         .await
@@ -266,7 +266,7 @@ pub async fn toggle_block(user_id: String) -> Result<GenericMutationResponse, Se
 #[server(ReportUser, "/api")]
 pub async fn report_user(user_id: String) -> Result<GenericMutationResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, ReportUserData, REPORT_USER_MUTATION};
+    use crate::api::graphql::{REPORT_USER_MUTATION, ReportUserData, mutate};
 
     let token = get_access_token_from_cookies()
         .await

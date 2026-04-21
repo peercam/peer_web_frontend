@@ -28,11 +28,7 @@ pub fn ViewProfilePage() -> impl IntoView {
     let params = use_params_map();
 
     // Extract user slug from route params
-    let user_slug = move || {
-        params.get()
-            .get("slug")
-            .map(|s| s.to_string())
-    };
+    let user_slug = move || params.get().get("slug").map(|s| s.to_string());
 
     view! {
         <AuthGuard>
@@ -53,15 +49,12 @@ fn ViewProfileMainContent(
     user_slug: impl Fn() -> Option<String> + Send + Sync + 'static,
 ) -> impl IntoView {
     // Fetch the profile based on the slug
-    let profile_resource = Resource::new(
-        user_slug,
-        |slug| async move {
-            match slug {
-                Some(slug) => get_profile(Some(slug), None).await,
-                None => Err(ServerFnError::new("No user specified")),
-            }
-        },
-    );
+    let profile_resource = Resource::new(user_slug, |slug| async move {
+        match slug {
+            Some(slug) => get_profile(Some(slug), None).await,
+            None => Err(ServerFnError::new("No user specified")),
+        }
+    });
 
     view! {
         <main class="site_main profile-main">
@@ -72,7 +65,7 @@ fn ViewProfileMainContent(
                             Ok(profile) => {
                                 let page_title = format!("{} - Peer Network", profile.username);
                                 let user_id = profile.id.clone();
-                                
+
                                 view! {
                                     <Title text=page_title/>
                                     <ProfileHeader
@@ -148,7 +141,9 @@ fn UserPostList(user_id: String) -> impl IntoView {
                 sort_by,
                 current_offset,
                 POSTS_PER_PAGE,
-            ).await {
+            )
+            .await
+            {
                 Ok(response) => {
                     let new_posts = response.affected_rows;
                     let has_new = !new_posts.is_empty();

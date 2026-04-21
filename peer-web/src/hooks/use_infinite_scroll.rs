@@ -42,8 +42,8 @@ pub fn use_infinite_scroll(
     {
         let load_fn = load_fn.clone();
         Effect::new(move |_| {
-            use wasm_bindgen::prelude::*;
             use wasm_bindgen::JsCast;
+            use wasm_bindgen::prelude::*;
 
             let Some(el) = loader_ref.get() else {
                 return;

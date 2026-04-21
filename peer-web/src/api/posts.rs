@@ -90,7 +90,7 @@ pub async fn list_posts(
     limit: i32,
 ) -> Result<PostListResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ListPostsData, LIST_POSTS_QUERY};
+    use crate::api::graphql::{LIST_POSTS_QUERY, ListPostsData, query};
 
     let token = get_access_token_from_cookies().await.ok();
 
@@ -121,7 +121,7 @@ pub async fn list_ad_posts(
     tag: Option<String>,
 ) -> Result<AdListResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, ListAdPostsData, LIST_AD_POSTS_QUERY};
+    use crate::api::graphql::{LIST_AD_POSTS_QUERY, ListAdPostsData, query};
 
     let token = get_access_token_from_cookies().await.ok();
 
@@ -144,7 +144,7 @@ pub async fn list_ad_posts(
 #[server(PostAction, "/api")]
 pub async fn post_action(post_id: String, action: PostActionType) -> Result<(), ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, PostActionData, POST_ACTION_MUTATION};
+    use crate::api::graphql::{POST_ACTION_MUTATION, PostActionData, mutate};
 
     let token = get_access_token_from_cookies()
         .await
@@ -171,9 +171,12 @@ pub async fn post_action(post_id: String, action: PostActionType) -> Result<(), 
 
 /// Search users by username.
 #[server(SearchUsers, "/api")]
-pub async fn search_users(username: String, limit: i32) -> Result<Vec<UserSearchResult>, ServerFnError> {
+pub async fn search_users(
+    username: String,
+    limit: i32,
+) -> Result<Vec<UserSearchResult>, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, SearchUserData, SEARCH_USERS_QUERY};
+    use crate::api::graphql::{SEARCH_USERS_QUERY, SearchUserData, query};
 
     let token = get_access_token_from_cookies().await.ok();
 
@@ -189,9 +192,11 @@ pub async fn search_users(username: String, limit: i32) -> Result<Vec<UserSearch
 
 /// Get user info by ID.
 #[server(GetUserInfo, "/api")]
-pub async fn get_user_info(user_id: String) -> Result<crate::models::user::UserInfo, ServerFnError> {
+pub async fn get_user_info(
+    user_id: String,
+) -> Result<crate::models::user::UserInfo, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, GetUserData, GET_USER_QUERY};
+    use crate::api::graphql::{GET_USER_QUERY, GetUserData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -212,11 +217,13 @@ pub async fn get_user_info(user_id: String) -> Result<crate::models::user::UserI
 
 /// Variables for the postEligibility query.
 #[derive(Debug, Serialize)]
+#[allow(dead_code)] // used by #[server] macro expansion (server-only)
 struct EmptyVars {}
 
 /// Variables for the createPost mutation.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)] // used by #[server] macro expansion (server-only)
 struct CreatePostVars {
     action: String,
     input: crate::models::post::CreatePostInput,
@@ -225,6 +232,7 @@ struct CreatePostVars {
 /// Variables for the searchTags query.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)] // used by #[server] macro expansion (server-only)
 struct SearchTagsVars {
     tag_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -244,10 +252,10 @@ struct SearchTagsVars {
 /// - `51301`: Insufficient token balance
 /// - `60501`: Not authenticated
 #[server(CheckPostEligibility, "/api")]
-pub async fn check_post_eligibility(
-) -> Result<crate::models::post::PostEligibilityResponse, ServerFnError> {
+pub async fn check_post_eligibility()
+-> Result<crate::models::post::PostEligibilityResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, PostEligibilityData, POST_ELIGIBILITY_QUERY};
+    use crate::api::graphql::{POST_ELIGIBILITY_QUERY, PostEligibilityData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -278,16 +286,14 @@ pub async fn create_post(
     input: crate::models::post::CreatePostInput,
 ) -> Result<crate::models::post::CreatePostResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, CreatePostData, CREATE_POST_MUTATION};
+    use crate::api::graphql::{CREATE_POST_MUTATION, CreatePostData, mutate};
 
     let token = get_access_token_from_cookies()
         .await
         .map_err(|_| ServerFnError::new("Not authenticated"))?;
 
     // Validate input before sending
-    input
-        .validate()
-        .map_err(|e| ServerFnError::new(e))?;
+    input.validate().map_err(|e| ServerFnError::new(e))?;
 
     let vars = CreatePostVars {
         action: "POST".to_string(),
@@ -315,7 +321,7 @@ pub async fn search_tags(
     limit: Option<i32>,
 ) -> Result<crate::models::post::TagSearchResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, SearchTagsData, SEARCH_TAGS_QUERY};
+    use crate::api::graphql::{SEARCH_TAGS_QUERY, SearchTagsData, query};
 
     let token = get_access_token_from_cookies().await.ok();
 
@@ -373,9 +379,9 @@ pub async fn upload_post_files(
 
     for (idx, (name, mime_type, base64_data)) in files.into_iter().enumerate() {
         // Decode base64 data
-        let data = STANDARD
-            .decode(&base64_data)
-            .map_err(|e| ServerFnError::new(format!("Invalid base64 data for file {}: {}", idx, e)))?;
+        let data = STANDARD.decode(&base64_data).map_err(|e| {
+            ServerFnError::new(format!("Invalid base64 data for file {}: {}", idx, e))
+        })?;
 
         let part = Part::bytes(data)
             .file_name(name)

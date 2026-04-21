@@ -31,12 +31,7 @@ enum Platform {
 pub fn InvitePage() -> impl IntoView {
     let query = use_query_map();
 
-    let referral_uuid = Memo::new(move |_| {
-        query
-            .get()
-            .get("referralUuid")
-            .unwrap_or_default()
-    });
+    let referral_uuid = Memo::new(move |_| query.get().get("referralUuid").unwrap_or_default());
 
     // Client-side deep link logic (hydrate-only)
     #[cfg(feature = "hydrate")]
@@ -44,7 +39,7 @@ pub fn InvitePage() -> impl IntoView {
         use gloo_timers::callback::Timeout;
         use std::cell::Cell;
         use std::rc::Rc;
-        use wasm_bindgen::{closure::Closure, JsCast};
+        use wasm_bindgen::{JsCast, closure::Closure};
 
         Effect::new(move |_| {
             let uuid = referral_uuid.get();
@@ -82,10 +77,7 @@ pub fn InvitePage() -> impl IntoView {
                     Platform::Android | Platform::Ios => {}
                     Platform::Desktop => {
                         let origin = w.location().origin().unwrap_or_default();
-                        let url = format!(
-                            "{}/register?referralUuid={}",
-                            origin, uuid_for_fallback
-                        );
+                        let url = format!("{}/register?referralUuid={}", origin, uuid_for_fallback);
                         let _ = w.location().set_href(&url);
                     }
                 }

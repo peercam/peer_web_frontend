@@ -120,11 +120,9 @@ fn ContactCard(friend: BasicUserInfo) -> impl IntoView {
     let userid_for_check = friend.userid.clone();
 
     let is_group = move || ctx.filter_type.get() == ChatType::Group;
-    
+
     // Use Memo for derived state that needs to be reactive
-    let is_selected = Memo::new(move |_| {
-        ctx.is_user_selected(&userid_for_check)
-    });
+    let is_selected = Memo::new(move |_| ctx.is_user_selected(&userid_for_check));
 
     let avatar_url = friend
         .img

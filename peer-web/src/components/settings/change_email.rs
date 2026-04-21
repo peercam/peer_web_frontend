@@ -5,7 +5,7 @@ use leptos::task::spawn_local;
 use leptos::web_sys;
 
 use crate::api::settings::update_email;
-use crate::components::toast::{use_toast, ToastType};
+use crate::components::toast::{ToastType, use_toast};
 use crate::components::validation::is_valid_email;
 
 /// Panel for changing the user's email address.
@@ -24,8 +24,7 @@ pub fn ChangeEmailPanel(
 
     let email_valid = move || is_valid_email(&email.get());
 
-    let can_submit =
-        move || email_valid() && !password.get().is_empty() && !is_submitting.get();
+    let can_submit = move || email_valid() && !password.get().is_empty() && !is_submitting.get();
 
     let on_submit = move |ev: web_sys::SubmitEvent| {
         ev.prevent_default();

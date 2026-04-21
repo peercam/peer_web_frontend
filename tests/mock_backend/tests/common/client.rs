@@ -4,7 +4,7 @@ use axum::{
 };
 use http_body_util::BodyExt;
 use mock_backend::{app, app_with_state, state::MockState};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower::ServiceExt;
@@ -53,11 +53,7 @@ pub async fn graphql_stateful(state: &Arc<RwLock<MockState>>, query: &str) -> Va
 }
 
 /// Shared state + Bearer token.
-pub async fn graphql_with_auth(
-    state: &Arc<RwLock<MockState>>,
-    query: &str,
-    token: &str,
-) -> Value {
+pub async fn graphql_with_auth(state: &Arc<RwLock<MockState>>, query: &str, token: &str) -> Value {
     graphql_request(Some(state), query, Some(token)).await
 }
 

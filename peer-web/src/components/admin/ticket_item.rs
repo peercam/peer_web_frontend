@@ -56,7 +56,11 @@ pub fn TicketItem(
     .to_string();
 
     let reports_count = item.reportscount;
-    let reports_class = if reports_count >= 5 { "high-reports" } else { "" };
+    let reports_class = if reports_count >= 5 {
+        "high-reports"
+    } else {
+        ""
+    };
 
     let date_display = format_moderation_date(&item.createdat);
 
@@ -179,8 +183,7 @@ fn extract_content_info(item: &ModerationItem) -> (Option<String>, String, &'sta
 /// Falls back to first 10 characters (YYYY-MM-DD) if parsing fails.
 fn format_moderation_date(date_str: &str) -> String {
     static MONTHS: [&str; 12] = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
 
     // Try to parse "YYYY-MM-DDTHH:MM:SS" (with or without timezone/fractional seconds)
@@ -199,10 +202,7 @@ fn format_moderation_date(date_str: &str) -> String {
             ) {
                 if month >= 1 && month <= 12 {
                     let hour_min = format!("{}:{}", time_fields[0], time_fields[1]);
-                    return format!(
-                        "{} {} {}, {}",
-                        day, MONTHS[month - 1], year, hour_min
-                    );
+                    return format!("{} {} {}, {}", day, MONTHS[month - 1], year, hour_min);
                 }
             }
         }

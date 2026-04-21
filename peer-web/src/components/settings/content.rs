@@ -7,7 +7,7 @@ use leptos::task::spawn_local;
 
 use crate::api::posts::get_user_info;
 use crate::api::settings::update_content_preferences;
-use crate::components::toast::{use_toast, ToastType};
+use crate::components::toast::{ToastType, use_toast};
 
 /// Content Settings tab — reported content toggle.
 #[component]

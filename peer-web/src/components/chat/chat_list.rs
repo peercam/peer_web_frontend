@@ -97,22 +97,22 @@ fn ChatPanel() -> impl IntoView {
 fn ChatItems() -> impl IntoView {
     let ctx = use_chat();
 
-    let filtered_chats = move || {
-        let filter = ctx.filter_type.get();
-        ctx.chats
-            .get()
-            .into_iter()
-            .filter(|chat| chat.chat_type() == filter)
-            .collect::<Vec<_>>()
-    };
+    let filtered_chats = move || ctx.filtered_chats();
 
     let is_loading = move || ctx.is_loading_chats.get();
     let has_chats = move || !filtered_chats().is_empty();
+    let search_is_active = move || !ctx.search_query.get().trim().is_empty();
 
     view! {
         <Show when=is_loading fallback=move || {
             view! {
-                <Show when=has_chats fallback=|| view! { <EmptyState/> }>
+                <Show when=has_chats fallback=move || {
+                    view! {
+                        <Show when=search_is_active fallback=|| view! { <EmptyState/> }>
+                            <FilteredEmptyState/>
+                        </Show>
+                    }
+                }>
                     <For
                         each=filtered_chats
                         key=|chat| chat.id.clone()
@@ -125,6 +125,18 @@ fn ChatItems() -> impl IntoView {
         }>
             <ChatListSkeleton/>
         </Show>
+    }
+}
+
+/// Empty state shown when a search filter yields no results.
+#[component]
+fn FilteredEmptyState() -> impl IntoView {
+    let ctx = use_chat();
+    let query = move || ctx.search_query.get();
+    view! {
+        <div class="no_post_found active">
+            <p>{move || format!("No chats match \"{}\"", query())}</p>
+        </div>
     }
 }
 

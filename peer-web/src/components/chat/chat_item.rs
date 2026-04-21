@@ -2,7 +2,7 @@
 
 use leptos::prelude::*;
 
-use crate::models::chat::{format_relative_time, Chat};
+use crate::models::chat::{Chat, format_relative_time};
 use crate::state::chat::{select_chat, use_chat};
 
 /// A single chat item in the list.
@@ -43,6 +43,37 @@ pub fn ChatItem(chat: Chat) -> impl IntoView {
         move || ctx.is_active(&chat_id)
     };
 
+    let unread_count = {
+        let chat_id = chat_id.clone();
+        Memo::new(move |_| {
+            ctx.unread_counts
+                .get()
+                .get(&chat_id)
+                .copied()
+                .unwrap_or(0u32)
+        })
+    };
+
+    let badge_label = move || {
+        let n = unread_count.get();
+        if n > 99 {
+            "99+".to_string()
+        } else {
+            n.to_string()
+        }
+    };
+
+    let badge_aria = move || {
+        let n = unread_count.get();
+        if n > 99 {
+            "99 or more unread messages".to_string()
+        } else {
+            format!("{} unread messages", n)
+        }
+    };
+
+    let has_unread = move || unread_count.get() > 0;
+
     let on_click = move |_| {
         select_chat(ctx, chat_for_click.clone());
     };
@@ -63,7 +94,14 @@ pub fn ChatItem(chat: Chat) -> impl IntoView {
                     <span class="name">{display_name}</span>
                     <span class="time">{time}</span>
                 </div>
-                <div class="message-preview">{preview}</div>
+                <div class="message-preview-row">
+                    <div class="message-preview">{preview}</div>
+                    <Show when=has_unread>
+                        <span class="unread-badge" aria-label=badge_aria>
+                            {badge_label}
+                        </span>
+                    </Show>
+                </div>
             </div>
         </div>
     }

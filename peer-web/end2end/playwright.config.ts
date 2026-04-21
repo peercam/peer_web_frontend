@@ -6,9 +6,9 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests",
-  timeout: 15_000,
+  timeout: 5_000,
   expect: {
-    timeout: 5_000,
+    timeout: 2_000,
   },
   fullyParallel: false,            // run sequentially — shared mock backend state
   forbidOnly: !!process.env.CI,
@@ -18,7 +18,7 @@ export default defineConfig({
 
   use: {
     baseURL: "http://localhost:3000",
-    actionTimeout: 5_000,
+    actionTimeout: 2_000,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

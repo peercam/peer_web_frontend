@@ -1,9 +1,10 @@
 //! Chat messages display component.
 
 use leptos::prelude::*;
+use leptos::task::spawn_local;
 
-use crate::models::chat::{format_message_time, ChatMessage};
-use crate::state::chat::use_chat;
+use crate::models::chat::{ChatMessage, MessageStatus, format_message_time};
+use crate::state::chat::{retry_message, use_chat};
 
 /// Container for displaying chat messages.
 #[component]
@@ -36,10 +37,30 @@ pub fn ChatMessages() -> impl IntoView {
 /// A single message bubble.
 #[component]
 fn Message(message: ChatMessage, is_own: bool) -> impl IntoView {
+    let ctx = use_chat();
     let content = message.decoded_content();
     let time = format_message_time(&message.createdat);
+    let status = message.status.clone();
+    let msg_id = message.id.clone();
 
-    let class = if is_own { "message right" } else { "message" };
+    let class = {
+        let status = status.clone();
+        let base = if is_own { "message right" } else { "message" };
+        match status {
+            MessageStatus::Sending => format!("{} sending", base),
+            MessageStatus::Failed => format!("{} failed", base),
+            MessageStatus::Sent => base.to_string(),
+        }
+    };
+
+    let is_failed = matches!(status, MessageStatus::Failed);
+    let retry_id = msg_id.clone();
+    let on_retry = move |_| {
+        let id = retry_id.clone();
+        spawn_local(async move {
+            let _ = retry_message(ctx, id).await;
+        });
+    };
 
     view! {
         <div class=class>
@@ -57,6 +78,12 @@ fn Message(message: ChatMessage, is_own: bool) -> impl IntoView {
                     <span class="message-text">{content}</span>
                     <span class="time">{time}</span>
                 </div>
+                <Show when=move || is_failed>
+                    <div class="failed-meta">
+                        <span class="failed-label">"Failed to send"</span>
+                        <button class="retry-btn" on:click=on_retry.clone()>"Retry"</button>
+                    </div>
+                </Show>
             </div>
         </div>
     }

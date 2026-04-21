@@ -14,9 +14,7 @@ pub fn format_time_ago(timestamp: &str) -> String {
     use chrono::{NaiveDateTime, Utc};
 
     // Parse various ISO 8601 formats
-    let dt = timestamp
-        .replace('T', " ")
-        .replace('Z', "");
+    let dt = timestamp.replace('T', " ").replace('Z', "");
 
     // Try parsing with optional fractional seconds
     let parsed = NaiveDateTime::parse_from_str(&dt, "%Y-%m-%d %H:%M:%S%.f")

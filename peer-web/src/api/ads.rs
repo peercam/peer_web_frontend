@@ -6,13 +6,12 @@
 use leptos::prelude::*;
 use serde::Serialize;
 
-use crate::models::advertisement::{
-    AdHistoryResponse, AdvertisePostResponse, AdvertisementSort,
-};
+use crate::models::advertisement::{AdHistoryResponse, AdvertisePostResponse, AdvertisementSort};
 
 /// Variables for the advertisementHistory query.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)] // used by #[server] macro expansion (server-only)
 struct AdHistoryFilter {
     #[serde(skip_serializing_if = "Option::is_none")]
     user_id: Option<String>,
@@ -20,6 +19,7 @@ struct AdHistoryFilter {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)] // used by #[server] macro expansion (server-only)
 struct AdHistoryVars {
     #[serde(skip_serializing_if = "Option::is_none")]
     filter: Option<AdHistoryFilter>,
@@ -32,6 +32,7 @@ struct AdHistoryVars {
 /// Variables for the advertisePostPinned mutation.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)] // used by #[server] macro expansion (server-only)
 struct AdvertisePostPinnedVars {
     postid: String,
     advertise_plan: String,
@@ -51,7 +52,7 @@ pub async fn get_ad_history(
     limit: i32,
 ) -> Result<AdHistoryResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{query, AdvertisementHistoryData, ADVERTISEMENT_HISTORY_QUERY};
+    use crate::api::graphql::{ADVERTISEMENT_HISTORY_QUERY, AdvertisementHistoryData, query};
 
     let token = get_access_token_from_cookies()
         .await
@@ -89,7 +90,7 @@ pub async fn advertise_post_pinned(
     post_id: String,
 ) -> Result<AdvertisePostResponse, ServerFnError> {
     use crate::api::auth_fetch::get_access_token_from_cookies;
-    use crate::api::graphql::{mutate, AdvertisePostPinnedData, ADVERTISE_POST_PINNED_MUTATION};
+    use crate::api::graphql::{ADVERTISE_POST_PINNED_MUTATION, AdvertisePostPinnedData, mutate};
 
     let token = get_access_token_from_cookies()
         .await

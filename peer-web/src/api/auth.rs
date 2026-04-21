@@ -17,7 +17,7 @@ use crate::models::auth::{AuthPayload, LogoutPayload};
 /// The caller is responsible for storing them (via cookies).
 #[server(Login, "/api")]
 pub async fn login(email: String, password: String) -> Result<AuthPayload, ServerFnError> {
-    use crate::api::graphql::{mutate, LoginData, LOGIN_MUTATION};
+    use crate::api::graphql::{LOGIN_MUTATION, LoginData, mutate};
 
     // Basic server-side validation
     if email.is_empty() || password.is_empty() {
@@ -40,8 +40,7 @@ pub async fn login(email: String, password: String) -> Result<AuthPayload, Serve
 
     // Set HttpOnly cookies on success (server-side)
     if data.login.is_success() {
-        if let (Some(access), Some(refresh)) =
-            (&data.login.access_token, &data.login.refresh_token)
+        if let (Some(access), Some(refresh)) = (&data.login.access_token, &data.login.refresh_token)
         {
             set_auth_cookies_ssr(access, refresh);
         }
@@ -59,7 +58,7 @@ pub async fn login(email: String, password: String) -> Result<AuthPayload, Serve
 /// Reads the refresh token from the request cookie if not provided explicitly.
 #[server(RefreshAccessToken, "/api")]
 pub async fn refresh_access_token() -> Result<AuthPayload, ServerFnError> {
-    use crate::api::graphql::{mutate, RefreshTokenData, REFRESH_TOKEN_MUTATION};
+    use crate::api::graphql::{REFRESH_TOKEN_MUTATION, RefreshTokenData, mutate};
 
     let refresh_token = get_cookie_ssr("refresh_token")
         .ok_or_else(|| ServerFnError::new("No refresh token found."))?;
@@ -94,7 +93,7 @@ pub async fn refresh_access_token() -> Result<AuthPayload, ServerFnError> {
 /// Logout and invalidate the refresh token.
 #[server(LogoutUser, "/api")]
 pub async fn logout_user() -> Result<LogoutPayload, ServerFnError> {
-    use crate::api::graphql::{mutate, LogoutData, LOGOUT_MUTATION};
+    use crate::api::graphql::{LOGOUT_MUTATION, LogoutData, mutate};
 
     let refresh_token = get_cookie_ssr("refresh_token")
         .ok_or_else(|| ServerFnError::new("No refresh token found."))?;
@@ -149,7 +148,11 @@ fn get_cookie_ssr(name: &str) -> Option<String> {
             let mut kv = cookie.splitn(2, '=');
             let key = kv.next()?.trim();
             let val = kv.next()?.trim();
-            if key == name { Some(val.to_string()) } else { None }
+            if key == name {
+                Some(val.to_string())
+            } else {
+                None
+            }
         })
 }
 
@@ -207,8 +210,7 @@ fn clear_auth_cookies_ssr() {
             http::header::SET_COOKIE,
             http::HeaderValue::from_str(&format!(
                 "{}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0{}",
-                name,
-                secure_flag
+                name, secure_flag
             ))
             .expect("valid header value"),
         );

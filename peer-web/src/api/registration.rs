@@ -18,9 +18,7 @@
 
 use leptos::prelude::*;
 
-use crate::models::user::{
-    ReferralVerifyResponse, RegisterResponse, VerifyAccountResponse,
-};
+use crate::models::user::{ReferralVerifyResponse, RegisterResponse, VerifyAccountResponse};
 
 // ============================================================================
 // Server function: Verify Referral Code
@@ -34,7 +32,7 @@ use crate::models::user::{
 pub async fn verify_referral(
     referral_string: String,
 ) -> Result<ReferralVerifyResponse, ServerFnError> {
-    use crate::api::graphql::{mutate, VerifyReferralData, VERIFY_REFERRAL_MUTATION};
+    use crate::api::graphql::{VERIFY_REFERRAL_MUTATION, VerifyReferralData, mutate};
     use crate::api::validation::validate_uuid;
 
     // 1. Server-side validation
@@ -72,7 +70,7 @@ pub async fn register_user(
     username: String,
     referral_uuid: String,
 ) -> Result<RegisterResponse, ServerFnError> {
-    use crate::api::graphql::{mutate, RegisterData, REGISTER_MUTATION};
+    use crate::api::graphql::{REGISTER_MUTATION, RegisterData, mutate};
     use crate::api::validation::{validate_registration_input, validate_uuid};
     use crate::models::user::RegistrationInput;
 
@@ -109,7 +107,7 @@ pub async fn register_user(
 /// clicking an email link).
 #[server(VerifyAccount, "/api")]
 pub async fn verify_account(userid: String) -> Result<VerifyAccountResponse, ServerFnError> {
-    use crate::api::graphql::{mutate, VerifyAccountData, VERIFY_ACCOUNT_MUTATION};
+    use crate::api::graphql::{VERIFY_ACCOUNT_MUTATION, VerifyAccountData, mutate};
 
     // 1. Basic validation — userid should be non-empty
     if userid.trim().is_empty() {

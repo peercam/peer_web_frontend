@@ -36,7 +36,7 @@ html-escape = "0.2"
 rust_decimal = { version = "1", features = ["serde", "serde-with-str"] }
 wasm-bindgen = { version = "0.2.106", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
-web-sys = { version = "0.3", features = ["Window", "Location", "Storage", "Document", "HtmlDocument", "HtmlElement", "Element", "History", "Event", "EventTarget", "IntersectionObserver", "IntersectionObserverInit", "IntersectionObserverEntry", "FileList", "File", "Blob", "DataTransfer", "DragEvent", "Url", "FormData", "HtmlInputElement", "HtmlTextAreaElement", "HtmlImageElement", "HtmlCanvasElement", "CanvasRenderingContext2d", "KeyboardEvent", "Navigator", "Clipboard", "ServiceWorker", "ServiceWorkerContainer", "ServiceWorkerRegistration", "ServiceWorkerState", "MessageEvent", "MediaQueryList", "VisibilityState", "Performance"], optional = true }
+web-sys = { version = "0.3", features = ["Window", "Location", "Storage", "Document", "HtmlDocument", "HtmlElement", "Element", "History", "Event", "EventTarget", "IntersectionObserver", "IntersectionObserverInit", "IntersectionObserverEntry", "FileList", "File", "Blob", "BlobPropertyBag", "DataTransfer", "DragEvent", "Url", "FormData", "HtmlInputElement", "HtmlTextAreaElement", "HtmlImageElement", "HtmlCanvasElement", "CanvasRenderingContext2d", "HtmlMediaElement", "HtmlVideoElement", "TimeRanges", "DomRect", "MouseEvent", "WheelEvent", "MediaDevices", "MediaStream", "MediaStreamConstraints", "MediaRecorder", "MediaRecorderOptions", "BlobEvent", "KeyboardEvent", "Navigator", "Clipboard", "ServiceWorker", "ServiceWorkerContainer", "ServiceWorkerRegistration", "ServiceWorkerState", "MessageEvent", "MediaQueryList", "VisibilityState", "Performance"], optional = true }
 js-sys = { version = "0.3", optional = true }
 gloo-timers = { version = "0.3", features = ["futures"], optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -71,11 +71,15 @@ ssr = [
 ]
 
 [dev-dependencies]
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
 uuid = { version = "1", features = ["v4"] }
 reqwest = { version = "0.13", features = ["json"] }
 serde_json = "1"
 mime_guess = "2"
+# Use the local GraphQL mock backend as an in-process library so integration
+# tests don't require a separately-running service on port 4000.
+mock_backend = { path = "../tests/mock_backend" }
+axum = "0.8"
 
 # Defines a size-optimized profile for the WASM bundle in release mode
 [profile.wasm-release]

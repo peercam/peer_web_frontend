@@ -1,7 +1,7 @@
 #![recursion_limit = "512"]
 
-pub mod app;
 pub mod api;
+pub mod app;
 pub mod components;
 pub mod hooks;
 pub mod models;
@@ -14,7 +14,9 @@ pub mod server;
 
 // Re-export commonly used types
 pub use models::common::ApiError;
-pub use models::user::{RegistrationInput, RegisterResponse, ReferralVerifyResponse, VerifyAccountResponse};
+pub use models::user::{
+    ReferralVerifyResponse, RegisterResponse, RegistrationInput, VerifyAccountResponse,
+};
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]

@@ -18,8 +18,8 @@ pub fn SearchBar() -> impl IntoView {
     // Debounced search effect
     #[cfg(feature = "hydrate")]
     Effect::new(move |_| {
-        use wasm_bindgen::prelude::*;
         use wasm_bindgen::JsCast;
+        use wasm_bindgen::prelude::*;
 
         let value = input_value.get();
 

@@ -1,12 +1,27 @@
 # Chat Implementation Plan
 
-**Feature:** Chat  
-**Priority:** #7 (after New Post)  
-**Status:** ✅ Core Implemented  
-**Created:** 2026-04-12  
-**Plan Quality:** ⭐⭐⭐⭐ (4/5)  
-**Reviewed:** 2026-04-14  
+**Feature:** Chat
+**Status:** 🟡 Client Core Implemented — polling transport, unread, and search pending ([sprint plan](chat-completion-sprint.md)); backend persistence pending (Track A)
+**Created:** 2026-04-12
+**Plan Quality:** ⭐⭐⭐⭐ (4/5)
+**Reviewed:** 2026-04-14
 **Implementation Verified:** 2026-04-14
+**Architecture note (2026-04-21):** Real-time transport is Postgres + polling for v1; GraphQL subscriptions are the preferred upgrade path. See [chat-completion-sprint.md § Blocker Resolution](chat-completion-sprint.md#blocker-resolution-2026-04-21) and [docs/adr-chat-realtime-transport.md](../../adr-chat-realtime-transport.md).
+
+> **Reading note:** the code snippets below were drafted in 2026-04 against an earlier Leptos API (`create_signal`, `create_resource`, `create_effect`, `set_interval(..., Duration)`) and the pre-polling transport design. They are preserved as **historical design reference** — the authoritative source for current shape is the code under [peer-web/src/](../../../peer-web/src/) and the [sprint plan](chat-completion-sprint.md). Do not copy snippets from this file verbatim.
+
+---
+
+## What Isn't Here (2026-04-21 audit)
+
+A repo-wide search of `peer_backend` confirmed the following are **absent**, not merely undocumented:
+
+- No Firestore / Firebase Admin SDK dependency (`composer.json` ships only `firebase/php-jwt`).
+- No `sendChatMessage` / `createChat` / `listChats` resolver or mapper in `peer_backend/src/`.
+- No GraphQL chat schema file.
+- No Firestore service-account credentials or config.
+
+What **does** exist: the Postgres schema (`chats`, `chatmessages`, `chatparticipants`), input filters (`ValidateChatMessages`, `ValidateChatStructure`), and response-code copy in [json/response-codes-editable.json](../../../json/response-codes-editable.json). The feature is **stubbed**, not implemented, on the backend. The mock backend (`tests/mock_backend`) implements the full contract for client development.
 
 ---
 
@@ -47,6 +62,8 @@ Implement the real-time chat system for the Leptos frontend. This is a complex f
 - [x] Error handling (connection lost, send failed)
 - [x] Mobile-responsive layout
 - [x] Message character limit (500)
+
+Three unchecked items are owned by the [completion sprint](chat-completion-sprint.md) (Track C). See that plan for task breakdown, DoD, and cross-references to the ADR.
 
 ### Out of Scope (Future Work)
 
@@ -231,6 +248,8 @@ Implement the real-time chat system for the Leptos frontend. This is a complex f
 
 ## Backend API Reference
 
+> **⚠️ Status (2026-04-21):** The mutations and queries documented below exist in the **mock backend** ([tests/mock_backend](../../../tests/mock_backend), Phase 4) and in [json/response-codes-editable.json](../../../json/response-codes-editable.json) as planned surface. They are **not yet implemented** in `peer_backend`. The shapes below are the contract the real backend must honour — see [chat-completion-sprint.md § Blocker Resolution](chat-completion-sprint.md#blocker-resolution-2026-04-21) (Track A).
+
 ### `listChats` Query
 
 ```graphql
@@ -339,6 +358,8 @@ query GetProfile {
 
 ## Firebase Integration
 
+> **⚠️ Architecture note (2026-04-21):** The Firestore structure below is **assumed / legacy** — it describes the shape the legacy `js/chat/loader.js` client expected, not a live architecture. The canonical write path in the new design is **Postgres** (`chatmessages` table). If a Firestore mirror is ever added, it becomes a **read-only projection** populated out-of-process (Cloud Function / outbox worker), never written directly by the request path. See [docs/adr-chat-realtime-transport.md](../../adr-chat-realtime-transport.md).
+
 ### Firestore Structure (Assumed)
 
 ```
@@ -379,14 +400,16 @@ db.collection('chats')
 
 ### Leptos + Firebase Strategy
 
-Since Leptos is Rust/WASM, we have options:
+> **Decision (2026-04-21):** v1 ships **polling** against the GraphQL backend as the primary — and only — transport. GraphQL subscriptions are the preferred future upgrade path per the [ADR](../../adr-chat-realtime-transport.md); Firebase/Firestore JS-interop is **rejected** for this codebase (there is no production write path to mirror). The four-option menu below is preserved as historical context only. **No recommendation stands;** follow the ADR.
+
+Since Leptos is Rust/WASM, earlier drafts considered:
 
 1. **JavaScript Interop**: Call Firebase SDK from Rust via `wasm-bindgen`
 2. **REST API**: Use Firebase REST API directly from Rust
 3. **Server-Sent Events**: Implement polling/SSE on server side
 4. **Hybrid Approach**: Use JS for real-time, Rust for UI
 
-**Recommended**: JavaScript interop for Firebase listeners, Rust for GraphQL and UI.
+~~**Recommended**: JavaScript interop for Firebase listeners, Rust for GraphQL and UI.~~ — **Superseded.** See the ADR.
 
 ---
 
@@ -1132,35 +1155,9 @@ pub fn unsubscribe_from_chat(chat_id: &str) {
 }
 ```
 
-#### 3.2 Alternative: Polling Strategy
+#### 3.2 Polling Transport (PRIMARY for v1)
 
-If Firebase integration is complex, implement polling:
-
-```rust
-#[component]
-pub fn ChatMessagesWithPolling(chat: Chat) -> impl IntoView {
-    let (messages, set_messages) = create_signal(chat.chatmessages.clone());
-    
-    // Poll every 5 seconds
-    create_effect(move |_| {
-        let chat_id = chat.id.clone();
-        set_interval(
-            move || {
-                spawn_local(async move {
-                    if let Ok(updated_chats) = list_chats(Some(1), Some(0)).await {
-                        if let Some(updated) = updated_chats.iter().find(|c| c.id == chat_id) {
-                            set_messages.set(updated.chatmessages.clone());
-                        }
-                    }
-                });
-            },
-            Duration::from_secs(5),
-        );
-    });
-    
-    // Render messages...
-}
-```
+Polling is the chosen transport per the [ADR](../../adr-chat-realtime-transport.md). Implementation specifics — visibility-aware intervals, `since` semantics, optimistic-send dedup, connection-lost banner — are owned by [chat-completion-sprint.md § Task 1](chat-completion-sprint.md#task-1--polling-transport-primary).
 
 ### Phase 4: Polish & Edge Cases
 
@@ -1189,16 +1186,19 @@ pub fn ChatMessagesWithPolling(chat: Chat) -> impl IntoView {
 
 ## Testing Strategy
 
+> Status legend: ✅ landed, 🔲 owned by [sprint](chat-completion-sprint.md)
+
 ### Unit Tests
 
-| Test | Description |
-|------|-------------|
-| `chat_type_detection` | Private vs group chat detection |
-| `display_name_private` | Username shown for private chats |
-| `display_name_group` | Group name shown for group chats |
-| `time_formatting` | Relative time (Xm, Xh, Xd) |
-| `message_validation` | 500 char limit, empty check |
-| `html_decode` | Entity decoding in messages |
+| Test | Status | Description |
+|------|--------|-------------|
+| `chat_type_detection` | ✅ | Private vs group chat detection |
+| `display_name_private` | ✅ | Username shown for private chats |
+| `display_name_group` | ✅ | Group name shown for group chats |
+| `time_formatting` | ✅ | Relative time (Xm, Xh, Xd) |
+| `message_validation` | ✅ | 500 char limit, empty check |
+| `html_decode` | ✅ | Entity decoding in messages |
+| `message_status_failed_renders_retry` | 🔲 | Failed bubble shows Retry button (sprint Task 6) |
 
 ### Integration Tests
 
@@ -1255,7 +1255,7 @@ test('can create group chat', async ({ page }) => {
 | `src/components/chat/group_review.rs` | Group creation | ✅ |
 | `style/chat.scss` | Chat page styles | ✅ |
 | `src/models/chat.rs` (tests) | Unit tests | ✅ |
-| `end2end/tests/chat.spec.ts` | E2E tests | ❌ |
+| `end2end/tests/chat.spec.ts` | E2E tests | 🔲 owned by [sprint Task 7](chat-completion-sprint.md#task-7--e2e-tests) |
 
 ---
 
@@ -1263,24 +1263,26 @@ test('can create group chat', async ({ page }) => {
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Firebase integration complexity | High | Start with polling, add real-time later |
-| Real-time message ordering | Medium | Use timestamp sorting, handle duplicates |
+| Backend persistence (Track A) slips | High | Client Track C ships against the mock today; production ship is gated on Track A landing, flagged in the sprint's feature-level DoD. |
+| Polling backend load at scale | Medium | Intervals env-configurable; visibility-pause on hidden tabs; `since`-exclusive keeps payloads small. |
+| Real-time message ordering | Medium | Use timestamp sorting, handle duplicates via client-side id dedup (sprint Task 1). |
 | Mobile responsiveness | Medium | Design mobile-first, test on devices |
-| Message sync conflicts | Low | GraphQL is source of truth, Firebase for real-time |
 | Large chat history | Low | Implement pagination, virtualization |
 
 ---
 
 ## Estimated Effort
 
-| Phase | Effort |
+Superseded by the [completion sprint](chat-completion-sprint.md), which tracks remaining effort per-task. Original 9-day estimate from the 2026-04-12 draft is retained below for historical context only.
+
+| Phase | Effort (historical) |
 |-------|--------|
 | Phase 1: Infrastructure | 2 days |
 | Phase 2: UI Components | 3 days |
-| Phase 3: Firebase Real-time | 2 days |
+| Phase 3: Firebase Real-time | 2 days — **superseded** by polling (sprint Task 1) |
 | Phase 4: Polish | 1 day |
 | Testing | 1 day |
-| **Total** | **9 days** |
+| **Total (historical)** | **9 days** |
 
 ---
 
@@ -1289,12 +1291,19 @@ test('can create group chat', async ({ page }) => {
 - Auth system (complete ✅)
 - Profile API (for current user info)
 - Friends/follow system (for `listFriends`)
-- Firebase SDK integration
 - Media URL helper (for avatars)
+- Track A backend persistence (Postgres resolvers) — tracked in a sibling plan, required for production ship
 
 ---
 
 ## Changelog
+
+### 2026-04-21 (Transport decision + doc refresh)
+- Transport decision ratified in [docs/adr-chat-realtime-transport.md](../../adr-chat-realtime-transport.md): **polling for v1**, GraphQL subscriptions as the preferred upgrade path. Firebase/Firestore rejected for this codebase.
+- Superseded stale priority and effort headers; added historical-reference note to the code snippets section.
+- Rewrote §3.2 (polling) to point at the sprint; struck the Firebase recommendation under §Leptos + Firebase Strategy.
+- Reconciled Testing Strategy table with the 2026-04-14 changelog (unit tests are landed ✅; E2E delegated to sprint Task 7).
+- Added "What Isn't Here" audit pointing at [chat-completion-sprint.md § Blocker Resolution](chat-completion-sprint.md#blocker-resolution-2026-04-21).
 
 ### 2026-04-14 (Implementation Verified)
 - Core implementation complete and compiles successfully

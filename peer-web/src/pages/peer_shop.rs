@@ -10,9 +10,7 @@ use leptos_meta::Title;
 use crate::api::profile::{get_profile, list_user_posts, toggle_follow};
 use crate::components::auth_guard::AuthGuard;
 use crate::components::posts::PostCard;
-use crate::components::shop::{
-    CheckoutPopup, FaqPopup, ProductPriceBadge, ShopProfileHeader,
-};
+use crate::components::shop::{CheckoutPopup, FaqPopup, ProductPriceBadge, ShopProfileHeader};
 use crate::models::post::{FeedItem, Post, PostSortType};
 use crate::models::shop::ShopProduct;
 

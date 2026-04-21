@@ -36,18 +36,41 @@ pub struct ChatParticipant {
 impl ChatParticipant {
     /// Get avatar URL with fallback.
     pub fn avatar_url(&self) -> String {
-        self.img.clone().unwrap_or_else(|| "/svg/noname.svg".to_string())
+        self.img
+            .clone()
+            .unwrap_or_else(|| "/svg/noname.svg".to_string())
+    }
+}
+
+/// Delivery status for a chat message, used for optimistic rendering
+/// and retry UX. Not serialised to/from the API.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MessageStatus {
+    /// Confirmed by the server (default for polled messages).
+    Sent,
+    /// Optimistic send in flight.
+    Sending,
+    /// Send attempt failed; awaits user retry.
+    Failed,
+}
+
+impl Default for MessageStatus {
+    fn default() -> Self {
+        MessageStatus::Sent
     }
 }
 
 /// A single chat message.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ChatMessage {
     pub id: String,
     pub senderid: String,
     pub chatid: String,
     pub content: String,
     pub createdat: String,
+    /// Client-side delivery status. Skipped during (de)serialisation.
+    #[serde(skip, default)]
+    pub status: MessageStatus,
 }
 
 impl ChatMessage {
@@ -69,6 +92,12 @@ pub struct Chat {
     pub chatmessages: Vec<ChatMessage>,
     #[serde(default)]
     pub chatparticipants: Vec<ChatParticipant>,
+    /// Unread message count for the viewer (seeded by the server).
+    #[serde(default, rename = "unreadCount")]
+    pub unread_count: u32,
+    /// Viewer's last-read timestamp on this chat, as recorded by the server.
+    #[serde(default, rename = "lastReadAt")]
+    pub last_read_at: Option<String>,
 }
 
 impl Chat {
@@ -99,10 +128,7 @@ impl Chat {
                 .find(|p| p.userid != current_user_id)
                 .map(|p| p.username.clone())
                 .unwrap_or_else(|| "Unknown".to_string()),
-            ChatType::Group => self
-                .name
-                .clone()
-                .unwrap_or_else(|| "Group".to_string()),
+            ChatType::Group => self.name.clone().unwrap_or_else(|| "Group".to_string()),
         }
     }
 
@@ -200,6 +226,40 @@ impl CreateChatResponse {
     }
 }
 
+/// Response wrapper for listChatMessages query.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListChatMessagesResponse {
+    pub meta: DefaultResponse,
+    #[serde(default, rename = "affectedRows")]
+    pub affected_rows: Option<Vec<ChatMessage>>,
+}
+
+impl ListChatMessagesResponse {
+    pub fn is_success(&self) -> bool {
+        self.meta.status == "success"
+    }
+
+    pub fn messages(self) -> Vec<ChatMessage> {
+        self.affected_rows.unwrap_or_default()
+    }
+}
+
+/// Response wrapper for markChatRead mutation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarkChatReadResponse {
+    pub meta: DefaultResponse,
+    #[serde(default, rename = "lastReadAt")]
+    pub last_read_at: Option<String>,
+}
+
+impl MarkChatReadResponse {
+    pub fn is_success(&self) -> bool {
+        self.meta.status == "success"
+    }
+}
+
 // ============================================================================
 // Time formatting utilities
 // ============================================================================
@@ -247,7 +307,6 @@ pub fn format_message_time(timestamp: &str) -> String {
 // ============================================================================
 // Tests
 // ============================================================================
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -262,6 +321,8 @@ mod tests {
             updatedat: "2024-01-01T00:00:00Z".to_string(),
             chatmessages: vec![],
             chatparticipants: vec![],
+            unread_count: 0,
+            last_read_at: None,
         };
         assert_eq!(private_chat.chat_type(), ChatType::Private);
 
@@ -273,6 +334,8 @@ mod tests {
             updatedat: "2024-01-01T00:00:00Z".to_string(),
             chatmessages: vec![],
             chatparticipants: vec![],
+            unread_count: 0,
+            last_read_at: None,
         };
         assert_eq!(group_chat.chat_type(), ChatType::Group);
     }
@@ -302,6 +365,8 @@ mod tests {
                     hasaccess: Some(true),
                 },
             ],
+            unread_count: 0,
+            last_read_at: None,
         };
 
         assert_eq!(chat.display_name("current"), "Friend");
@@ -322,8 +387,11 @@ mod tests {
                 chatid: "1".to_string(),
                 content: long_message,
                 createdat: "2024-01-01T00:00:00Z".to_string(),
+                status: MessageStatus::Sent,
             }],
             chatparticipants: vec![],
+            unread_count: 0,
+            last_read_at: None,
         };
 
         let preview = chat.message_preview();

@@ -6,7 +6,9 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::api::comments::{create_comment, like_comment, list_child_comments, list_comments, unlike_comment};
+use crate::api::comments::{
+    create_comment, like_comment, list_child_comments, list_comments, unlike_comment,
+};
 use crate::components::view_post::post_content::format_time_ago;
 use crate::models::comment::Comment;
 
@@ -28,9 +30,7 @@ pub fn Comments(post_id: String, is_guest: bool) -> impl IntoView {
     let load_more = Action::new(move |_: &()| {
         let id = post_id_for_load.get_value();
         let current_offset = offset.get();
-        async move {
-            list_comments(id, current_offset, COMMENTS_PER_PAGE).await
-        }
+        async move { list_comments(id, current_offset, COMMENTS_PER_PAGE).await }
     });
 
     // Handle load results
@@ -267,9 +267,7 @@ fn ChildComments(parent_id: String, is_guest: bool) -> impl IntoView {
         let id = parent_id.clone();
         move |_: &()| {
             let id = id.clone();
-            async move {
-                list_child_comments(id, 0, COMMENTS_PER_PAGE).await
-            }
+            async move { list_child_comments(id, 0, COMMENTS_PER_PAGE).await }
         }
     });
 
@@ -387,9 +385,7 @@ where
         move |text: &String| {
             let id = id.clone();
             let text = text.clone();
-            async move {
-                create_comment(id, text, None).await
-            }
+            async move { create_comment(id, text, None).await }
         }
     });
 
@@ -455,9 +451,7 @@ where
             let id = id.clone();
             let parent = parent.clone();
             let text = text.clone();
-            async move {
-                create_comment(id, text, Some(parent)).await
-            }
+            async move { create_comment(id, text, Some(parent)).await }
         }
     });
 

@@ -40,9 +40,11 @@ pub fn AudioUpload() -> impl IntoView {
                     if let Ok(url) = web_sys::Url::create_object_url_with_blob(&file) {
                         let file_clone = file.clone();
                         leptos::task::spawn_local(async move {
-                            if let Ok(data) = super::drop_zone::read_file_as_bytes(&file_clone).await {
-                                let media_file = MediaFile::new(name, mime_type, data)
-                                    .with_preview(url);
+                            if let Ok(data) =
+                                super::drop_zone::read_file_as_bytes(&file_clone).await
+                            {
+                                let media_file =
+                                    MediaFile::new(name, mime_type, data).with_preview(url);
                                 ctx.set_media_files.set(vec![media_file]);
                             }
                         });
@@ -77,9 +79,11 @@ pub fn AudioUpload() -> impl IntoView {
                     if let Ok(url) = web_sys::Url::create_object_url_with_blob(&file) {
                         let file_clone = file.clone();
                         leptos::task::spawn_local(async move {
-                            if let Ok(data) = super::drop_zone::read_file_as_bytes(&file_clone).await {
-                                let media_file = MediaFile::new(name, mime_type, data)
-                                    .with_preview(url);
+                            if let Ok(data) =
+                                super::drop_zone::read_file_as_bytes(&file_clone).await
+                            {
+                                let media_file =
+                                    MediaFile::new(name, mime_type, data).with_preview(url);
                                 ctx.set_cover_file.set(Some(media_file));
                             }
                         });
@@ -91,11 +95,7 @@ pub fn AudioUpload() -> impl IntoView {
     };
 
     let handle_recording = move |(data, mime_type): (Vec<u8>, String)| {
-        let media_file = MediaFile::new(
-            "recording.wav".to_string(),
-            mime_type,
-            data,
-        );
+        let media_file = MediaFile::new("recording.wav".to_string(), mime_type, data);
         ctx.set_media_files.set(vec![media_file]);
     };
 

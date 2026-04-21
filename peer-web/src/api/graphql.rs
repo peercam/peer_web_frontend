@@ -121,8 +121,7 @@ mod ssr {
     ///
     /// Reads `GRAPHQL_ENDPOINT` env var, falling back to local mock backend.
     pub fn get_endpoint() -> String {
-        env::var("GRAPHQL_ENDPOINT")
-            .unwrap_or_else(|_| "http://localhost:4000/graphql".to_string())
+        env::var("GRAPHQL_ENDPOINT").unwrap_or_else(|_| "http://localhost:4000/graphql".to_string())
     }
 
     /// Build a configured reqwest client.
@@ -198,19 +197,15 @@ mod ssr {
         }
 
         // Send the request
-        let response = request
-            .json(&request_body)
-            .send()
-            .await
-            .map_err(|e| {
-                if e.is_timeout() {
-                    ApiError::Network("Request timed out".to_string())
-                } else if e.is_connect() {
-                    ApiError::Network(format!("Failed to connect to {}: {}", endpoint, e))
-                } else {
-                    ApiError::Network(format!("Request failed: {}", e))
-                }
-            })?;
+        let response = request.json(&request_body).send().await.map_err(|e| {
+            if e.is_timeout() {
+                ApiError::Network("Request timed out".to_string())
+            } else if e.is_connect() {
+                ApiError::Network(format!("Failed to connect to {}: {}", endpoint, e))
+            } else {
+                ApiError::Network(format!("Request failed: {}", e))
+            }
+        })?;
 
         // Check HTTP status
         let status = response.status();
@@ -243,11 +238,7 @@ mod ssr {
 
     /// Truncate a string for error messages.
     fn truncate_for_error(s: &str, max_len: usize) -> &str {
-        if s.len() <= max_len {
-            s
-        } else {
-            &s[..max_len]
-        }
+        if s.len() <= max_len { s } else { &s[..max_len] }
     }
 }
 
@@ -1235,6 +1226,8 @@ query ListChats($limit: Int, $offset: Int) {
             name
             createdat
             updatedat
+            unreadCount
+            lastReadAt
             chatmessages {
                 id
                 senderid
@@ -1292,6 +1285,43 @@ mutation CreateChat($name: String!, $recipients: [String!]!, $image: String) {
 }
 "#;
 
+/// Query: List messages for a single chat, optionally filtered by
+/// an exclusive `since` timestamp. Used by the polling transport.
+pub const LIST_CHAT_MESSAGES_QUERY: &str = r#"
+query ListChatMessages($chatid: ID!, $since: String) {
+    listChatMessages(chatid: $chatid, since: $since) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        affectedRows {
+            id
+            senderid
+            chatid
+            content
+            createdat
+        }
+    }
+}
+"#;
+
+/// Mutation: Mark a chat as read up to the current server time.
+pub const MARK_CHAT_READ_MUTATION: &str = r#"
+mutation MarkChatRead($chatid: ID!) {
+    markChatRead(chatid: $chatid) {
+        meta {
+            status
+            RequestId
+            ResponseCode
+            ResponseMessage
+        }
+        lastReadAt
+    }
+}
+"#;
+
 /// Wrapper for the `listChats` query response.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -1311,6 +1341,20 @@ pub struct SendChatMessageData {
 #[serde(rename_all = "camelCase")]
 pub struct CreateChatData {
     pub create_chat: crate::models::chat::CreateChatResponse,
+}
+
+/// Wrapper for the `listChatMessages` query response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListChatMessagesData {
+    pub list_chat_messages: crate::models::chat::ListChatMessagesResponse,
+}
+
+/// Wrapper for the `markChatRead` mutation response.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarkChatReadData {
+    pub mark_chat_read: crate::models::chat::MarkChatReadResponse,
 }
 
 // ============================================================================

@@ -8,7 +8,10 @@ use crate::models::version::VersionRelease;
 #[server(GetVersionReleases, "/api")]
 pub async fn get_version_releases() -> Result<Vec<VersionRelease>, ServerFnError> {
     // Try peer-web/json/ first, then fall back to ../json/ (repo root)
-    let paths = ["json/version_releases.json", "../json/version_releases.json"];
+    let paths = [
+        "json/version_releases.json",
+        "../json/version_releases.json",
+    ];
     let mut content = None;
     for path in &paths {
         if let Ok(data) = tokio::fs::read_to_string(path).await {

@@ -25,8 +25,8 @@ pub fn UserListItem(
     let is_following = RwSignal::new(user.isfollowed);
     let is_loading = RwSignal::new(false);
 
-    let is_hidden = user.visibility_status == ContentVisibilityStatus::Hidden
-        || user.is_hidden_for_users;
+    let is_hidden =
+        user.visibility_status == ContentVisibilityStatus::Hidden || user.is_hidden_for_users;
     let is_illegal = user.visibility_status == ContentVisibilityStatus::Illegal;
 
     let handle_follow = move |ev: leptos::ev::MouseEvent| {
@@ -123,8 +123,8 @@ pub fn FriendListItem(
     /// The friend/peer to display.
     user: BasicUserInfo,
 ) -> impl IntoView {
-    let is_hidden = user.visibility_status == ContentVisibilityStatus::Hidden
-        || user.is_hidden_for_users;
+    let is_hidden =
+        user.visibility_status == ContentVisibilityStatus::Hidden || user.is_hidden_for_users;
     let is_illegal = user.visibility_status == ContentVisibilityStatus::Illegal;
 
     let display_username = if is_illegal {

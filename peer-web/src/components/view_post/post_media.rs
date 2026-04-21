@@ -59,7 +59,11 @@ fn ImageGallery(post: Post) -> impl IntoView {
 
     let prev = move |_| {
         current_index.update(|i| {
-            *i = if *i == 0 { images_len.saturating_sub(1) } else { *i - 1 };
+            *i = if *i == 0 {
+                images_len.saturating_sub(1)
+            } else {
+                *i - 1
+            };
         });
     };
 

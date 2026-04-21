@@ -97,7 +97,8 @@ pub fn PostList() -> impl IntoView {
 
                                 // Insert ad every AD_INTERVAL posts
                                 if feed_idx > 0 && feed_idx % AD_INTERVAL == 0 {
-                                    let ad_idx = (feed_idx / AD_INTERVAL - 1) % current_ads.len().max(1);
+                                    let ad_idx =
+                                        (feed_idx / AD_INTERVAL - 1) % current_ads.len().max(1);
                                     if let Some(ad) = current_ads.get(ad_idx) {
                                         f.push(FeedItem::Ad {
                                             post: ad.post.clone(),

@@ -4,7 +4,6 @@ use leptos::prelude::*;
 
 use super::video_cover::VideoCover;
 use super::video_trimmer::VideoTrimmer;
-use crate::models::post::MediaFile;
 use crate::pages::new_post::NewPostContext;
 
 /// Video upload area with multi-video support and trimming.
@@ -16,7 +15,6 @@ pub fn VideoUpload() -> impl IntoView {
     // State for trimming
     let (trim_video_src, set_trim_video_src) = signal(Option::<String>::None);
     let (trim_video_duration, set_trim_video_duration) = signal(0.0_f64);
-    let (pending_video_index, set_pending_video_index) = signal(0usize);
 
     let has_videos = move || !ctx.media_files.get().is_empty();
     let can_add_more = move || ctx.media_files.get().len() < 2;
@@ -32,6 +30,9 @@ pub fn VideoUpload() -> impl IntoView {
         #[cfg(feature = "hydrate")]
         {
             use wasm_bindgen::JsCast;
+
+            use crate::models::post::MediaFile;
+
             let target = ev.target().unwrap();
             let input: web_sys::HtmlInputElement = target.unchecked_into();
             if let Some(files) = input.files() {
@@ -50,9 +51,11 @@ pub fn VideoUpload() -> impl IntoView {
                         if let Ok(url) = web_sys::Url::create_object_url_with_blob(&file) {
                             let file_clone = file.clone();
                             let url_clone = url.clone();
-                            
+
                             leptos::task::spawn_local(async move {
-                                if let Ok(data) = super::drop_zone::read_file_as_bytes(&file_clone).await {
+                                if let Ok(data) =
+                                    super::drop_zone::read_file_as_bytes(&file_clone).await
+                                {
                                     let media_file = MediaFile::new(name, mime_type, data)
                                         .with_preview(url_clone);
                                     ctx.add_media(media_file);
@@ -71,7 +74,6 @@ pub fn VideoUpload() -> impl IntoView {
         if let Some(file) = files.get(index) {
             if let Some(ref url) = file.preview_url {
                 set_trim_video_src.set(Some(url.clone()));
-                set_pending_video_index.set(index);
                 set_trim_video_duration.set(30.0);
             }
         }
@@ -88,9 +90,6 @@ pub fn VideoUpload() -> impl IntoView {
     let remove_video = move |index: usize| {
         ctx.remove_media(index);
     };
-
-    // Suppress unused warnings
-    let _ = set_pending_video_index;
 
     view! {
         <div class="video-upload">

@@ -5,7 +5,7 @@ use leptos::task::spawn_local;
 use leptos_router::hooks::use_navigate;
 
 use crate::api::settings::delete_account;
-use crate::components::toast::{use_toast, ToastType};
+use crate::components::toast::{ToastType, use_toast};
 use crate::state::auth::use_auth;
 
 /// Deactivate account panel with password confirmation.

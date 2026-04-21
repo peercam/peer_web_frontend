@@ -19,7 +19,7 @@ use std::time::{Duration, Instant};
 
 use axum::body::Body;
 use axum::extract::{Query, State};
-use axum::http::{header, HeaderName, StatusCode};
+use axum::http::{HeaderName, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use futures_util::StreamExt;
 use serde::Deserialize;
@@ -153,7 +153,9 @@ impl IntoResponse for DownloadError {
         let (status, body) = match self {
             DownloadError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
             DownloadError::Forbidden => (StatusCode::FORBIDDEN, "host not allow-listed"),
-            DownloadError::TooLarge => (StatusCode::PAYLOAD_TOO_LARGE, "upstream content too large"),
+            DownloadError::TooLarge => {
+                (StatusCode::PAYLOAD_TOO_LARGE, "upstream content too large")
+            }
             DownloadError::BadGateway => (StatusCode::BAD_GATEWAY, "upstream error"),
             DownloadError::GatewayTimeout => (StatusCode::GATEWAY_TIMEOUT, "upstream timeout"),
             DownloadError::Internal => (StatusCode::INTERNAL_SERVER_ERROR, "internal error"),
@@ -418,9 +420,7 @@ fn content_disposition(name: &str) -> String {
         .collect();
     let encoded =
         percent_encoding::utf8_percent_encode(name, percent_encoding::NON_ALPHANUMERIC).to_string();
-    format!(
-        r#"attachment; filename="{ascii}"; filename*=UTF-8''{encoded}"#
-    )
+    format!(r#"attachment; filename="{ascii}"; filename*=UTF-8''{encoded}"#)
 }
 
 // ---------------------------------------------------------------------------

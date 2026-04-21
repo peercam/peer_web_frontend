@@ -20,7 +20,7 @@ async function globalSetup(config: FullConfig) {
 
   console.log("\n🔧 Starting mock backend...");
 
-  const mockBackend = spawn("node", ["server.js"], {
+  const mockBackend = spawn("cargo", ["run", "--release", "--quiet"], {
     cwd: path.resolve(__dirname, "../../tests/mock_backend"),
     stdio: "pipe",
     detached: true,

@@ -17,6 +17,7 @@ pub mod pwa;
 pub mod referral;
 pub mod referral_board;
 pub mod registration_form;
+pub mod registration_gate;
 pub mod search;
 pub mod settings;
 pub mod shop;

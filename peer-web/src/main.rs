@@ -1,13 +1,12 @@
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
     use axum::Router;
     use leptos::logging::log;
     use leptos::prelude::*;
-    use leptos_axum::{generate_route_list, LeptosRoutes};
+    use leptos_axum::{LeptosRoutes, generate_route_list};
     use peer_web::app::*;
-    use peer_web::server::download::{download_handler, DownloadConfig};
+    use peer_web::server::download::{DownloadConfig, download_handler};
 
     // Log GraphQL endpoint configuration
     let graphql_endpoint = std::env::var("GRAPHQL_ENDPOINT")

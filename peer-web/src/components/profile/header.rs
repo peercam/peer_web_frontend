@@ -139,11 +139,7 @@ pub fn ProfileHeader(
 
 /// Profile avatar with visibility handling.
 #[component]
-fn ProfileAvatar(
-    src: Option<String>,
-    username: String,
-    is_illegal: bool,
-) -> impl IntoView {
+fn ProfileAvatar(src: Option<String>, username: String, is_illegal: bool) -> impl IntoView {
     let default_avatar = "/svg/noname.svg".to_string();
 
     view! {
@@ -180,11 +176,7 @@ fn ProfileAvatar(
 
 /// Profile info section (username, slug, bio).
 #[component]
-fn ProfileInfo(
-    profile: Profile,
-    is_illegal: bool,
-    has_reports: bool,
-) -> impl IntoView {
+fn ProfileInfo(profile: Profile, is_illegal: bool, has_reports: bool) -> impl IntoView {
     let bio_signal = RwSignal::new(None::<String>);
     let bio_loading = RwSignal::new(false);
 

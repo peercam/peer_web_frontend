@@ -46,10 +46,7 @@ pub fn MyProfilePage() -> impl IntoView {
 #[component]
 fn ProfileMainContent() -> impl IntoView {
     // Fetch the current user's profile
-    let profile_resource = Resource::new(
-        || (),
-        |_| async { get_profile(None, None).await },
-    );
+    let profile_resource = Resource::new(|| (), |_| async { get_profile(None, None).await });
 
     // Boost post mode signal
     let boost_mode_active = RwSignal::new(false);
@@ -132,7 +129,9 @@ fn ProfilePostList(user_id: String) -> impl IntoView {
                 sort_by,
                 current_offset,
                 POSTS_PER_PAGE,
-            ).await {
+            )
+            .await
+            {
                 Ok(response) => {
                     let new_posts = response.affected_rows;
                     let has_new = !new_posts.is_empty();

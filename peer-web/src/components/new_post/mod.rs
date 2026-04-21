@@ -19,7 +19,7 @@ mod tags;
 pub use content_type_tabs::ContentTypeTabs;
 pub use form::NewPostForm;
 pub use header::NewPostHeader;
-pub use media::{ImageCropper, ImageSlider, VideoCover, VoiceRecorder, VideoTrimmer};
+pub use media::{ImageCropper, ImageSlider, VideoCover, VideoTrimmer, VoiceRecorder};
 pub use preview::PostPreview;
 pub use right_sidebar::NewPostRightSidebar;
 pub use submit::SubmitButton;

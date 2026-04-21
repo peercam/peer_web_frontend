@@ -70,7 +70,10 @@ pub fn ModerationList() -> impl IntoView {
     let on_moderation_action = move |(ticket_id, action): (String, ModerationAction)| {
         // Optimistically update the item status
         items.update(|list| {
-            if let Some(item) = list.iter_mut().find(|i| i.moderation_ticket_id == ticket_id) {
+            if let Some(item) = list
+                .iter_mut()
+                .find(|i| i.moderation_ticket_id == ticket_id)
+            {
                 item.status = action.to_string();
             }
         });

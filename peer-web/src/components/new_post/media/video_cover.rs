@@ -2,7 +2,6 @@
 
 use leptos::prelude::*;
 
-use crate::models::post::MediaFile;
 use crate::pages::new_post::NewPostContext;
 
 /// Video cover image selection component.
@@ -23,6 +22,9 @@ pub fn VideoCover() -> impl IntoView {
         #[cfg(feature = "hydrate")]
         {
             use wasm_bindgen::JsCast;
+
+            use crate::models::post::MediaFile;
+
             let target = ev.target().unwrap();
             let input: web_sys::HtmlInputElement = target.unchecked_into();
             if let Some(files) = input.files() {
@@ -37,9 +39,11 @@ pub fn VideoCover() -> impl IntoView {
                     if let Ok(url) = web_sys::Url::create_object_url_with_blob(&file) {
                         let file_clone = file.clone();
                         leptos::task::spawn_local(async move {
-                            if let Ok(data) = super::drop_zone::read_file_as_bytes(&file_clone).await {
-                                let media_file = MediaFile::new(name, mime_type, data)
-                                    .with_preview(url);
+                            if let Ok(data) =
+                                super::drop_zone::read_file_as_bytes(&file_clone).await
+                            {
+                                let media_file =
+                                    MediaFile::new(name, mime_type, data).with_preview(url);
                                 ctx.set_cover_file.set(Some(media_file));
                             }
                         });

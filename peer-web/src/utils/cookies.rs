@@ -9,19 +9,16 @@ pub fn get_cookie(name: &str) -> Option<String> {
     {
         // Use helper to get document.cookie via HtmlDocument cast
         let cookies = get_document_cookie()?;
-        cookies
-            .split(';')
-            .map(|s| s.trim())
-            .find_map(|cookie| {
-                let mut parts = cookie.splitn(2, '=');
-                let key = parts.next()?.trim();
-                let val = parts.next()?.trim();
-                if key == name {
-                    Some(val.to_string())
-                } else {
-                    None
-                }
-            })
+        cookies.split(';').map(|s| s.trim()).find_map(|cookie| {
+            let mut parts = cookie.splitn(2, '=');
+            let key = parts.next()?.trim();
+            let val = parts.next()?.trim();
+            if key == name {
+                Some(val.to_string())
+            } else {
+                None
+            }
+        })
     }
     #[cfg(not(feature = "hydrate"))]
     {
@@ -61,10 +58,7 @@ pub fn set_cookie(name: &str, value: &str, days: Option<i32>) {
         let max_age = days
             .map(|d| format!("; Max-Age={}", d * 24 * 60 * 60))
             .unwrap_or_default();
-        let cookie = format!(
-            "{}={}{}; Path=/; SameSite=Strict",
-            name, value, max_age
-        );
+        let cookie = format!("{}={}{}; Path=/; SameSite=Strict", name, value, max_age);
         set_document_cookie(&cookie);
     }
     #[cfg(not(feature = "hydrate"))]
@@ -77,10 +71,7 @@ pub fn set_cookie(name: &str, value: &str, days: Option<i32>) {
 pub fn delete_cookie(name: &str) {
     #[cfg(feature = "hydrate")]
     {
-        let cookie = format!(
-            "{}=; Path=/; SameSite=Strict; Max-Age=0",
-            name
-        );
+        let cookie = format!("{}=; Path=/; SameSite=Strict; Max-Age=0", name);
         set_document_cookie(&cookie);
     }
     #[cfg(not(feature = "hydrate"))]

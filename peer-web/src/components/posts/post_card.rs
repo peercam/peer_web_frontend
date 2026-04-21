@@ -193,32 +193,29 @@ fn PostMedia(
     let display_url = cover.or(media).unwrap_or_default();
 
     match content_type {
-        ContentType::Image | ContentType::Video => {
-            view! {
-                <div class="post-media">
-                    <img src=display_url alt=title class="post-image"/>
-                    {(content_type == ContentType::Video).then(|| view! {
-                        <div class="play-overlay">
-                            <img src="/svg/play.svg" alt="Play" class="play-icon"/>
-                        </div>
-                    })}
-                </div>
-            }.into_any()
+        ContentType::Image | ContentType::Video => view! {
+            <div class="post-media">
+                <img src=display_url alt=title class="post-image"/>
+                {(content_type == ContentType::Video).then(|| view! {
+                    <div class="play-overlay">
+                        <img src="/svg/play.svg" alt="Play" class="play-icon"/>
+                    </div>
+                })}
+            </div>
         }
-        ContentType::Audio => {
-            view! {
-                <div class="post-media post-media-audio">
-                    <img src="/svg/music.svg" alt="Audio" class="audio-icon"/>
-                </div>
-            }.into_any()
+        .into_any(),
+        ContentType::Audio => view! {
+            <div class="post-media post-media-audio">
+                <img src="/svg/music.svg" alt="Audio" class="audio-icon"/>
+            </div>
         }
-        ContentType::Text => {
-            view! {
-                <div class="post-media post-media-text">
-                    <span class="text-preview">{title.chars().take(100).collect::<String>()}</span>
-                </div>
-            }.into_any()
+        .into_any(),
+        ContentType::Text => view! {
+            <div class="post-media post-media-text">
+                <span class="text-preview">{title.chars().take(100).collect::<String>()}</span>
+            </div>
         }
+        .into_any(),
     }
 }
 

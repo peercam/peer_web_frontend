@@ -15,7 +15,11 @@ test.describe("Registration — Form Validation", () => {
 
   // ── T5: Weak password rejected ──────────────────────────────────────────
   test("T5: weak password shows strength indicator and requirements", async () => {
+    await regPage.passwordInput.click();
     await regPage.passwordInput.fill("abcd");
+    await regPage.passwordInput.evaluate((el: HTMLInputElement) => {
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
 
     // Password strength meter should be visible and show weak state
     await expect(regPage.passwordStrength).toBeVisible();
@@ -24,21 +28,28 @@ test.describe("Registration — Form Validation", () => {
     const strengthText = await regPage.passwordStrength.textContent();
     expect(strengthText).toMatch(/weak|very weak/i);
 
-    // Fill rest of form and try to submit — should be blocked
+    // Fill rest of form — submit should remain blocked because password is weak
     await regPage.emailInput.fill("test@example.com");
     await regPage.usernameInput.fill("test_user");
     await regPage.confirmPasswordInput.fill("abcd");
     await regPage.privacyCheckbox.check();
     await regPage.eulaCheckbox.check();
-    await regPage.registerButton.click();
+
+    // Submit button stays disabled while the form is invalid
+    await expect(regPage.registerButton).toBeDisabled();
 
     // Should remain on step 2 — password too weak
     await regPage.expectActiveStep(2);
-    await expect(regPage.passwordValidation).toBeVisible();
   });
 
   test("T5b: strong password shows strong/excellent indicator", async () => {
+    await regPage.passwordInput.click();
     await regPage.passwordInput.fill("S3cur3P@ssw0rd!");
+    // Re-dispatch an input event to ensure Leptos sees the value even if
+    // Playwright's `fill` set it before hydration finished wiring the handler.
+    await regPage.passwordInput.evaluate((el: HTMLInputElement) => {
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
 
     await expect(regPage.passwordStrength).toBeVisible();
     const strengthText = await regPage.passwordStrength.textContent();
@@ -50,27 +61,33 @@ test.describe("Registration — Form Validation", () => {
     await regPage.passwordInput.fill("SecurePass123!");
     await regPage.confirmPasswordInput.fill("DifferentPass456!");
 
-    // Trigger validation by tabbing away or clicking submit
-    await regPage.registerButton.click();
-
-    await expect(regPage.confirmPasswordValidation).toBeVisible();
+    // Validation is reactive — message appears as soon as inputs mismatch
     await expect(regPage.confirmPasswordValidation).toContainText(
       /passwords do not match/i
     );
+
+    // Submit is blocked while the form is invalid
+    await expect(regPage.registerButton).toBeDisabled();
 
     // Should remain on step 2
     await regPage.expectActiveStep(2);
   });
 
   // ── T7: Unchecked checkboxes ────────────────────────────────────────────
-  test("T7: unchecked checkboxes show error message", async () => {
+  test("T7: unchecked checkboxes show error message", async ({ page }) => {
     await regPage.fillRegistrationForm();
 
     // Uncheck the checkboxes that fillRegistrationForm checked
     await regPage.privacyCheckbox.uncheck();
     await regPage.eulaCheckbox.uncheck();
 
-    await regPage.registerButton.click();
+    // Submit button is disabled; trigger the form's submit handler directly
+    // to exercise the checkbox validation path.
+    await expect(regPage.registerButton).toBeDisabled();
+    await page.evaluate(() => {
+      const form = document.getElementById("registrationForm") as HTMLFormElement | null;
+      form?.requestSubmit();
+    });
 
     await expect(regPage.checkboxValidation).toBeVisible();
     await expect(regPage.checkboxValidation).toContainText(
@@ -80,11 +97,15 @@ test.describe("Registration — Form Validation", () => {
     await regPage.expectActiveStep(2);
   });
 
-  test("T7b: single unchecked checkbox still shows error", async () => {
+  test("T7b: single unchecked checkbox still shows error", async ({ page }) => {
     await regPage.fillRegistrationForm();
     await regPage.eulaCheckbox.uncheck(); // only uncheck EULA
 
-    await regPage.registerButton.click();
+    await expect(regPage.registerButton).toBeDisabled();
+    await page.evaluate(() => {
+      const form = document.getElementById("registrationForm") as HTMLFormElement | null;
+      form?.requestSubmit();
+    });
 
     await expect(regPage.checkboxValidation).toBeVisible();
     await regPage.expectActiveStep(2);

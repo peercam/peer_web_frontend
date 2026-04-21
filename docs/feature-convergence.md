@@ -103,7 +103,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Chat | `js/chat/api.js` | 🚧 In Progress | `src/api/chat.rs` (151L) — list_chats, send_message, create_chat. Mock backend: Phase 4 complete |
 | Wallet | `js/wallet.js` | 🚧 In Progress | `src/api/wallet.rs` (246L) — get_balance, transaction_history, transfer_tokens |
 | Referral | `js/referral.js` | ✅ Implemented | `src/api/referral.rs` (65L) — get_referral_info, get_referral_list |
-| Firebase | `js/firebase_config.js` | ❌ Not Started | Real-time, analytics |
+| Firebase / Real-time chat transport | `js/firebase_config.js` | ❌ Not Started | Client row renamed from "Firebase" — the vendor choice is now transport-agnostic. v1 ships **polling** against GraphQL; Firestore/WS/SSE tracked in [ADR](plans/../adr-chat-realtime-transport.md). Backend write path is Postgres, not Firestore ([chat-completion-sprint.md § Blocker Resolution](plans/chat/chat-completion-sprint.md#blocker-resolution-2026-04-21)) |
 
 ---
 

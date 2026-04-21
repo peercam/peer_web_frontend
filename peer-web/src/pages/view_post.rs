@@ -37,7 +37,13 @@ pub fn ViewPostPage() -> impl IntoView {
     let params = use_params_map();
     let auth = use_auth();
 
-    let post_id = move || params.get().get("id").map(|s| s.to_string()).unwrap_or_default();
+    let post_id = move || {
+        params
+            .get()
+            .get("id")
+            .map(|s| s.to_string())
+            .unwrap_or_default()
+    };
     let post_id_signal = Signal::derive(post_id);
     let is_guest = Signal::derive(move || !auth.is_authenticated.get());
 

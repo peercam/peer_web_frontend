@@ -1,14 +1,12 @@
 //! FAQ popup with shop policies.
 
 use leptos::prelude::*;
-use leptos::web_sys;
 use leptos::wasm_bindgen::JsCast;
+use leptos::web_sys;
 
 /// FAQ modal overlay with shop policies (order processing, delivery, returns, etc.).
 #[component]
-pub fn FaqPopup(
-    is_open: RwSignal<bool>,
-) -> impl IntoView {
+pub fn FaqPopup(is_open: RwSignal<bool>) -> impl IntoView {
     let on_close = move |_| is_open.set(false);
 
     let on_backdrop_click = move |ev: leptos::ev::MouseEvent| {

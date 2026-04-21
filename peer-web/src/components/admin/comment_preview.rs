@@ -22,6 +22,12 @@ pub fn CommentPreview(comment: ModerationComment) -> impl IntoView {
     let post_id = comment.postid.clone().unwrap_or_default();
     let has_post = !post_id.is_empty();
     let post_link = format!("/post/{}", post_id);
+    let profile_link = if slug.is_empty() {
+        String::new()
+    } else {
+        format!("/{}", slug)
+    };
+    let has_profile = !profile_link.is_empty();
 
     view! {
         <div class="comment_box">
@@ -36,7 +42,21 @@ pub fn CommentPreview(comment: ModerationComment) -> impl IntoView {
                 </div>
                 <div class="comment_body">
                     <div class="commenter_info">
-                        <span class="bold">{username}</span>
+                        {
+                            let username_clone = username.clone();
+                            let profile_link_clone = profile_link.clone();
+                            move || if has_profile {
+                                view! {
+                                    <a href=profile_link_clone.clone() class="bold">
+                                        {username_clone.clone()}
+                                    </a>
+                                }.into_any()
+                            } else {
+                                view! {
+                                    <span class="bold">{username_clone.clone()}</span>
+                                }.into_any()
+                            }
+                        }
                         <span class="timeagao">{created}</span>
                     </div>
                     <p>{content}</p>

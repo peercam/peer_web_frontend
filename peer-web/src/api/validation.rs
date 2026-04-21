@@ -161,7 +161,9 @@ mod tests {
 
     #[test]
     fn test_valid_registration_input() {
-        assert!(validate_registration_input("user@example.com", "peer_user", "SecurePass123!",).is_ok());
+        assert!(
+            validate_registration_input("user@example.com", "peer_user", "SecurePass123!",).is_ok()
+        );
     }
 
     #[test]
