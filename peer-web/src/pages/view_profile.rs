@@ -12,6 +12,7 @@ use leptos_router::hooks::use_params_map;
 use crate::api::profile::{get_profile, list_user_posts};
 use crate::components::auth_guard::AuthGuard;
 use crate::components::filters::{ContentFilter, SortFilter};
+use crate::components::layout::SiteShell;
 use crate::components::posts::PostCard;
 use crate::components::profile::{ProfileHeader, ProfileHeaderSkeleton};
 use crate::hooks::use_infinite_scroll;
@@ -32,13 +33,12 @@ pub fn ViewProfilePage() -> impl IntoView {
 
     view! {
         <AuthGuard>
-            <div id="view-profile" class="site_layout profile-layout">
+            <SiteShell id="view-profile" modifier="profile-layout">
                 <ViewProfileHeader/>
                 <ViewProfileFilterSidebar/>
                 <ViewProfileMainContent user_slug/>
                 <RightSidebar/>
-                <MobileFooter/>
-            </div>
+            </SiteShell>
         </AuthGuard>
     }
 }
@@ -263,36 +263,6 @@ fn RightSidebar() -> impl IntoView {
                 </a>
             </nav>
         </aside>
-    }
-}
-
-/// Mobile navigation footer.
-#[component]
-fn MobileFooter() -> impl IntoView {
-    view! {
-        <footer class="mobile-footer">
-            <nav class="mobile-nav">
-                <a href="/dashboard" class="nav-item">
-                    <i class="peer-icon peer-icon-home"/>
-                    <span>"Home"</span>
-                </a>
-                <a href="/search" class="nav-item">
-                    <i class="peer-icon peer-icon-search"/>
-                    <span>"Search"</span>
-                </a>
-                <a href="/newpost" class="nav-item add-post">
-                    <i class="peer-icon peer-icon-plus"/>
-                </a>
-                <a href="/notifications" class="nav-item">
-                    <i class="peer-icon peer-icon-bell"/>
-                    <span>"Alerts"</span>
-                </a>
-                <a href="/profile" class="nav-item">
-                    <i class="peer-icon peer-icon-user"/>
-                    <span>"Profile"</span>
-                </a>
-            </nav>
-        </footer>
     }
 }
 

@@ -9,6 +9,7 @@ use leptos_meta::Title;
 
 use crate::api::profile::{get_profile, list_user_posts, toggle_follow};
 use crate::components::auth_guard::AuthGuard;
+use crate::components::layout::SiteShell;
 use crate::components::posts::PostCard;
 use crate::components::shop::{CheckoutPopup, FaqPopup, ProductPriceBadge, ShopProfileHeader};
 use crate::models::post::{FeedItem, Post, PostSortType};
@@ -22,15 +23,14 @@ pub fn PeerShopPage() -> impl IntoView {
     view! {
         <AuthGuard>
             <Title text="Peer Shop - Peer Network"/>
-            <div id="view-peer-shop" class="view-peer-shop site_layout profile-layout">
+            <SiteShell id="view-peer-shop" modifier="view-peer-shop profile-layout">
                 <ShopPageHeader/>
                 <aside class="site_sidebar left-sidebar">
                     <ShopFilters/>
                 </aside>
                 <ShopMainContent/>
                 <ShopRightSidebar/>
-                <ShopMobileFooter/>
-            </div>
+            </SiteShell>
         </AuthGuard>
     }
 }
@@ -309,36 +309,6 @@ fn ShopRightSidebar() -> impl IntoView {
                 </a>
             </nav>
         </aside>
-    }
-}
-
-/// Mobile footer navigation.
-#[component]
-fn ShopMobileFooter() -> impl IntoView {
-    view! {
-        <footer class="mobile-footer">
-            <nav class="mobile-nav">
-                <a href="/dashboard" class="nav-item">
-                    <i class="peer-icon peer-icon-home"/>
-                    <span>"Home"</span>
-                </a>
-                <a href="/search" class="nav-item">
-                    <i class="peer-icon peer-icon-search"/>
-                    <span>"Search"</span>
-                </a>
-                <a href="/newpost" class="nav-item add-post">
-                    <i class="peer-icon peer-icon-plus"/>
-                </a>
-                <a href="/notifications" class="nav-item">
-                    <i class="peer-icon peer-icon-bell"/>
-                    <span>"Alerts"</span>
-                </a>
-                <a href="/profile" class="nav-item">
-                    <i class="peer-icon peer-icon-user"/>
-                    <span>"Profile"</span>
-                </a>
-            </nav>
-        </footer>
     }
 }
 

@@ -6,6 +6,7 @@ use leptos_meta::Title;
 
 use crate::components::auth_guard::AuthGuard;
 use crate::components::chat::{ChatContainer, ChatList};
+use crate::components::layout::SiteShell;
 use crate::components::widgets::{AddPostButton, MainMenu, ProfileWidget, VersionWidget};
 use crate::state::chat::{ChatContext, load_chats, provide_chat_context, use_chat};
 #[cfg(target_arch = "wasm32")]
@@ -37,7 +38,7 @@ pub fn ChatPage() -> impl IntoView {
     view! {
         <Title text="Chat - Peer Network"/>
         <AuthGuard>
-            <div id="chat" class="site_layout">
+            <SiteShell id="chat">
                 <ChatHeader/>
                 <LeftSidebar/>
                 <main class="site-main site-main-chats">
@@ -47,8 +48,7 @@ pub fn ChatPage() -> impl IntoView {
                     </div>
                 </main>
                 <RightSidebar/>
-                <MobileFooter/>
-            </div>
+            </SiteShell>
         </AuthGuard>
     }
 }
@@ -195,35 +195,5 @@ fn RightSidebar() -> impl IntoView {
                 <VersionWidget/>
             </div>
         </aside>
-    }
-}
-
-/// Mobile navigation footer.
-#[component]
-fn MobileFooter() -> impl IntoView {
-    view! {
-        <footer class="mobile-footer">
-            <nav class="mobile-nav">
-                <a href="/dashboard" class="nav-item">
-                    <i class="peer-icon peer-icon-home"/>
-                    <span>"Home"</span>
-                </a>
-                <a href="/search" class="nav-item">
-                    <i class="peer-icon peer-icon-search"/>
-                    <span>"Search"</span>
-                </a>
-                <a href="/newpost" class="nav-item add-post">
-                    <i class="peer-icon peer-icon-plus"/>
-                </a>
-                <a href="/chat" class="nav-item active">
-                    <i class="peer-icon peer-icon-chat"/>
-                    <span>"Chat"</span>
-                </a>
-                <a href="/profile" class="nav-item">
-                    <i class="peer-icon peer-icon-user"/>
-                    <span>"Profile"</span>
-                </a>
-            </nav>
-        </footer>
     }
 }

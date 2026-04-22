@@ -25,7 +25,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Feature | Legacy File | peer-web Status | Notes |
 |---------|-------------|-----------------|-------|
 | **Landing** ||||
-| Home / Landing | `index.php` | 🚧 In Progress | Placeholder stub at `/` (`src/app.rs::HomePage`) — renders only `<h1>Welcome to Peer</h1>` and a single `Create an Account` link, no shared header/footer/nav, no imagery, no styling. Legacy `index.php` provided full marketing chrome which has not yet been ported. Compounded by the fact that `Header`/`Footer`/`Sidebars` are not extracted as shared components (see Components table below). |
+| Home / Landing | `index.php` | 🚧 In Progress | Placeholder stub at `/` (`src/app.rs::HomePage`) — renders only `<h1>Welcome to Peer</h1>` and a single `Create an Account` link, no shared header/footer/nav, no imagery, no styling. Legacy `index.php` provided full marketing chrome which has not yet been ported. The shared layout shell ([`SiteShell`](../peer-web/src/components/layout/site_shell.rs)) is now available so a Home port can adopt it without inventing new chrome. |
 | **Authentication** ||||
 | Login | `login.php` | ✅ Implemented | Email/password, remember-me, auto-login, redirect handling ([docs](plans/login/login-auth-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation |
@@ -61,9 +61,9 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Component | Legacy Location | peer-web Status | Notes |
 |-----------|----------------|-----------------|-------|
 | **Layout** ||||
-| Header | `template-parts/` | ❌ Not Started | Not extracted as a shared component; pages render navigation/user menu inline |
-| Footer | `template-parts/footer.php` | ❌ Not Started | Not extracted as a shared component; pages render footer inline (or omit) |
-| Sidebars | `template-parts/sidebars/` | ❌ Not Started | Filter sidebars implemented per-page (dashboard, profile, view-profile); no shared component |
+| Header | `template-parts/` | ✅ Implemented | `SiteHeader` component (`peer-web/src/components/layout/site_header.rs`) — Hyphen / Underscore spelling, optional icon + actions slot. Adopted opportunistically (Pass 2); Pass 1 wraps existing inline headers in [`SiteShell`](../peer-web/src/components/layout/site_shell.rs) ([docs](plans/layout/layout-shell-implementation.md)) |
+| Footer | `template-parts/footer.php` | ✅ Implemented | Route-aware `MobileFooter` (`peer-web/src/components/layout/mobile_footer.rs`) — single shared component replaces 10 private `fn MobileFooter` copies + 1 inline `<footer>`; reactive `active` class against `use_location()`. Auto-rendered by [`SiteShell`](../peer-web/src/components/layout/site_shell.rs) ([docs](plans/layout/layout-shell-implementation.md)) |
+| Sidebars | `template-parts/sidebars/` | ✅ Implemented | `LeftRail` / `RightRail` wrappers + `StandardRightRail` widget-stack preset (`peer-web/src/components/layout/{left_rail,right_rail}.rs`); page-specific filter sidebars stay page-local ([docs](plans/layout/layout-shell-implementation.md)) |
 | **Posts** ||||
 | Post Card | `js/posts.js` | 🚧 In Progress | 304-line component with like/dislike/save actions, view tracking |
 | Post List | `js/load_posts.js` | 🚧 In Progress | 209 lines, infinite scroll, ad interleaving, filter integration |
@@ -162,10 +162,22 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 16. ✅ ~~Version History~~ — Complete, auth-guarded two-panel layout, static JSON fetch, responsive styles ([docs](plans/version-history/version-history-implementation.md))
 17. ✅ ~~PWA~~ — Complete, manifest + service worker + install prompt + offline shell + update toast ([docs](plans/pwa/pwa-implementation.md))
 18. ✅ ~~Download~~ — Force-download media proxy: HTTPS-only host allow-list, streaming body, byte + time caps, sanitised `Content-Disposition` ([docs](plans/download/download-implementation.md))
+19. ✅ ~~Layout shell~~ — Shared `SiteShell` / `SiteHeader` / `MobileFooter` / `LeftRail` / `RightRail` (+ `StandardRightRail` preset). Closes Header / Footer / Sidebars rows; deletes 10 private `fn MobileFooter` copies + 1 inline `<footer>`; route-aware mobile-footer active class via `use_location()` ([docs](plans/layout/layout-shell-implementation.md))
 
 ---
 
 ## Changelog
+
+### 2026-04-22 (Layout Shell Implemented)
+- **Shared layout shell landed** — new `peer-web/src/components/layout/` module with `SiteShell`, `SiteHeader` (Hyphen / Underscore spellings), `MobileFooter` (route-aware via `use_location()`), `LeftRail`, `RightRail`, and the `StandardRightRail` widget-stack preset ([docs](plans/layout/layout-shell-implementation.md)).
+- **Pass-1 migration:** `dashboard`, `chat`, `wallet`, `settings`, `view_profile`, `version_history`, `profile`, `my_ads`, `peer_shop`, `referral_board`, `new_post`, `admin` now wrap their existing chrome in `<SiteShell…>`. Ten private `fn MobileFooter` copies and one inline `<footer class="mobile-footer">` (in `peer_shop.rs`) deleted. `grep "fn MobileFooter"` is now zero in `peer-web/src/pages/`; `grep "site_layout"` is zero in `pages/`.
+- **Components table:** Header / Footer / Sidebars rows ❌ Not Started → ✅ Implemented. Page summary counts unchanged (these are component rows). Home / Landing note updated to drop the now-stale "compounded by…" caveat.
+- **Migration Priority:** added entry #19 (`Layout shell`).
+- **Behaviour change — Settings / Version History / My Ads mobile nav:** these pages previously rendered an unstyled `mobile-nav-item` preset (Home / Chat / NewPost / Wallet / Profile, no labels). The shared `MobileFooter` ships the canonical Dashboard preset (Home / Search / NewPost / Alerts / Profile, labelled, `nav-item` class) per Open Question 1's default in the plan. Those pages now show the canonical nav; the legacy preset is dropped. Documented as a behaviour change rather than a regression because the legacy preset had no SCSS coverage in `peer-web/style/` (silently unstyled).
+- **Latent bug fixed:** the `active` class on the mobile footer was hard-coded per-page (Wallet pinned `/wallet`, Settings pinned nothing). It is now computed reactively against the URL, so navigating without a page reload no longer leaves the wrong link highlighted.
+- **New files (6):** `peer-web/src/components/layout/{mod,site_shell,site_header,mobile_footer,left_rail,right_rail}.rs`.
+- **Modified files (13):** `peer-web/src/components/mod.rs` + 12 page files in `peer-web/src/pages/`.
+- Build: `cargo build --features ssr` ✅, `cargo-leptos leptos build` ✅ (SSR + WASM hydrate). Pre-existing `cargo clippy` / `cargo fmt --check` issues outside the layout module unchanged.
 
 ### 2026-04-22 (New Post Doc Drift Reconciled)
 - **New Post completion sprint Task 1 — documentation accuracy pass.** A code audit of [`peer-web/src/components/new_post/`](../peer-web/src/components/new_post/) showed several items the parent plan and tracker still labelled "stubbed" are in fact fully implemented (image cropper canvas draw/drag/zoom, aspect ratio wiring, cropped output, MediaRecorder voice capture + timer + playback + reset, video trimmer drag handles + clamp, two responsive breakpoints).

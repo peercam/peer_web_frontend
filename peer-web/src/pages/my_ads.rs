@@ -7,6 +7,7 @@ use leptos::prelude::*;
 use leptos_meta::Title;
 
 use crate::components::auth_guard::AuthGuard;
+use crate::components::layout::SiteShell;
 use crate::components::my_ads::AdList;
 use crate::components::widgets::{MainMenu, ProfileWidget, VersionWidget};
 
@@ -18,7 +19,7 @@ pub fn MyAdsPage() -> impl IntoView {
     view! {
         <Title text="My Ads - Peer Network"/>
         <AuthGuard>
-            <div id="my-ads-page" class="site_layout my-ads-layout">
+            <SiteShell id="my-ads-page" modifier="my-ads-layout">
                 <MyAdsHeader/>
 
                 <aside class="left-sidebar left-sidebar-my-ads">
@@ -44,9 +45,7 @@ pub fn MyAdsPage() -> impl IntoView {
                         <VersionWidget />
                     </div>
                 </aside>
-
-                <MobileFooter />
-            </div>
+            </SiteShell>
         </AuthGuard>
     }
 }
@@ -74,31 +73,5 @@ fn NewPostButton() -> impl IntoView {
                 <span>"New Post"</span>
             </a>
         </div>
-    }
-}
-
-/// Mobile navigation footer.
-#[component]
-fn MobileFooter() -> impl IntoView {
-    view! {
-        <footer class="mobile-footer">
-            <nav class="mobile-nav">
-                <a href="/dashboard" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-home"></i>
-                </a>
-                <a href="/chat" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-chat"></i>
-                </a>
-                <a href="/newpost" class="mobile-nav-item mobile-nav-create">
-                    <i class="peer-icon peer-icon-plus"></i>
-                </a>
-                <a href="/wallet" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-wallet-filled"></i>
-                </a>
-                <a href="/profile" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-profile"></i>
-                </a>
-            </nav>
-        </footer>
     }
 }

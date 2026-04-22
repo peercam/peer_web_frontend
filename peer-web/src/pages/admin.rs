@@ -7,6 +7,7 @@ use leptos_router::components::Redirect;
 use crate::components::admin::admin_header::AdminHeader;
 use crate::components::admin::moderation_list::ModerationList;
 use crate::components::auth_guard::AuthGuard;
+use crate::components::layout::SiteShell;
 
 /// Admin page component — role-gated content moderation dashboard.
 #[component]
@@ -15,13 +16,13 @@ pub fn AdminPage() -> impl IntoView {
         <Title text="Admin - Peer Network"/>
         <AuthGuard>
             <RoleGuard>
-                <div id="admin-page" class="site_layout admin-layout">
+                <SiteShell id="admin-page" modifier="admin-layout" mobile_footer=false>
                     <AdminHeader/>
                     <main class="site-main site-main-admin">
                         <h1 class="page-title xxl_font_size">"Content moderation"</h1>
                         <ModerationList/>
                     </main>
-                </div>
+                </SiteShell>
             </RoleGuard>
         </AuthGuard>
     }

@@ -8,6 +8,7 @@ use leptos_meta::Title;
 
 use crate::api::profile::get_profile;
 use crate::components::auth_guard::AuthGuard;
+use crate::components::layout::SiteShell;
 use crate::components::settings::{
     ContentSettings, DeactivateAccountPanel, NotificationSettings, PreferencesSettings,
     ProfileSettings, SettingsMenu,
@@ -35,7 +36,7 @@ pub fn SettingsPage() -> impl IntoView {
     view! {
         <Title text="Settings - Peer Network"/>
         <AuthGuard>
-            <div id="edit-profile" class="site_layout settings-layout">
+            <SiteShell id="edit-profile" modifier="settings-layout">
                 <SettingsHeader/>
 
                 <aside class="left-sidebar left-sidebar-profile">
@@ -94,9 +95,7 @@ pub fn SettingsPage() -> impl IntoView {
                         <VersionWidget/>
                     </div>
                 </aside>
-
-                <MobileFooter/>
-            </div>
+            </SiteShell>
         </AuthGuard>
     }
 }
@@ -122,31 +121,5 @@ fn NewPostButton() -> impl IntoView {
                 <span>"New Post"</span>
             </a>
         </div>
-    }
-}
-
-/// Mobile navigation footer.
-#[component]
-fn MobileFooter() -> impl IntoView {
-    view! {
-        <footer class="mobile-footer">
-            <nav class="mobile-nav">
-                <a href="/dashboard" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-home"></i>
-                </a>
-                <a href="/chat" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-chat"></i>
-                </a>
-                <a href="/newpost" class="mobile-nav-item mobile-nav-item-new">
-                    <i class="peer-icon peer-icon-plus"></i>
-                </a>
-                <a href="/wallet" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-wallet"></i>
-                </a>
-                <a href="/profile" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-user"></i>
-                </a>
-            </nav>
-        </footer>
     }
 }

@@ -10,6 +10,7 @@ use leptos::prelude::*;
 use leptos_meta::Title;
 
 use crate::components::auth_guard::AuthGuard;
+use crate::components::layout::SiteShell;
 use crate::components::new_post::{
     ContentTypeTabs, NewPostForm, NewPostHeader, NewPostRightSidebar, PostPreview,
 };
@@ -192,7 +193,7 @@ pub fn NewPostPage() -> impl IntoView {
     view! {
         <Title text="Create Post - Peer Network"/>
         <AuthGuard>
-            <div id="addPost" class="site_layout">
+            <SiteShell id="addPost">
                 <NewPostHeader/>
                 <ContentTypeTabs/>
                 <main class="site-main site-main-createpost">
@@ -204,38 +205,7 @@ pub fn NewPostPage() -> impl IntoView {
                     </Show>
                 </main>
                 <NewPostRightSidebar/>
-                <MobileFooter/>
-            </div>
+            </SiteShell>
         </AuthGuard>
-    }
-}
-
-/// Mobile navigation footer.
-#[component]
-fn MobileFooter() -> impl IntoView {
-    view! {
-        <footer class="mobile-footer">
-            <nav class="mobile-nav">
-                <a href="/dashboard" class="nav-item">
-                    <i class="peer-icon peer-icon-home"/>
-                    <span>"Home"</span>
-                </a>
-                <a href="/search" class="nav-item">
-                    <i class="peer-icon peer-icon-search"/>
-                    <span>"Search"</span>
-                </a>
-                <a href="/newpost" class="nav-item add-post active">
-                    <i class="peer-icon peer-icon-plus"/>
-                </a>
-                <a href="/notifications" class="nav-item">
-                    <i class="peer-icon peer-icon-bell"/>
-                    <span>"Alerts"</span>
-                </a>
-                <a href="/profile" class="nav-item">
-                    <i class="peer-icon peer-icon-user"/>
-                    <span>"Profile"</span>
-                </a>
-            </nav>
-        </footer>
     }
 }

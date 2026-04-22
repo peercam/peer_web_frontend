@@ -8,6 +8,7 @@ use leptos_meta::Title;
 
 use crate::api::version::get_version_releases;
 use crate::components::auth_guard::AuthGuard;
+use crate::components::layout::SiteShell;
 use crate::components::version_history::version_detail::VersionDetail;
 use crate::components::version_history::version_list::VersionList;
 use crate::components::widgets::{MainMenu, ProfileWidget, VersionWidget};
@@ -22,7 +23,7 @@ pub fn VersionHistoryPage() -> impl IntoView {
     view! {
         <Title text="Version History - Peer Network"/>
         <AuthGuard>
-            <div id="version_history" class="site_layout version-history-layout">
+            <SiteShell id="version_history" modifier="version-history-layout">
                 <VersionHistoryHeader/>
 
                 <aside class="left-sidebar left-sidebar-profile">
@@ -81,9 +82,7 @@ pub fn VersionHistoryPage() -> impl IntoView {
                         <VersionWidget/>
                     </div>
                 </aside>
-
-                <MobileFooter/>
-            </div>
+            </SiteShell>
         </AuthGuard>
     }
 }
@@ -109,31 +108,5 @@ fn NewPostButton() -> impl IntoView {
                 <span>"New Post"</span>
             </a>
         </div>
-    }
-}
-
-/// Mobile navigation footer.
-#[component]
-fn MobileFooter() -> impl IntoView {
-    view! {
-        <footer class="mobile-footer">
-            <nav class="mobile-nav">
-                <a href="/dashboard" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-home"></i>
-                </a>
-                <a href="/chat" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-chat"></i>
-                </a>
-                <a href="/newpost" class="mobile-nav-item mobile-nav-item-new">
-                    <i class="peer-icon peer-icon-plus"></i>
-                </a>
-                <a href="/wallet" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-wallet"></i>
-                </a>
-                <a href="/profile" class="mobile-nav-item">
-                    <i class="peer-icon peer-icon-user"></i>
-                </a>
-            </nav>
-        </footer>
     }
 }

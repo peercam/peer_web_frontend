@@ -6,6 +6,7 @@ pub mod back_button;
 pub mod chat;
 pub mod dashboard;
 pub mod filters;
+pub mod layout;
 pub mod left_panel;
 pub mod login_form;
 pub mod my_ads;

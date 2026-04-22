@@ -10,6 +10,7 @@ use leptos_meta::Title;
 use crate::api::profile::get_profile;
 use crate::api::wallet::get_balance;
 use crate::components::auth_guard::AuthGuard;
+use crate::components::layout::SiteShell;
 use crate::components::wallet::{
     BalanceHeader, BalanceSkeleton, TransactionHistory, TransferModal, WalletViewerId,
 };
@@ -49,7 +50,7 @@ pub fn WalletPage() -> impl IntoView {
     view! {
         <Title text="Wallet - Peer Network"/>
         <AuthGuard>
-            <div id="wallet-page" class="site_layout wallet-layout">
+            <SiteShell id="wallet-page" modifier="wallet-layout">
                 <WalletHeader/>
 
                 <aside class="left-sidebar left-sidebar-wallet">
@@ -86,9 +87,7 @@ pub fn WalletPage() -> impl IntoView {
                         <VersionWidget />
                     </div>
                 </aside>
-
-                <MobileFooter />
-            </div>
+            </SiteShell>
 
             // Transfer modal
             <Show when=move || show_transfer_modal.get()>
@@ -127,35 +126,5 @@ fn NewPostButton() -> impl IntoView {
                 <span>"New Post"</span>
             </a>
         </div>
-    }
-}
-
-/// Mobile navigation footer.
-#[component]
-fn MobileFooter() -> impl IntoView {
-    view! {
-        <footer class="mobile-footer">
-            <nav class="mobile-nav">
-                <a href="/dashboard" class="nav-item">
-                    <i class="peer-icon peer-icon-home" />
-                    <span>"Home"</span>
-                </a>
-                <a href="/search" class="nav-item">
-                    <i class="peer-icon peer-icon-search" />
-                    <span>"Search"</span>
-                </a>
-                <a href="/newpost" class="nav-item add-post">
-                    <i class="peer-icon peer-icon-plus" />
-                </a>
-                <a href="/notifications" class="nav-item">
-                    <i class="peer-icon peer-icon-bell" />
-                    <span>"Alerts"</span>
-                </a>
-                <a href="/wallet" class="nav-item active">
-                    <i class="peer-icon peer-icon-wallet" />
-                    <span>"Wallet"</span>
-                </a>
-            </nav>
-        </footer>
     }
 }

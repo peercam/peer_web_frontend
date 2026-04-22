@@ -8,6 +8,7 @@ use leptos_meta::Title;
 
 use crate::api::referral::{get_referral_info, get_referral_list};
 use crate::components::auth_guard::AuthGuard;
+use crate::components::layout::SiteShell;
 use crate::components::referral_board::{ReferralHeader, ReferralHeaderSkeleton, ReferralTabs};
 use crate::components::widgets::{MainMenu, ProfileWidget, VersionWidget};
 
@@ -35,7 +36,7 @@ pub fn ReferralBoardPage() -> impl IntoView {
     view! {
         <Title text="Referral Program - Peer Network"/>
         <AuthGuard>
-            <div id="referral-board" class="site_layout referral-board-layout">
+            <SiteShell id="referral-board" modifier="referral-board-layout">
                 <ReferralBoardHeader/>
 
                 <aside class="left-sidebar left-sidebar-referralBoard">
@@ -77,9 +78,7 @@ pub fn ReferralBoardPage() -> impl IntoView {
                         <VersionWidget/>
                     </div>
                 </aside>
-
-                <MobileFooter/>
-            </div>
+            </SiteShell>
         </AuthGuard>
     }
 }
@@ -128,35 +127,5 @@ fn NewPostButton() -> impl IntoView {
                 <span>"New Post"</span>
             </a>
         </div>
-    }
-}
-
-/// Mobile navigation footer.
-#[component]
-fn MobileFooter() -> impl IntoView {
-    view! {
-        <footer class="mobile-footer">
-            <nav class="mobile-nav">
-                <a href="/dashboard" class="nav-item">
-                    <i class="peer-icon peer-icon-home"></i>
-                    <span>"Home"</span>
-                </a>
-                <a href="/search" class="nav-item">
-                    <i class="peer-icon peer-icon-search"></i>
-                    <span>"Search"</span>
-                </a>
-                <a href="/newpost" class="nav-item add-post">
-                    <i class="peer-icon peer-icon-plus"></i>
-                </a>
-                <a href="/notifications" class="nav-item">
-                    <i class="peer-icon peer-icon-bell"></i>
-                    <span>"Alerts"</span>
-                </a>
-                <a href="/referral" class="nav-item active">
-                    <i class="peer-icon peer-icon-referral"></i>
-                    <span>"Referral"</span>
-                </a>
-            </nav>
-        </footer>
     }
 }
