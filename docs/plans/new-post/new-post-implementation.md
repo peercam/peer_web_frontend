@@ -2,9 +2,9 @@
 
 **Feature:** New Post  
 **Priority:** #6 (after View Post & Profile)  
-**Status:** � In Progress  
+**Status:** 🚧 In Progress  
 **Created:** 2026-04-12  
-**Updated:** 2026-04-14
+**Updated:** 2026-04-22
 
 ---
 
@@ -42,33 +42,33 @@ Implement the post creation page for the Leptos frontend. This is a complex feat
   - [x] Drag & drop / file picker for images
   - [x] Multi-image upload (up to 5 images)
   - [x] Image slider navigation
-  - [ ] Image cropping modal _(UI shell exists, canvas draw/crop logic is stubbed)_
-  - [ ] Aspect ratio toggle (1:1 square, 4:5 vertical) _(UI exists, not wired to canvas)_
-  - [ ] Cropped image preview _(output canvas is empty)_
+  - [x] Image cropping modal
+  - [x] Aspect ratio toggle (1:1 square, 4:5 vertical)
+  - [x] Cropped image preview
   - [x] Remove individual images
 - [ ] **Audio Post:**
   - [x] Audio file upload (.mp3, .wav, .flac, .aac, .m4a)
-  - [ ] Voice recording with microphone _(UI shell exists, MediaRecorder calls stubbed)_
-  - [ ] Real-time waveform visualization _(static SVG placeholder only)_
-  - [ ] Recording timer _(signal exists, not incremented)_
-  - [ ] Playback controls (play/pause) _(button exists, handler is empty)_
-  - [ ] Record again functionality _(resets state, but no actual recording)_
+  - [x] Voice recording with microphone
+  - [ ] Real-time waveform visualization _(static SVG placeholder only — see [completion sprint](new-post-completion-sprint.md) Task 2)_
+  - [x] Recording timer
+  - [x] Playback controls (play/pause)
+  - [x] Record again functionality
   - [x] Cover image upload (optional background)
 - [ ] **Video Post:**
   - [x] Video file upload
   - [x] Dual video support (up to 2 videos)
-  - [ ] Video trimming interface _(UI shell exists, drag handlers are empty)_
-  - [ ] Timeline with thumbnail frames _(no frame extraction)_
-  - [ ] Start/end handle dragging _(handlers are empty stubs)_
+  - [x] Video trimming interface
+  - [ ] Timeline with thumbnail frames _(no frame extraction — see [completion sprint](new-post-completion-sprint.md) Task 4)_
+  - [x] Start/end handle dragging
   - [x] Minimum trim duration (3 seconds) _(validation in place)_
-  - [ ] FFmpeg WASM encoding _(not integrated)_
+  - [ ] FFmpeg WASM encoding _(not integrated; deferred in favour of server-side trim — see [completion sprint](new-post-completion-sprint.md) Task 5)_
   - [x] Cover image generation/upload
   - [x] Progress indicator during processing _(UI exists)_
 - [ ] **Tag System:**
   - [x] Tag input with autocomplete
   - [x] Tag search via API
   - [x] Selected tags display with remove
-  - [ ] Tag history (localStorage) _(not implemented)_
+  - [ ] Tag history (localStorage) _(not implemented — see [completion sprint](new-post-completion-sprint.md) Task 6)_
   - [x] Max 10 tags per post
   - [x] Tag validation (alphanumeric/underscores, 2-53 chars)
 - [x] **Live Preview:**
@@ -86,7 +86,7 @@ Implement the post creation page for the Leptos frontend. This is a complex feat
 - [x] Loading states and progress indicators
 - [x] Form validation with error messages
 - [x] Token cost indicator (20 tokens or free daily)
-- [ ] Responsive layout _(desktop layout done, no mobile breakpoints)_
+- [x] Responsive layout
 
 ### Out of Scope (Future Work)
 

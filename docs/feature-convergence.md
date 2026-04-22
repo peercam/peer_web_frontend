@@ -2,7 +2,7 @@
 
 This document tracks the progress of migrating features from the legacy PHP/JS frontend to the new Leptos (Rust/WASM) rewrite.
 
-**Last Updated:** 2026-04-22
+**Last Updated:** 2026-04-22 (New Post Doc Drift Reconciled)
 
 ---
 
@@ -12,11 +12,11 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 |--------|-------|
 | ✅ Implemented | 13 |
 | 🟡 Near-Complete | 5 |
-| 🚧 In Progress | 2 |
+| 🚧 In Progress | 3 |
 | ❌ Not Started | 0 |
-| **Total** | **20** |
+| **Total** | **21** |
 
-**Convergence:** 13/20 pages implemented (65%); 18/20 ≥ near-complete (90%).
+**Convergence:** 13/21 pages implemented (~62%); 18/21 ≥ near-complete (~86%).
 
 ---
 
@@ -24,6 +24,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 | Feature | Legacy File | peer-web Status | Notes |
 |---------|-------------|-----------------|-------|
+| **Landing** ||||
+| Home / Landing | `index.php` | 🚧 In Progress | Placeholder stub at `/` (`src/app.rs::HomePage`) — renders only `<h1>Welcome to Peer</h1>` and a single `Create an Account` link, no shared header/footer/nav, no imagery, no styling. Legacy `index.php` provided full marketing chrome which has not yet been ported. Compounded by the fact that `Header`/`Footer`/`Sidebars` are not extracted as shared components (see Components table below). |
 | **Authentication** ||||
 | Login | `login.php` | ✅ Implemented | Email/password, remember-me, auto-login, redirect handling ([docs](plans/login/login-auth-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation |
@@ -79,9 +81,9 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Auth Context | — | ✅ Implemented | Global auth state, actions |
 | Left Panel | — | ✅ Implemented | Shared login/register layout |
 | **Media** ||||
-| Image Cropper | `js/crop.js` | 🚧 In Progress | 226 lines, canvas-based cropping (some stubs remain) |
-| Audio Player | `js/audio.js` | 🚧 In Progress | audio_upload (236L) + voice_recorder (159L), MediaRecorder stubs |
-| Video Encoder | `js/ffmpeg/` | 🚧 In Progress | video_upload (180L) + video_trimmer (189L) + video_cover (102L), FFmpeg WASM stubs |
+| Image Cropper | `js/crop.js` | ✅ Implemented | Canvas draw + drag + scroll-zoom (0.3–8×) + 1:1/4:5 toggle, 1080px PNG data-URL output (`image_cropper.rs`) |
+| Audio Player | `js/audio.js` | 🟡 Mostly Implemented | MediaRecorder + chunked capture + preview `<audio>` + timer + play/pause + reset wired; real-time waveform pending — see [sprint](plans/new-post/new-post-completion-sprint.md) Task 2 |
+| Video Encoder | `js/ffmpeg/` | 🟡 Mostly Implemented | Trimmer timeline + draggable handles (`MIN_DURATION` clamp) + cover wired; frame thumbnails + server-side trim plumbing pending, FFmpeg WASM intentionally deferred — see [sprint](plans/new-post/new-post-completion-sprint.md) Tasks 3–5 |
 | **UI** ||||
 | Modal | `js/lib/modal.js` | 🚧 In Progress | image_modal (settings 151L, view_post 74L), share_modal (138L), relations_modal (271L), transfer_modal (760L) |
 | Toast | — | ✅ Implemented | Notification toasts |
@@ -164,6 +166,20 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 ---
 
 ## Changelog
+
+### 2026-04-22 (New Post Doc Drift Reconciled)
+- **New Post completion sprint Task 1 — documentation accuracy pass.** A code audit of [`peer-web/src/components/new_post/`](../peer-web/src/components/new_post/) showed several items the parent plan and tracker still labelled "stubbed" are in fact fully implemented (image cropper canvas draw/drag/zoom, aspect ratio wiring, cropped output, MediaRecorder voice capture + timer + playback + reset, video trimmer drag handles + clamp, two responsive breakpoints).
+- **Parent plan** [new-post-implementation.md](plans/new-post/new-post-implementation.md): flipped 8 checkboxes from `[ ]` to `[x]` (image cropping modal, aspect ratio toggle, cropped image preview, voice recording, recording timer, playback controls, record again, responsive layout); preserved unchecked items now link to the relevant completion-sprint tasks; bumped Updated to today and replaced the corrupted "� In Progress" status glyph.
+- **Components table:** Image Cropper 🚧 → ✅ Implemented; Audio Player 🚧 → 🟡 Mostly Implemented (waveform note); Video Encoder 🚧 → 🟡 Mostly Implemented (frame thumbnails + server-side trim note).
+- **Pages table / summary counts unchanged** — New Post row stays 🚧 In Progress until the remaining sprint tasks (real-time waveform, video duration extraction, frame thumbnails, server-side trim plumbing, tag history, mobile review, E2E) close. Promotion to ✅ is gated on the sprint's Definition of Done.
+- No code changes.
+
+### 2026-04-22 (Home Page Stub Documented)
+- Manual smoke test of `cargo leptos watch` against the Rust mock backend revealed `/` renders as bare HTML (`<h1>Welcome to Peer</h1>` + a `/register` link) with no styling, imagery, or shared chrome.
+- Root cause: `HomePage` component in `peer-web/src/app.rs` is a placeholder; legacy `index.php` marketing surface has not been ported, and `Header`/`Footer`/`Sidebars` are not yet extracted as shared components (already noted in Components table).
+- Tracker updated to surface the home/landing page as 🚧 In Progress so it stops being an invisible gap.
+- **Summary counts updated:** Total 20 → 21, 🚧 In Progress 2 → 3; convergence 65% → ~62% implemented, 90% → ~86% near-complete.
+- No code changes.
 
 ### 2026-04-22 (Wallet Promoted to ✅)
 - **Wallet completion sprint closed** — shop delivery panel wired into expanded transaction row (lazy `shopOrderDetails` fetch, gated to Peer Shop viewer); `format_balance()` produces grouped thousands with 4dp rounding matching legacy `toLocaleString`; new `tests/mock_backend` shop-purchase seed transaction so the row appears in wallet history; new Playwright `wallet.spec.ts` (6 cases including lazy-load network assertion + non-shop viewer gate) ([sprint](plans/wallet/wallet-completion-sprint.md))
