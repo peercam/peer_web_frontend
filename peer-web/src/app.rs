@@ -135,6 +135,7 @@ fn HomePage() -> impl IntoView {
 
 /// Redirect legacy edit-profile URLs to the settings page.
 #[component]
+#[allow(clippy::unused_unit)]
 fn EditProfileRedirect() -> impl IntoView {
     let navigate = use_navigate();
     Effect::new(move |_| {

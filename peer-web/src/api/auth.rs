@@ -39,12 +39,11 @@ pub async fn login(email: String, password: String) -> Result<AuthPayload, Serve
     let data: LoginData = mutate(LOGIN_MUTATION, variables, None).await?;
 
     // Set HttpOnly cookies on success (server-side)
-    if data.login.is_success() {
-        if let (Some(access), Some(refresh)) = (&data.login.access_token, &data.login.refresh_token)
+    if data.login.is_success()
+        && let (Some(access), Some(refresh)) = (&data.login.access_token, &data.login.refresh_token)
         {
             set_auth_cookies_ssr(access, refresh);
         }
-    }
 
     Ok(data.login)
 }
@@ -74,14 +73,13 @@ pub async fn refresh_access_token() -> Result<AuthPayload, ServerFnError> {
     let data: RefreshTokenData = mutate(REFRESH_TOKEN_MUTATION, variables, None).await?;
 
     // Update cookies on success
-    if data.refresh_token.is_success() {
-        if let (Some(access), Some(refresh)) = (
+    if data.refresh_token.is_success()
+        && let (Some(access), Some(refresh)) = (
             &data.refresh_token.access_token,
             &data.refresh_token.refresh_token,
         ) {
             set_auth_cookies_ssr(access, refresh);
         }
-    }
 
     Ok(data.refresh_token)
 }

@@ -87,7 +87,7 @@ pub fn AdList() -> impl IntoView {
     // Sort ads: active first, then ended (preserving order within groups)
     let get_sorted_ads = move || {
         let mut all = ads.get();
-        all.sort_by(|a, b| b.is_active().cmp(&a.is_active()));
+        all.sort_by_key(|a| std::cmp::Reverse(a.is_active()));
         all
     };
 

@@ -18,8 +18,8 @@ pub fn SubmitButton() -> impl IntoView {
     let navigate = use_navigate();
 
     let submit_action = Action::new(move |_: &()| {
-        let ctx = ctx.clone();
-        let toast = toast.clone();
+        let ctx = ctx;
+        let toast = toast;
         let navigate = navigate.clone();
 
         async move {

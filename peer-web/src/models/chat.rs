@@ -12,16 +12,13 @@ use super::common::DefaultResponse;
 
 /// Chat type enumeration (private 1:1 vs group).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum ChatType {
+    #[default]
     Private,
     Group,
 }
 
-impl Default for ChatType {
-    fn default() -> Self {
-        ChatType::Private
-    }
-}
 
 /// A participant in a chat room.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,8 +42,10 @@ impl ChatParticipant {
 /// Delivery status for a chat message, used for optimistic rendering
 /// and retry UX. Not serialised to/from the API.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum MessageStatus {
     /// Confirmed by the server (default for polled messages).
+    #[default]
     Sent,
     /// Optimistic send in flight.
     Sending,
@@ -54,11 +53,6 @@ pub enum MessageStatus {
     Failed,
 }
 
-impl Default for MessageStatus {
-    fn default() -> Self {
-        MessageStatus::Sent
-    }
-}
 
 /// A single chat message.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -106,7 +100,7 @@ impl Chat {
     /// Private chats have no name and no image.
     /// Group chats have a name or image.
     pub fn chat_type(&self) -> ChatType {
-        let has_name = self.name.as_ref().map_or(false, |n| !n.trim().is_empty());
+        let has_name = self.name.as_ref().is_some_and(|n| !n.trim().is_empty());
         let has_image = self.image.is_some();
 
         if has_name || has_image {

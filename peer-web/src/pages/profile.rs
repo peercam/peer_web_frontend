@@ -198,16 +198,16 @@ fn ProfilePostList(user_id: String) -> impl IntoView {
 
 /// Redirect legacy `?user=<uuid>` query param to `/u/<uuid>`.
 #[component]
+#[allow(clippy::unused_unit)]
 fn QueryParamRedirect() -> impl IntoView {
     let params = use_query_map();
 
     Effect::new(move |_| {
-        if let Some(user_id) = params.get().get("user") {
-            if !user_id.is_empty() {
+        if let Some(user_id) = params.get().get("user")
+            && !user_id.is_empty() {
                 let navigate = use_navigate();
                 navigate(&format!("/u/{}", user_id), Default::default());
             }
-        }
     });
 
     view! {}

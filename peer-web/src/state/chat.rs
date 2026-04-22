@@ -28,16 +28,13 @@ use crate::models::profile::BasicUserInfo;
 
 /// Aggregate connection state for the chat transport.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum ConnectionState {
+    #[default]
     Connected,
     Lost,
 }
 
-impl Default for ConnectionState {
-    fn default() -> Self {
-        ConnectionState::Connected
-    }
-}
 
 /// Global chat context available to all chat components.
 #[derive(Clone, Copy)]
@@ -301,14 +298,13 @@ pub async fn load_chats(ctx: ChatContext) {
                     }
 
                     // If local was ahead of server, heal the server.
-                    if let (Some(l), Some(s)) = (local_lr.as_deref(), server_lr.as_deref()) {
-                        if l > s {
+                    if let (Some(l), Some(s)) = (local_lr.as_deref(), server_lr.as_deref())
+                        && l > s {
                             let id = chat.id.clone();
                             spawn_local(async move {
                                 let _ = mark_chat_read(id).await;
                             });
                         }
-                    }
 
                     unread.insert(chat.id.clone(), chat.unread_count);
                 }

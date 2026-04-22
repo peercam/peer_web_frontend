@@ -87,11 +87,10 @@ pub fn UserListItem(
                         src=avatar_url
                         alt=display_username.clone()
                         on:error=|ev| {
-                            if let Some(target) = ev.target() {
-                                if let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
+                            if let Some(target) = ev.target()
+                                && let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
                                     img.set_src("/svg/noname.svg");
                                 }
-                            }
                         }
                     />
                 </div>
@@ -160,11 +159,10 @@ pub fn FriendListItem(
                         src=avatar_url
                         alt=display_username.clone()
                         on:error=|ev| {
-                            if let Some(target) = ev.target() {
-                                if let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
+                            if let Some(target) = ev.target()
+                                && let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
                                     img.set_src("/svg/noname.svg");
                                 }
-                            }
                         }
                     />
                 </div>

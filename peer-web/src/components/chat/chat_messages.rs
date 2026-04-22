@@ -40,11 +40,10 @@ fn Message(message: ChatMessage, is_own: bool) -> impl IntoView {
     let ctx = use_chat();
     let content = message.decoded_content();
     let time = format_message_time(&message.createdat);
-    let status = message.status.clone();
+    let status = message.status;
     let msg_id = message.id.clone();
 
     let class = {
-        let status = status.clone();
         let base = if is_own { "message right" } else { "message" };
         match status {
             MessageStatus::Sending => format!("{} sending", base),

@@ -115,7 +115,6 @@ pub fn ViewProfileActions(
 
     let handle_follow = {
         let user_id = user_id.clone();
-        let toast = toast;
         move |_| {
             let user_id = user_id.clone();
             is_loading.set(true);
@@ -142,7 +141,6 @@ pub fn ViewProfileActions(
 
     let handle_report = {
         let user_id = user_id.clone();
-        let toast = toast;
         move |_| {
             let user_id = user_id.clone();
             more_expanded.set(false);
@@ -163,7 +161,6 @@ pub fn ViewProfileActions(
 
     let handle_block = {
         let user_id = user_id.clone();
-        let toast = toast;
         move |_| {
             let user_id = user_id.clone();
             more_expanded.set(false);

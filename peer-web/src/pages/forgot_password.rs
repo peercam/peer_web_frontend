@@ -343,7 +343,7 @@ fn EmailStep(
                     }
                 }
                 Err(e) => {
-                    toast.show(&e.to_string(), ToastType::Error);
+                    toast.show(e.to_string(), ToastType::Error);
                 }
             }
             pending.set(false);
@@ -572,7 +572,7 @@ fn VerifyCodeStep(
                     toast.show(user_friendly_msg(&code), ToastType::Error);
                 }
                 Err(e) => {
-                    toast.show(&e.to_string(), ToastType::Error);
+                    toast.show(e.to_string(), ToastType::Error);
                 }
             }
             pending.set(false);

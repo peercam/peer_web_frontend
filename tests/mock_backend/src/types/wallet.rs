@@ -11,6 +11,11 @@ use super::registration::DefaultResponse;
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 #[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
 pub enum TransactionCategory {
+    // The default `SCREAMING_SNAKE_CASE` mapping turns `P2pTransfer` into
+    // `P_2P_TRANSFER` (an underscore is inserted before each digit), which
+    // does not match the frontend's serde mapping (`P2P_TRANSFER`). Pin
+    // the GraphQL name explicitly so the schema stays in sync.
+    #[graphql(name = "P2P_TRANSFER")]
     P2pTransfer,
     AdBasic,
     AdPinned,

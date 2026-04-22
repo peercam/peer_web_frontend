@@ -54,7 +54,7 @@ pub fn ChangePasswordPanel(
         response_msg.set(None);
         let new_pw = new_password.get().clone();
         let old_pw = old_password.get().clone();
-        let toast = toast.clone();
+        let toast = toast;
 
         spawn_local(async move {
             match update_password(new_pw, old_pw).await {

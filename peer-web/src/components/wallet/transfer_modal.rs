@@ -480,11 +480,10 @@ fn UserListItem(user: RecipientUser, on_click: Callback<()>) -> impl IntoView {
                 src=avatar.clone()
                 alt="User avatar"
                 on:error=|e| {
-                    if let Some(target) = e.target() {
-                        if let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
+                    if let Some(target) = e.target()
+                        && let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
                             img.set_src("/svg/noname.svg");
                         }
-                    }
                 }
             />
             <div class="info">
@@ -533,11 +532,10 @@ fn AmountForm(
                     src=avatar
                     alt="User avatar"
                     on:error=|e| {
-                        if let Some(target) = e.target() {
-                            if let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
+                        if let Some(target) = e.target()
+                            && let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
                                 img.set_src("/svg/noname.svg");
                             }
-                        }
                     }
                 />
                 <span class="username bold">"@"{username}</span>
@@ -672,11 +670,10 @@ fn ConfirmTransfer(
                     src=avatar
                     alt="User avatar"
                     on:error=|e| {
-                        if let Some(target) = e.target() {
-                            if let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
+                        if let Some(target) = e.target()
+                            && let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
                                 img.set_src("/svg/noname.svg");
                             }
-                        }
                     }
                 />
                 <span class="username bold">"@"{username}</span>

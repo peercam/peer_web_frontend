@@ -40,7 +40,7 @@ pub fn ReferralHeader(info: ReferralInfoResponse) -> impl IntoView {
     };
 
     let do_copy_click = do_copy.clone();
-    let do_copy_keydown = do_copy.clone();
+    let do_copy_keydown = do_copy;
 
     view! {
         <div class="referralBoard_header">

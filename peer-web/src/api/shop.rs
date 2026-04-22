@@ -2,6 +2,8 @@
 //!
 //! Provides server functions for placing shop orders and fetching order details.
 
+#![allow(clippy::too_many_arguments)]
+
 use leptos::prelude::*;
 use serde::Serialize;
 

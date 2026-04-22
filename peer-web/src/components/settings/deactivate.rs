@@ -23,7 +23,7 @@ pub fn DeactivateAccountPanel(
     let on_confirm = move |_: leptos::ev::MouseEvent| {
         is_deleting.set(true);
         let pw = password.get();
-        let toast = toast.clone();
+        let toast = toast;
 
         spawn_local(async move {
             match delete_account(pw).await {
@@ -33,7 +33,7 @@ pub fn DeactivateAccountPanel(
                 }
                 Err(e) => {
                     toast.show(
-                        &format!("Failed to delete account: {}", e),
+                        format!("Failed to delete account: {}", e),
                         ToastType::Error,
                     );
                     is_deleting.set(false);

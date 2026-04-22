@@ -28,11 +28,10 @@ pub fn ContentSettings() -> impl IntoView {
 
     Effect::new(move |_| {
         if let Some(Ok(info)) = user_info_resource.get() {
-            if let Some(prefs) = info.user_preferences {
-                if let Some(level) = prefs.content_filtering_severity_level {
+            if let Some(prefs) = info.user_preferences
+                && let Some(level) = prefs.content_filtering_severity_level {
                     is_lenient.set(level == "MYGRANDMAHATES");
                 }
-            }
             is_loading.set(false);
         }
     });
@@ -43,7 +42,6 @@ pub fn ContentSettings() -> impl IntoView {
     };
 
     let on_confirm = {
-        let toast = toast.clone();
         move || {
             show_confirm.set(false);
             let new_level = if pending_state.get() {
@@ -52,7 +50,6 @@ pub fn ContentSettings() -> impl IntoView {
                 "MYGRANDMALIKES"
             };
 
-            let toast = toast.clone();
             spawn_local(async move {
                 match update_content_preferences(new_level.to_string()).await {
                     Ok(()) => {
@@ -71,7 +68,7 @@ pub fn ContentSettings() -> impl IntoView {
                         show_success.set(true);
                     }
                     Err(e) => {
-                        toast.show(&format!("Failed to update: {}", e), ToastType::Error);
+                        toast.show(format!("Failed to update: {}", e), ToastType::Error);
                     }
                 }
             });
@@ -111,7 +108,7 @@ pub fn ContentSettings() -> impl IntoView {
             <Show when=move || show_confirm.get()>
                 <ContentConfirmDialog
                     is_enabling=pending_state.get()
-                    on_confirm=on_confirm.clone()
+                    on_confirm=on_confirm
                     on_cancel=move || show_confirm.set(false)
                 />
             </Show>

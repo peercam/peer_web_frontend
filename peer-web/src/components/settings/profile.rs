@@ -101,7 +101,7 @@ fn handle_save_results(
             if let Err(e) = img_result {
                 errors.push(format!("Image: {}", e));
             }
-            toast.show(&errors.join(", "), ToastType::Error);
+            toast.show(errors.join(", "), ToastType::Error);
             response_msg.set(Some(("Save failed.".to_string(), false)));
         }
     }
@@ -134,7 +134,6 @@ fn MainProfilePanel(
     }
 
     let on_save = {
-        let toast = toast.clone();
         move |_| {
             if is_saving.get() {
                 return;
@@ -144,7 +143,7 @@ fn MainProfilePanel(
 
             let bio_text = biography.get();
             let img = image_data.get();
-            let toast = toast.clone();
+            let toast = toast;
 
             spawn_local(async move {
                 let img_result = match img {

@@ -104,12 +104,27 @@ export class RegistrationPage {
     const password = overrides?.password ?? "SecurePass123!";
     const confirmPassword = overrides?.confirmPassword ?? password;
 
-    await this.emailInput.fill(email);
-    await this.usernameInput.fill(username);
-    await this.passwordInput.fill(password);
-    await this.confirmPasswordInput.fill(confirmPassword);
-    await this.privacyCheckbox.check();
-    await this.eulaCheckbox.check();
+    const fillAll = async () => {
+      await this.emailInput.fill(email);
+      await this.usernameInput.fill(username);
+      await this.passwordInput.fill(password);
+      await this.confirmPasswordInput.fill(confirmPassword);
+      if (!(await this.privacyCheckbox.isChecked())) {
+        await this.privacyCheckbox.check();
+      }
+      if (!(await this.eulaCheckbox.isChecked())) {
+        await this.eulaCheckbox.check();
+      }
+    };
+
+    await fillAll();
+    // If the form arrived during a hydration race, Leptos's reactive
+    // `prop:value` can wipe pre-hydration typed values back to the empty
+    // initial signal. Detect that by checking the email input and
+    // re-filling once if needed.
+    if ((await this.emailInput.inputValue()) !== email) {
+      await fillAll();
+    }
   }
 
   /** Complete the entire registration flow (step 1 + step 2 + submit). */
@@ -121,6 +136,11 @@ export class RegistrationPage {
   }) {
     await this.completeReferralStep(overrides?.referralCode);
     await this.fillRegistrationForm(overrides);
+    // Wait for the reactive gate (`is_form_valid`) to enable the button.
+    // Without this, a hydration race after the step-1→step-2 transition
+    // can leave one or more `on:input` handlers unattached, so the
+    // signals stay empty and the submit button remains disabled.
+    await expect(this.registerButton).toBeEnabled({ timeout: 5_000 });
     await this.registerButton.click();
     await this.successStep.waitFor({ state: "visible" });
   }

@@ -110,9 +110,11 @@ fn InstallBanner() -> impl IntoView {
         #[cfg(feature = "hydrate")]
         let has_event = ctx.event.get().is_some();
         #[cfg(not(feature = "hydrate"))]
-        let has_event = false;
-
-        let _ = ctx;
+        let has_event = {
+            // SSR: `ctx.event` doesn't exist; suppress unused-binding warning.
+            let _ = ctx;
+            false
+        };
         if !has_event {
             return false;
         }

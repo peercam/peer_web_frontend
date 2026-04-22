@@ -15,7 +15,7 @@
 //!   * T2 unread badge renders/clears        → `test_unread_count_clears_after_mark_read`
 //!   * T4 polled delivery                    → `test_poll_returns_new_peer_message`
 //!   * T5 connection-lost / auth guard       → `test_list_chats_without_auth_fails`,
-//!                                             `test_send_chat_message_without_auth_fails`
+//!     `test_send_chat_message_without_auth_fails`
 //!
 //! Run with: `cargo test --features ssr --test chat_integration`
 

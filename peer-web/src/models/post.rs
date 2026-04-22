@@ -393,11 +393,10 @@ impl CreatePostInput {
         }
 
         // Description: max 500 chars
-        if let Some(ref desc) = self.mediadescription {
-            if desc.len() > 500 {
+        if let Some(ref desc) = self.mediadescription
+            && desc.len() > 500 {
                 return Err("Description must be 500 characters or less".to_string());
             }
-        }
 
         // Tags: max 10, valid format
         if let Some(ref tags) = self.tags {
@@ -418,7 +417,7 @@ impl CreatePostInput {
 /// Check if a tag name is valid (alphanumeric/underscores, 2-53 chars).
 pub fn is_valid_tag(tag: &str) -> bool {
     let len = tag.len();
-    len >= 2 && len <= 53 && tag.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+    (2..=53).contains(&len) && tag.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
 }
 
 /// Post eligibility response.

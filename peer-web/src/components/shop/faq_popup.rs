@@ -11,13 +11,11 @@ pub fn FaqPopup(is_open: RwSignal<bool>) -> impl IntoView {
 
     let on_backdrop_click = move |ev: leptos::ev::MouseEvent| {
         // Close when clicking the backdrop itself, not content
-        if let Some(target) = ev.target() {
-            if let Ok(el) = target.dyn_into::<web_sys::HtmlElement>() {
-                if el.class_list().contains("faq-overlay") {
+        if let Some(target) = ev.target()
+            && let Ok(el) = target.dyn_into::<web_sys::HtmlElement>()
+                && el.class_list().contains("faq-overlay") {
                     is_open.set(false);
                 }
-            }
-        }
     };
 
     view! {

@@ -27,10 +27,12 @@ pub fn WalletPage() -> impl IntoView {
     // authenticated profile.
     let viewer_user_id = RwSignal::new(Option::<String>::None);
     provide_context(WalletViewerId(viewer_user_id));
-    spawn_local(async move {
-        if let Ok(profile) = get_profile(None, None).await {
-            viewer_user_id.set(Some(profile.id));
-        }
+    Effect::new(move |_| {
+        spawn_local(async move {
+            if let Ok(profile) = get_profile(None, None).await {
+                viewer_user_id.set(Some(profile.id));
+            }
+        });
     });
 
     // Balance resource with manual refresh trigger

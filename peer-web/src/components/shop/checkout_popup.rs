@@ -98,13 +98,11 @@ pub fn CheckoutPopup(
     };
 
     let on_backdrop_click = move |ev: leptos::ev::MouseEvent| {
-        if let Some(target) = ev.target() {
-            if let Ok(el) = target.dyn_into::<web_sys::HtmlElement>() {
-                if el.class_list().contains("checkout-overlay") {
+        if let Some(target) = ev.target()
+            && let Ok(el) = target.dyn_into::<web_sys::HtmlElement>()
+                && el.class_list().contains("checkout-overlay") {
                     reset_state();
                 }
-            }
-        }
     };
 
     let size_required = has_sizes;

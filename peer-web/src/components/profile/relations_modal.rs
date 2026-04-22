@@ -33,13 +33,11 @@ pub fn RelationsModal(
     // Close modal when clicking overlay background
     let on_close_for_overlay = on_close;
     let handle_overlay_click = move |ev: leptos::ev::MouseEvent| {
-        if let Some(target) = ev.target() {
-            if let Some(current_target) = ev.current_target() {
-                if target == current_target {
+        if let Some(target) = ev.target()
+            && let Some(current_target) = ev.current_target()
+                && target == current_target {
                     on_close_for_overlay.run(());
                 }
-            }
-        }
     };
 
     // Close on escape key

@@ -37,7 +37,7 @@ pub fn ChangeUsernamePanel(
         response_msg.set(None);
         let new_username = username.get().trim().to_string();
         let pw = password.get().clone();
-        let toast = toast.clone();
+        let toast = toast;
 
         spawn_local(async move {
             match update_username(new_username, pw).await {

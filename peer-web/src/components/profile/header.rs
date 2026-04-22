@@ -160,11 +160,10 @@ fn ProfileAvatar(src: Option<String>, username: String, is_illegal: bool) -> imp
                             src=avatar_src
                             alt=format!("{}'s profile picture", username)
                             on:error=|ev| {
-                                if let Some(target) = ev.target() {
-                                    if let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
+                                if let Some(target) = ev.target()
+                                    && let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
                                         img.set_src("/svg/noname.svg");
                                     }
-                                }
                             }
                         />
                     }.into_any()

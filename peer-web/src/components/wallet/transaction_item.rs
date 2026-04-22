@@ -95,11 +95,10 @@ fn TransactionMedia(tx: Transaction) -> impl IntoView {
                             src=avatar_url.clone()
                             alt="User avatar"
                             on:error=|e| {
-                                if let Some(target) = e.target() {
-                                    if let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
+                                if let Some(target) = e.target()
+                                    && let Ok(img) = target.dyn_into::<leptos::web_sys::HtmlImageElement>() {
                                         img.set_src("/svg/noname.svg");
                                     }
-                                }
                             }
                         />
                     </span>
@@ -123,7 +122,7 @@ fn TransactionMedia(tx: Transaction) -> impl IntoView {
 #[component]
 fn TransactionUserInfo(tx: Transaction) -> impl IntoView {
     if !matches!(tx.category(), TransactionCategory::P2pTransfer) {
-        return view! {}.into_any();
+        return ().into_any();
     }
 
     let user = tx.counterparty();
@@ -142,11 +141,11 @@ fn TransactionUserInfo(tx: Transaction) -> impl IntoView {
 #[component]
 fn ShortMessage(tx: Transaction) -> impl IntoView {
     let Some(short_msg) = tx.short_message() else {
-        return view! {}.into_any();
+        return ().into_any();
     };
 
     if !matches!(tx.category(), TransactionCategory::P2pTransfer) {
-        return view! {}.into_any();
+        return ().into_any();
     }
 
     view! {

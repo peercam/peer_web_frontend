@@ -1,9 +1,13 @@
 .vscode/*
 public/
+# peer-web ships PWA assets under its own public/ — keep them tracked.
+!peer-web/public/
+!peer-web/public/**
 test/
 video-editor/*
 .gitleaks_out/*
 *.html
+!peer-web/public/offline.html
 *.tmp
 error.txt
 .DS_Store
@@ -11,5 +15,6 @@ sw_instal.js
 sw_instal.min.js
 sw-db.js
 sw.js
+!peer-web/public/sw.js
 sw.min.js
 js/env.js

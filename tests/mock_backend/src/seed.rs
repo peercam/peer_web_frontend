@@ -387,6 +387,11 @@ impl Default for MockState {
         follows.insert((SEED_USER_BOB, SEED_USER_ALICE));
         // carol → alice (one-directional)
         follows.insert((SEED_USER_CAROL, SEED_USER_ALICE));
+        // verified ↔ alice (mutual = friends) — seeds the wallet transfer
+        // E2E test (wallet T3) which needs at least one friend in the
+        // recipient list for `test@peer.com`.
+        follows.insert((SEED_USER_VERIFIED, SEED_USER_ALICE));
+        follows.insert((SEED_USER_ALICE, SEED_USER_VERIFIED));
 
         // carol blocks dave
         blocks.insert((SEED_USER_CAROL, SEED_USER_DAVE));

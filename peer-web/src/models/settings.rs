@@ -67,9 +67,11 @@ pub struct UserPreferencesPayload {
 ///
 /// Controls how flagged/reported content is displayed to the user.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum ContentFilterLevel {
     /// Stricter: hides all flagged content.
     #[serde(rename = "MYGRANDMALIKES")]
+    #[default]
     Strict,
     /// Lenient: shows placeholders for flagged content.
     #[serde(rename = "MYGRANDMAHATES")]
@@ -86,6 +88,7 @@ impl ContentFilterLevel {
     }
 
     /// Parse from API string value.
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "MYGRANDMALIKES" => Some(ContentFilterLevel::Strict),
@@ -100,11 +103,6 @@ impl ContentFilterLevel {
     }
 }
 
-impl Default for ContentFilterLevel {
-    fn default() -> Self {
-        ContentFilterLevel::Strict
-    }
-}
 
 #[cfg(test)]
 mod tests {

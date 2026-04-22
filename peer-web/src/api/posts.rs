@@ -293,7 +293,7 @@ pub async fn create_post(
         .map_err(|_| ServerFnError::new("Not authenticated"))?;
 
     // Validate input before sending
-    input.validate().map_err(|e| ServerFnError::new(e))?;
+    input.validate().map_err(ServerFnError::new)?;
 
     let vars = CreatePostVars {
         action: "POST".to_string(),

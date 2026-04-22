@@ -36,7 +36,7 @@ pub fn ChangeEmailPanel(
         response_msg.set(None);
         let new_email = email.get().trim().to_string();
         let pw = password.get().clone();
-        let toast = toast.clone();
+        let toast = toast;
 
         spawn_local(async move {
             match update_email(new_email, pw).await {

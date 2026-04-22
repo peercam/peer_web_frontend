@@ -54,7 +54,13 @@ test.describe("Wallet — Track 8", () => {
     await login(page, VERIFIED_EMAIL, VERIFIED_PASSWORD);
     await page.goto("/wallet");
 
-    const firstRow = page.locator(".tarnsaction_item").first();
+    // Pick the seeded P2P transfer specifically — it's the only seeded
+    // transaction with a `fees` payload (see seed_transactions in
+    // tests/mock_backend/src/seed.rs). Using `.first()` would land on the
+    // newer "Extra Like" row which has no fee breakdown by design.
+    const firstRow = page
+      .locator(".tarnsaction_item", { hasText: /Transfer to|Received from/ })
+      .first();
     await expect(firstRow).toBeVisible();
     await firstRow.locator(".transaction_record").click();
 
@@ -94,13 +100,13 @@ test.describe("Wallet — Track 8", () => {
   test("T4: shop-account viewer lazy-loads the delivery panel", async ({ page }) => {
     await login(page, SHOP_EMAIL, SHOP_PASSWORD);
 
+    // The Leptos client invokes the `get_shop_order_details` server function
+    // (POST /api/get_shop_order_details), which the server then proxies to
+    // GraphQL. Match against that endpoint rather than `/graphql` directly.
     const shopOrderRequests: string[] = [];
     page.on("request", (req) => {
-      if (req.method() === "POST" && /graphql/i.test(req.url())) {
-        const body = req.postData() ?? "";
-        if (body.includes("shopOrderDetails")) {
-          shopOrderRequests.push(body);
-        }
+      if (req.method() === "POST" && /\/api\/get_shop_order_details/.test(req.url())) {
+        shopOrderRequests.push(req.url());
       }
     });
 
@@ -132,11 +138,8 @@ test.describe("Wallet — Track 8", () => {
 
     const shopOrderRequests: string[] = [];
     page.on("request", (req) => {
-      if (req.method() === "POST" && /graphql/i.test(req.url())) {
-        const body = req.postData() ?? "";
-        if (body.includes("shopOrderDetails")) {
-          shopOrderRequests.push(body);
-        }
+      if (req.method() === "POST" && /\/api\/get_shop_order_details/.test(req.url())) {
+        shopOrderRequests.push(req.url());
       }
     });
 
@@ -162,13 +165,13 @@ test.describe("Wallet — Track 8", () => {
     await expect(token).toBeVisible();
     const before = await token.textContent();
 
+    // The Leptos client invokes the `get_balance` server function
+    // (POST /api/get_balance), which the server proxies to GraphQL. Match
+    // against that endpoint rather than `/graphql` directly.
     const balanceRequests: string[] = [];
     page.on("request", (req) => {
-      if (req.method() === "POST" && /graphql/i.test(req.url())) {
-        const body = req.postData() ?? "";
-        if (/\bbalance\b/i.test(body)) {
-          balanceRequests.push(body);
-        }
+      if (req.method() === "POST" && /\/api\/get_balance/.test(req.url())) {
+        balanceRequests.push(req.url());
       }
     });
 
