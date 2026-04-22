@@ -1,11 +1,11 @@
-<picture>
-    <source srcset="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_Solid_White.svg" media="(prefers-color-scheme: dark)">
-    <img src="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_RGB.svg" alt="Leptos Logo">
-</picture>
+<p align="center">
+  <img src="public/img/brand/PeerLogoBlack.svg#gh-light-mode-only" alt="Peer Network logo" width="200">
+  <img src="public/img/brand/PeerLogoWhite.svg#gh-dark-mode-only" alt="Peer Network logo" width="200">
+</p>
 
-# Peer Network — Leptos Frontend
+# Peer Network — Leptos Frontend SPIKE!
 
-Modern Leptos (Rust/WASM) rewrite of the Peer Network web frontend, replacing the legacy PHP/JavaScript stack.
+Modern Leptos (Rust/WASM) rewrite-spike of the Peer Network web frontend, to test how one could replace the legacy PHP/JavaScript stack.
 
 ## Features Implemented
 
@@ -154,3 +154,8 @@ practical tips:
 ## License
 
 See [LICENSE](LICENSE) for details.
+
+<picture>
+    <source srcset="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_Solid_White.svg" media="(prefers-color-scheme: dark)">
+    <img src="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_RGB.svg" alt="Leptos Logo">
+</picture>
