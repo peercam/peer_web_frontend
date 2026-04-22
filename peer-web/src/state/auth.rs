@@ -92,3 +92,50 @@ pub fn provide_auth_context() {
 pub fn use_auth() -> AuthContext {
     expect_context::<AuthContext>()
 }
+
+/// Percent-encode a value for use as a `redirect=` query parameter.
+///
+/// Uses an unreserved-character allow-list (`A–Z a–z 0–9 - _ . ~ /`); every
+/// other byte of the UTF-8 encoding is percent-encoded as `%XX`. Shared by
+/// `AuthGuard` and `HomePage` so the two redirect paths can never drift in
+/// their encoding behaviour.
+pub(crate) fn encode_redirect(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for &b in value.as_bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' | b'/' => {
+                out.push(b as char);
+            }
+            _ => {
+                use std::fmt::Write as _;
+                let _ = write!(out, "%{:02X}", b);
+            }
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::encode_redirect;
+
+    #[test]
+    fn ascii_unreserved_passes_through() {
+        assert_eq!(encode_redirect("/wallet"), "/wallet");
+        assert_eq!(encode_redirect("/u/test-user_1.0~"), "/u/test-user_1.0~");
+    }
+
+    #[test]
+    fn ascii_reserved_is_percent_encoded() {
+        assert_eq!(encode_redirect("/a b"), "/a%20b");
+        assert_eq!(encode_redirect("/?x=1&y=2"), "/%3Fx%3D1%26y%3D2");
+    }
+
+    #[test]
+    fn non_ascii_uses_utf8_bytes() {
+        // U+00E9 'é' = 0xC3 0xA9
+        assert_eq!(encode_redirect("/é"), "/%C3%A9");
+        // U+1F600 '😀' = 0xF0 0x9F 0x98 0x80
+        assert_eq!(encode_redirect("/😀"), "/%F0%9F%98%80");
+    }
+}

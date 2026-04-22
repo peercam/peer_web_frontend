@@ -72,10 +72,11 @@ pub fn VideoUpload() -> impl IntoView {
     let start_trim = move |index: usize| {
         let files = ctx.media_files.get();
         if let Some(file) = files.get(index)
-            && let Some(ref url) = file.preview_url {
-                set_trim_video_src.set(Some(url.clone()));
-                set_trim_video_duration.set(30.0);
-            }
+            && let Some(ref url) = file.preview_url
+        {
+            set_trim_video_src.set(Some(url.clone()));
+            set_trim_video_duration.set(30.0);
+        }
     };
 
     let on_trim_complete = move |(_start, _end): (f64, f64)| {

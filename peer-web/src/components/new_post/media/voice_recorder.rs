@@ -85,14 +85,13 @@ pub fn VoiceRecorder(
                 };
 
                 // ondataavailable → push chunk
-                let on_data = wasm_bindgen::closure::Closure::wrap(Box::new(
-                    move |ev: web_sys::BlobEvent| {
+                let on_data =
+                    wasm_bindgen::closure::Closure::wrap(Box::new(move |ev: web_sys::BlobEvent| {
                         if let Some(blob) = ev.data() {
                             chunks_store.update_value(|v| v.push(blob));
                         }
-                    },
-                )
-                    as Box<dyn FnMut(web_sys::BlobEvent)>);
+                    })
+                        as Box<dyn FnMut(web_sys::BlobEvent)>);
                 recorder.set_ondataavailable(Some(on_data.as_ref().unchecked_ref()));
                 on_data.forget();
 
@@ -112,8 +111,7 @@ pub fn VoiceRecorder(
 
                     let bag = web_sys::BlobPropertyBag::new();
                     bag.set_type(&mime);
-                    let Ok(blob) =
-                        web_sys::Blob::new_with_blob_sequence_and_options(&array, &bag)
+                    let Ok(blob) = web_sys::Blob::new_with_blob_sequence_and_options(&array, &bag)
                     else {
                         return;
                     };
@@ -137,7 +135,8 @@ pub fn VoiceRecorder(
                     });
 
                     set_state.set(RecorderState::Preview);
-                }) as Box<dyn FnMut()>);
+                })
+                    as Box<dyn FnMut()>);
                 recorder.set_onstop(Some(on_stop.as_ref().unchecked_ref()));
                 on_stop.forget();
 
@@ -151,13 +150,12 @@ pub fn VoiceRecorder(
                 // 1-second tick timer.
                 let tick = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
                     set_elapsed_time.update(|t| *t += 1);
-                }) as Box<dyn FnMut()>);
-                if let Ok(handle) = window
-                    .set_interval_with_callback_and_timeout_and_arguments_0(
-                        tick.as_ref().unchecked_ref(),
-                        1000,
-                    )
-                {
+                })
+                    as Box<dyn FnMut()>);
+                if let Ok(handle) = window.set_interval_with_callback_and_timeout_and_arguments_0(
+                    tick.as_ref().unchecked_ref(),
+                    1000,
+                ) {
                     timer_handle.set_value(Some(handle));
                 }
                 tick.forget();

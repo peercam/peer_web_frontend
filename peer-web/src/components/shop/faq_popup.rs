@@ -13,9 +13,10 @@ pub fn FaqPopup(is_open: RwSignal<bool>) -> impl IntoView {
         // Close when clicking the backdrop itself, not content
         if let Some(target) = ev.target()
             && let Ok(el) = target.dyn_into::<web_sys::HtmlElement>()
-                && el.class_list().contains("faq-overlay") {
-                    is_open.set(false);
-                }
+            && el.class_list().contains("faq-overlay")
+        {
+            is_open.set(false);
+        }
     };
 
     view! {

@@ -35,9 +35,10 @@ pub fn RelationsModal(
     let handle_overlay_click = move |ev: leptos::ev::MouseEvent| {
         if let Some(target) = ev.target()
             && let Some(current_target) = ev.current_target()
-                && target == current_target {
-                    on_close_for_overlay.run(());
-                }
+            && target == current_target
+        {
+            on_close_for_overlay.run(());
+        }
     };
 
     // Close on escape key

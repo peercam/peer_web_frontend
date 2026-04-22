@@ -92,12 +92,13 @@ pub fn BoostPostModal(
 
         spawn_local(async move {
             if let Ok(response) = advertise_post_pinned(pid).await
-                && response.meta.status == "success" {
-                    if let Some(cb) = on_success {
-                        cb.run(());
-                    }
-                    close_triggered.set(true);
+                && response.meta.status == "success"
+            {
+                if let Some(cb) = on_success {
+                    cb.run(());
                 }
+                close_triggered.set(true);
+            }
             is_submitting.set(false);
         });
     });

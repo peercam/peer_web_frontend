@@ -2,7 +2,7 @@
 
 This document tracks the progress of migrating features from the legacy PHP/JS frontend to the new Leptos (Rust/WASM) rewrite.
 
-**Last Updated:** 2026-04-22 (New Post Doc Drift Reconciled)
+**Last Updated:** 2026-04-22 (Home / Landing Implemented)
 
 ---
 
@@ -10,13 +10,13 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 | Status | Count |
 |--------|-------|
-| ✅ Implemented | 13 |
+| ✅ Implemented | 14 |
 | 🟡 Near-Complete | 5 |
-| 🚧 In Progress | 3 |
+| 🚧 In Progress | 2 |
 | ❌ Not Started | 0 |
 | **Total** | **21** |
 
-**Convergence:** 13/21 pages implemented (~62%); 18/21 ≥ near-complete (~86%).
+**Convergence:** 14/21 pages implemented (~67%); 19/21 ≥ near-complete (~90%).
 
 ---
 
@@ -25,7 +25,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Feature | Legacy File | peer-web Status | Notes |
 |---------|-------------|-----------------|-------|
 | **Landing** ||||
-| Home / Landing | `index.php` | 🚧 In Progress | Placeholder stub at `/` (`src/app.rs::HomePage`) — renders only `<h1>Welcome to Peer</h1>` and a single `Create an Account` link, no shared header/footer/nav, no imagery, no styling. Legacy `index.php` provided full marketing chrome which has not yet been ported. The shared layout shell ([`SiteShell`](../peer-web/src/components/layout/site_shell.rs)) is now available so a Home port can adopt it without inventing new chrome. |
+| Home / Landing | `index.php` | ✅ Implemented | Auth-aware redirect node at `/` (`src/app.rs::HomePage`): authed → `/dashboard`, guest → `/login?message=mustLogin` (preserves inbound `?redirect=…`). Matches legacy `index.php`'s server-side 302 chain (`/` → `dashboard.php` → `login.php?message=…`). Loading sentinel reuses the shared `auth-guard-loading` selector to avoid placeholder flash during the session-check window. Percent-encoding factored into shared [`encode_redirect`](../peer-web/src/state/auth.rs) helper used by both `HomePage` and `AuthGuard` ([docs](plans/home/home-implementation.md)). |
 | **Authentication** ||||
 | Login | `login.php` | ✅ Implemented | Email/password, remember-me, auto-login, redirect handling ([docs](plans/login/login-auth-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation |
@@ -62,8 +62,8 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 |-----------|----------------|-----------------|-------|
 | **Layout** ||||
 | Header | `template-parts/` | ✅ Implemented | `SiteHeader` component (`peer-web/src/components/layout/site_header.rs`) — Hyphen / Underscore spelling, optional icon + actions slot. Adopted opportunistically (Pass 2); Pass 1 wraps existing inline headers in [`SiteShell`](../peer-web/src/components/layout/site_shell.rs) ([docs](plans/layout/layout-shell-implementation.md)) |
-| Footer | `template-parts/footer.php` | ✅ Implemented | Route-aware `MobileFooter` (`peer-web/src/components/layout/mobile_footer.rs`) — single shared component replaces 10 private `fn MobileFooter` copies + 1 inline `<footer>`; reactive `active` class against `use_location()`. Auto-rendered by [`SiteShell`](../peer-web/src/components/layout/site_shell.rs) ([docs](plans/layout/layout-shell-implementation.md)) |
-| Sidebars | `template-parts/sidebars/` | ✅ Implemented | `LeftRail` / `RightRail` wrappers + `StandardRightRail` widget-stack preset (`peer-web/src/components/layout/{left_rail,right_rail}.rs`); page-specific filter sidebars stay page-local ([docs](plans/layout/layout-shell-implementation.md)) |
+| Footer | `template-parts/footer.php` | ✅ Implemented | Route-aware `MobileFooter` (`peer-web/src/components/layout/mobile_footer.rs`) — single shared component replaces 10 private `fn MobileFooter` copies + 1 inline `<footer>`; reactive `active` class against `use_location()`. Auto-rendered by [`SiteShell`](../peer-web/src/components/layout/site_shell.rs). **Behaviour change:** Settings's previously unstyled `mobile-nav-item` markup is now the canonical Dashboard preset (Home / Search / New Post / Alerts / Profile) — see Open Question 1 in [the plan](plans/layout/layout-shell-implementation.md). |
+| Sidebars | `template-parts/sidebars/` | ✅ Implemented | `LeftRail` / `RightRail` wrappers + `StandardRightRail` widget-stack preset (`peer-web/src/components/layout/{left_rail,right_rail}.rs`) reusing the shared `AddPostButton` widget; page-specific filter sidebars stay page-local ([docs](plans/layout/layout-shell-implementation.md)) |
 | **Posts** ||||
 | Post Card | `js/posts.js` | 🚧 In Progress | 304-line component with like/dislike/save actions, view tracking |
 | Post List | `js/load_posts.js` | 🚧 In Progress | 209 lines, infinite scroll, ad interleaving, filter integration |
@@ -163,10 +163,22 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 17. ✅ ~~PWA~~ — Complete, manifest + service worker + install prompt + offline shell + update toast ([docs](plans/pwa/pwa-implementation.md))
 18. ✅ ~~Download~~ — Force-download media proxy: HTTPS-only host allow-list, streaming body, byte + time caps, sanitised `Content-Disposition` ([docs](plans/download/download-implementation.md))
 19. ✅ ~~Layout shell~~ — Shared `SiteShell` / `SiteHeader` / `MobileFooter` / `LeftRail` / `RightRail` (+ `StandardRightRail` preset). Closes Header / Footer / Sidebars rows; deletes 10 private `fn MobileFooter` copies + 1 inline `<footer>`; route-aware mobile-footer active class via `use_location()` ([docs](plans/layout/layout-shell-implementation.md))
+20. ✅ ~~Home / Landing~~ — Auth-aware redirect at `/`: authed → `/dashboard`, guest → `/login?message=mustLogin` (with inbound `?redirect=…` passthrough); shared `encode_redirect` helper now used by both `HomePage` and `AuthGuard` ([docs](plans/home/home-implementation.md))
 
 ---
 
 ## Changelog
+
+### 2026-04-22 (Home / Landing Implemented)
+- **`HomePage` rewritten** ([`peer-web/src/app.rs`](../peer-web/src/app.rs)): the placeholder `<h1>Welcome to Peer</h1>` + `/register` link is replaced with an auth-aware redirect that mirrors legacy `index.php`'s 302 to `dashboard.php`. Authed visitors land on `/dashboard`; guests land on `/login?message=mustLogin`. The session-check window renders the shared `auth-guard-loading` sentinel to suppress flash. ([docs](plans/home/home-implementation.md))
+- **Behaviour change vs. legacy:** the guest bounce uses `?message=mustLogin` rather than legacy's `?message=unauthorized`, matching the convention `AuthGuard` already emits everywhere else in the SPA. Both message keys render valid copy in [`login.rs`](../peer-web/src/pages/login.rs).
+- **New behaviour vs. legacy:** inbound `?redirect=…` on `/` is now preserved through to the login URL (re-encoded via the shared helper). Legacy `index.php` was a static 302 with no query passthrough; this is the first place in the SPA that does inbound-query passthrough on a redirect node.
+- **Shared encoder:** new `pub(crate) fn encode_redirect(&str) -> String` in [`peer-web/src/state/auth.rs`](../peer-web/src/state/auth.rs); `AuthGuard`'s inline percent-encoding loop is replaced with a call to it so the two redirect paths cannot drift.
+- **E2E:** new [`peer-web/end2end/tests/home.spec.ts`](../peer-web/end2end/tests/home.spec.ts) covers (1) guest redirect, (2) authed redirect, (3) `?redirect=` passthrough.
+- **Pages table:** Home / Landing 🚧 In Progress → ✅ Implemented.
+- **Summary counts:** ✅ 13 → 14, 🚧 3 → 2; convergence 13/21 (~62%) → 14/21 (~67%) implemented, 18/21 (~86%) → 19/21 (~90%) near-complete.
+- **Migration Priority:** added entry #20 (`Home / Landing`).
+- Build: `cargo build --features ssr` ✅, `cargo clippy --features ssr -- -D warnings` ✅. Pre-existing clippy/fmt issues outside the touched files unchanged.
 
 ### 2026-04-22 (Layout Shell Implemented)
 - **Shared layout shell landed** — new `peer-web/src/components/layout/` module with `SiteShell`, `SiteHeader` (Hyphen / Underscore spellings), `MobileFooter` (route-aware via `use_location()`), `LeftRail`, `RightRail`, and the `StandardRightRail` widget-stack preset ([docs](plans/layout/layout-shell-implementation.md)).

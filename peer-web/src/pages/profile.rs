@@ -204,10 +204,11 @@ fn QueryParamRedirect() -> impl IntoView {
 
     Effect::new(move |_| {
         if let Some(user_id) = params.get().get("user")
-            && !user_id.is_empty() {
-                let navigate = use_navigate();
-                navigate(&format!("/u/{}", user_id), Default::default());
-            }
+            && !user_id.is_empty()
+        {
+            let navigate = use_navigate();
+            navigate(&format!("/u/{}", user_id), Default::default());
+        }
     });
 
     view! {}

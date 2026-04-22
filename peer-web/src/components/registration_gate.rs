@@ -79,9 +79,7 @@ impl CheckboxError {
             Self::None => "",
             Self::BothRequired => "Please accept both the Privacy Policy and EULA",
             Self::PrivacyRequired => "Please accept the Privacy Policy to continue",
-            Self::EulaRequired => {
-                "Please accept the End User License Agreement (EULA) to continue"
-            }
+            Self::EulaRequired => "Please accept the End User License Agreement (EULA) to continue",
         }
     }
 

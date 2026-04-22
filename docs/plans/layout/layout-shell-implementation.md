@@ -2,7 +2,7 @@
 
 **Feature:** Layout components — `SiteShell`, `SiteHeader`, `MobileFooter`, `RightRail`, `LeftRail`
 **Priority:** Next — closes the three ❌ Layout rows in [feature-convergence.md](../../feature-convergence.md) and removes a documented bug source
-**Status:** ❌ Not Started
+**Status:** ✅ Implemented (Pass 1) — Pass 2 (`SiteHeader` / `StandardRightRail` adoption) deferred
 **Created:** 2026-04-22
 **Plan Quality Target:** ⭐⭐⭐⭐⭐
 
@@ -112,6 +112,15 @@ peer-web/src/components/
 
 ### Component Surface
 
+> **Implementation note (2026-04-22):** the as-built shell collapses the
+> per-region `#[slot]` design described below into a single `Children`
+> prop on both `SiteShell` and `SiteHeader`. The shell wraps `children()`
+> and auto-appends `<MobileFooter/>`; pages still hand-roll their own
+> `<header>` / `<aside>` / `<main>` for Pass 1. The original slot-based
+> surface is preserved here for context and remains the target shape if a
+> future refactor wants the shell to enforce the `header / left / main /
+> right / footer` rectangle.
+
 ```rust
 // site_shell.rs
 //
@@ -206,8 +215,11 @@ pub fn RightRail(
     children: Children,
 ) -> impl IntoView
 
-/// Convenience composition: ProfileWidget → MainMenu → NewPostButton → VersionWidget.
+/// Convenience composition: ProfileWidget → MainMenu → AddPostButton → VersionWidget.
 /// Used by Wallet, Chat, Referral Board, Settings, Version History.
+/// `AddPostButton` is the shared widget at
+/// `components/widgets/add_post_button.rs` (matches legacy
+/// `template-parts/sidebars/widget-add-new-post.php`).
 #[component]
 pub fn StandardRightRail(#[prop(into)] slug: String) -> impl IntoView
 ```

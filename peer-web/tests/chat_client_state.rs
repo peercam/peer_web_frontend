@@ -164,8 +164,10 @@ fn search_filter_matches_group_display_name_case_insensitive() {
     with_owner(|| {
         let ctx = make_ctx();
         ctx.filter_type.set(ChatType::Group);
-        ctx.chats
-            .set(vec![group_chat("g1", "The Crew"), group_chat("g2", "Book Club")]);
+        ctx.chats.set(vec![
+            group_chat("g1", "The Crew"),
+            group_chat("g2", "Book Club"),
+        ]);
         ctx.search_query.set("BOOK".to_string());
 
         let filtered = ctx.filtered_chats();

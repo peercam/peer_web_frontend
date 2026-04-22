@@ -394,9 +394,10 @@ impl CreatePostInput {
 
         // Description: max 500 chars
         if let Some(ref desc) = self.mediadescription
-            && desc.len() > 500 {
-                return Err("Description must be 500 characters or less".to_string());
-            }
+            && desc.len() > 500
+        {
+            return Err("Description must be 500 characters or less".to_string());
+        }
 
         // Tags: max 10, valid format
         if let Some(ref tags) = self.tags {

@@ -199,7 +199,9 @@ async fn test_login_mutation_verified_user_success() {
         "login should return a non-empty access token"
     );
     assert!(
-        login["refreshToken"].as_str().is_some_and(|t| !t.is_empty()),
+        login["refreshToken"]
+            .as_str()
+            .is_some_and(|t| !t.is_empty()),
         "login should return a non-empty refresh token"
     );
 }

@@ -305,8 +305,16 @@ fn render_delivery_panel(order: ShopOrderDetails) -> impl IntoView {
 
     let address = compose_address(&delivery);
     let na = || "N/A".to_string();
-    let name = delivery.name.clone().filter(|s| !s.is_empty()).unwrap_or_else(na);
-    let email = delivery.email.clone().filter(|s| !s.is_empty()).unwrap_or_else(na);
+    let name = delivery
+        .name
+        .clone()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(na);
+    let email = delivery
+        .email
+        .clone()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(na);
 
     view! {
         <div class="delivery_info_container">
@@ -343,7 +351,11 @@ fn compose_address(d: &DeliveryDetails) -> String {
         d.country.as_deref(),
     ]
     .into_iter()
-    .filter_map(|opt| opt.map(str::trim).filter(|s| !s.is_empty()).map(str::to_string))
+    .filter_map(|opt| {
+        opt.map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+    })
     .collect();
 
     if parts.is_empty() {
@@ -357,7 +369,10 @@ fn compose_address(d: &DeliveryDetails) -> String {
 // Firebase integration lands. See docs/plans/peer-shop/peer-shop-implementation.md.
 fn format_item_display(shop_item_id: &str, specs: Option<&ShopItemSpecs>) -> String {
     let mut out = format!("Shop item #{shop_item_id}");
-    if let Some(size) = specs.and_then(|s| s.size.as_deref()).filter(|s| !s.is_empty()) {
+    if let Some(size) = specs
+        .and_then(|s| s.size.as_deref())
+        .filter(|s| !s.is_empty())
+    {
         out.push_str(", size ");
         out.push_str(size);
     }

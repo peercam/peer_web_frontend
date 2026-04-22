@@ -2,8 +2,8 @@ use leptos::prelude::*;
 use leptos_meta::{MetaTags, Stylesheet, Title, provide_meta_context};
 use leptos_router::{
     StaticSegment,
-    components::{Route, Router, Routes},
-    hooks::use_navigate,
+    components::{Redirect, Route, Router, Routes},
+    hooks::{use_navigate, use_query_map},
     path,
 };
 
@@ -15,7 +15,7 @@ use crate::pages::{
     MyProfilePage, NewPostPage, PeerShopPage, ReferralBoardPage, RegisterPage, SettingsPage,
     VersionHistoryPage, ViewPostPage, ViewProfilePage, WalletPage,
 };
-use crate::state::auth::provide_auth_context;
+use crate::state::auth::{encode_redirect, provide_auth_context, use_auth};
 use crate::utils::pwa::{
     provide_install_prompt_context, provide_sw_update_context, register_service_worker,
 };
@@ -123,13 +123,42 @@ pub fn App() -> impl IntoView {
     }
 }
 
-/// Minimal home page (placeholder).
+/// Auth-aware landing route.
+///
+/// Mirrors the legacy `index.php` 302 to `dashboard.php`: visiting `/` ends up
+/// at `/dashboard` (signed in) or `/login?message=mustLogin` (signed out).
+/// Any inbound `?redirect=…` is preserved through to `/login` (re-encoded via
+/// the shared [`encode_redirect`] helper); other inbound query keys, including
+/// `?message=…`, are dropped to keep behaviour consistent with `AuthGuard`.
 #[component]
 fn HomePage() -> impl IntoView {
+    let auth = use_auth();
+    let query = use_query_map();
+
+    let guest_redirect_url = Memo::new(move |_| {
+        let redirect = query.with(|q| q.get("redirect"));
+        match redirect {
+            Some(target) if !target.is_empty() => format!(
+                "/login?message=mustLogin&redirect={}",
+                encode_redirect(&target)
+            ),
+            _ => "/login?message=mustLogin".to_string(),
+        }
+    });
+
     view! {
-        <Title text="Welcome to Peer"/>
-        <h1>"Welcome to Peer"</h1>
-        <a href="/register">"Create an Account"</a>
+        <Title text="Peer Network"/>
+        <Show
+            when=move || auth.is_session_checked.get()
+            fallback=|| view! { <div class="auth-guard-loading" role="status" aria-busy="true"></div> }
+        >
+            <Show
+                when=move || auth.is_authenticated.get()
+                fallback=move || view! { <Redirect path=guest_redirect_url.get()/> }
+            >
+                <Redirect path="/dashboard"/>
+            </Show>
+        </Show>
     }
 }
 

@@ -47,8 +47,8 @@ pub async fn mock_graphql_endpoint() -> String {
 fn start_mock_backend_once() -> String {
     // Bind synchronously on a standard listener so we know the port before
     // handing ownership to the dedicated runtime thread.
-    let std_listener = std::net::TcpListener::bind("127.0.0.1:0")
-        .expect("bind mock_backend listener");
+    let std_listener =
+        std::net::TcpListener::bind("127.0.0.1:0").expect("bind mock_backend listener");
     std_listener
         .set_nonblocking(true)
         .expect("set_nonblocking on listener");

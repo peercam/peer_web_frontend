@@ -29,9 +29,10 @@ pub fn ContentSettings() -> impl IntoView {
     Effect::new(move |_| {
         if let Some(Ok(info)) = user_info_resource.get() {
             if let Some(prefs) = info.user_preferences
-                && let Some(level) = prefs.content_filtering_severity_level {
-                    is_lenient.set(level == "MYGRANDMAHATES");
-                }
+                && let Some(level) = prefs.content_filtering_severity_level
+            {
+                is_lenient.set(level == "MYGRANDMAHATES");
+            }
             is_loading.set(false);
         }
     });

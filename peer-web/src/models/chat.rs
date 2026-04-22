@@ -11,14 +11,12 @@ use serde::{Deserialize, Serialize};
 use super::common::DefaultResponse;
 
 /// Chat type enumeration (private 1:1 vs group).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ChatType {
     #[default]
     Private,
     Group,
 }
-
 
 /// A participant in a chat room.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,8 +39,7 @@ impl ChatParticipant {
 
 /// Delivery status for a chat message, used for optimistic rendering
 /// and retry UX. Not serialised to/from the API.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum MessageStatus {
     /// Confirmed by the server (default for polled messages).
     #[default]
@@ -52,7 +49,6 @@ pub enum MessageStatus {
     /// Send attempt failed; awaits user retry.
     Failed,
 }
-
 
 /// A single chat message.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

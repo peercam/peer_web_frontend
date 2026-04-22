@@ -66,8 +66,7 @@ pub struct UserPreferencesPayload {
 /// Content filtering severity level.
 ///
 /// Controls how flagged/reported content is displayed to the user.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ContentFilterLevel {
     /// Stricter: hides all flagged content.
     #[serde(rename = "MYGRANDMALIKES")]
@@ -102,7 +101,6 @@ impl ContentFilterLevel {
         matches!(self, ContentFilterLevel::Lenient)
     }
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -4,9 +4,9 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 
 use crate::api::posts::check_post_eligibility;
+use crate::api::posts::create_post;
 #[cfg(feature = "hydrate")]
 use crate::api::posts::upload_post_files;
-use crate::api::posts::create_post;
 use crate::components::toast::{ToastType, use_toast};
 use crate::pages::new_post::NewPostContext;
 

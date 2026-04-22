@@ -39,6 +39,11 @@ pub fn ReferralHeader(info: ReferralInfoResponse) -> impl IntoView {
         }
     };
 
+    // Under the `hydrate` feature `do_copy` captures `text: String` and is
+    // therefore not `Copy`; under SSR the inner block compiles out, the
+    // capture disappears, and the closure becomes `Copy`. The clone is
+    // necessary in the hydrate build, so silence the SSR-only lint here.
+    #[allow(clippy::clone_on_copy)]
     let do_copy_click = do_copy.clone();
     let do_copy_keydown = do_copy;
 

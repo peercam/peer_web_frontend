@@ -32,10 +32,7 @@ pub fn DeactivateAccountPanel(
                     use_navigate()("/login", Default::default());
                 }
                 Err(e) => {
-                    toast.show(
-                        format!("Failed to delete account: {}", e),
-                        ToastType::Error,
-                    );
+                    toast.show(format!("Failed to delete account: {}", e), ToastType::Error);
                     is_deleting.set(false);
                     show_confirm.set(false);
                 }

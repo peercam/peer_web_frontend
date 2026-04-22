@@ -194,16 +194,18 @@ fn format_moderation_date(date_str: &str) -> String {
         let date_fields: Vec<&str> = date_part.split('-').collect();
         let time_fields: Vec<&str> = time_part.split(':').collect();
 
-        if date_fields.len() == 3 && time_fields.len() >= 2
+        if date_fields.len() == 3
+            && time_fields.len() >= 2
             && let (Ok(year), Ok(month), Ok(day)) = (
                 date_fields[0].parse::<u32>(),
                 date_fields[1].parse::<usize>(),
                 date_fields[2].parse::<u32>(),
             )
-                && (1..=12).contains(&month) {
-                    let hour_min = format!("{}:{}", time_fields[0], time_fields[1]);
-                    return format!("{} {} {}, {}", day, MONTHS[month - 1], year, hour_min);
-                }
+            && (1..=12).contains(&month)
+        {
+            let hour_min = format!("{}:{}", time_fields[0], time_fields[1]);
+            return format!("{} {} {}, {}", day, MONTHS[month - 1], year, hour_min);
+        }
     }
 
     // Fallback: show YYYY-MM-DD

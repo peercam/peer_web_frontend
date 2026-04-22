@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use leptos_router::components::Redirect;
 use leptos_router::hooks::use_location;
 
-use crate::state::auth::use_auth;
+use crate::state::auth::{encode_redirect, use_auth};
 
 /// Protects child routes by requiring authentication.
 ///
@@ -24,17 +24,10 @@ pub fn AuthGuard(children: ChildrenFn) -> impl IntoView {
         if path == "/" || path == "/login" {
             "/login?message=mustLogin".to_string()
         } else {
-            // Simple percent-encoding of path for the redirect parameter
-            let encoded: String = path
-                .chars()
-                .map(|c| match c {
-                    'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | '.' | '~' | '/' => {
-                        c.to_string()
-                    }
-                    _ => format!("%{:02X}", c as u32),
-                })
-                .collect();
-            format!("/login?message=mustLogin&redirect={}", encoded)
+            format!(
+                "/login?message=mustLogin&redirect={}",
+                encode_redirect(&path)
+            )
         }
     });
 

@@ -2,7 +2,7 @@
 
 use leptos::prelude::*;
 
-use crate::components::widgets::{MainMenu, ProfileWidget, VersionWidget};
+use crate::components::widgets::{AddPostButton, MainMenu, ProfileWidget, VersionWidget};
 
 /// Wrap page-specific right-sidebar content in the standard
 /// `<aside>` + `inner-scroll` markup.
@@ -26,10 +26,12 @@ pub fn RightRail(
 }
 
 /// Convenience composition: `ProfileWidget` → `MainMenu` →
-/// `NewPostButton` → `VersionWidget`.
+/// `AddPostButton` → `VersionWidget`.
 ///
 /// Used verbatim by Wallet, Chat, Settings, Referral Board, and
-/// Version History today.
+/// Version History today. The button widget is the shared
+/// [`crate::components::widgets::AddPostButton`] (matching the legacy
+/// `template-parts/sidebars/widget-add-new-post.php` chrome).
 #[component]
 pub fn StandardRightRail(
     /// Slug appended to the class list (e.g. `"wallet"` →
@@ -41,23 +43,8 @@ pub fn StandardRightRail(
         <RightRail slug=slug>
             <ProfileWidget/>
             <MainMenu/>
-            <NewPostButton/>
+            <AddPostButton/>
             <VersionWidget/>
         </RightRail>
-    }
-}
-
-/// "New Post" sidebar button. The widget chrome (class names) matches
-/// the per-page copies it replaces in Wallet / Settings / Version
-/// History / My Ads / Referral Board.
-#[component]
-fn NewPostButton() -> impl IntoView {
-    view! {
-        <div class="new-post-widget">
-            <a href="/newpost" class="new-post-btn">
-                <i class="peer-icon peer-icon-plus"/>
-                <span>"New Post"</span>
-            </a>
-        </div>
     }
 }
