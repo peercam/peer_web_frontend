@@ -227,11 +227,10 @@ mod hydrate_impl {
         // visibilitychange — check for updates when the tab regains focus.
         let reg_vc = reg.clone();
         let cb = Closure::<dyn FnMut(Event)>::new(move |_e: Event| {
-            if let Some(doc) = window().and_then(|w| w.document()) {
-                if doc.visibility_state() == web_sys::VisibilityState::Visible {
+            if let Some(doc) = window().and_then(|w| w.document())
+                && doc.visibility_state() == web_sys::VisibilityState::Visible {
                     let _ = reg_vc.update();
                 }
-            }
         });
         if let Some(doc) = win.document() {
             let _ = doc
@@ -242,11 +241,10 @@ mod hydrate_impl {
         // 60-second poll while visible.
         let reg_poll = reg.clone();
         let cb = Closure::<dyn FnMut()>::new(move || {
-            if let Some(doc) = window().and_then(|w| w.document()) {
-                if doc.visibility_state() == web_sys::VisibilityState::Visible {
+            if let Some(doc) = window().and_then(|w| w.document())
+                && doc.visibility_state() == web_sys::VisibilityState::Visible {
                     let _ = reg_poll.update();
                 }
-            }
         });
         let _ = win.set_interval_with_callback_and_timeout_and_arguments_0(
             cb.as_ref().unchecked_ref(),

@@ -151,7 +151,7 @@ Leptos is a **full-stack Rust web framework** that supports:
 ### 4.1 Project Structure
 
 ```
-peer-web/
+/
 ├── Cargo.toml
 ├── src/
 │   ├── main.rs                  — Server entry point (Axum)

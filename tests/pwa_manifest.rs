@@ -1,6 +1,6 @@
 //! Verifies the PWA manifest story that the plan promises:
 //!
-//! - `peer-web/public/manifest.webmanifest` exists and parses as JSON
+//! - `public/manifest.webmanifest` exists and parses as JSON
 //! - `mime_guess` (the crate `leptos_axum::file_and_error_handler` delegates
 //!   to when serving static files) resolves the `.webmanifest` extension to
 //!   `application/manifest+json`

@@ -9,7 +9,7 @@
 
 ## Overview
 
-Replace the placeholder `HomePage` component in [peer-web/src/app.rs](../../../peer-web/src/app.rs) with a proper landing route that achieves parity with the legacy `index.php` behaviour and stops shipping bare-HTML "Welcome to Peer" markup as the first thing visitors see.
+Replace the placeholder `HomePage` component in [src/app.rs](../../..//src/app.rs) with a proper landing route that achieves parity with the legacy `index.php` behaviour and stops shipping bare-HTML "Welcome to Peer" markup as the first thing visitors see.
 
 ### What the legacy actually does
 
@@ -38,15 +38,15 @@ Visiting `/` in the Leptos build renders:
 
 1. **Highest-visibility gap.** Every uncached cold load of the production hostname (and every PWA `start_url` launch — see below) lands here.
 2. **Tiny surface area.** No new API calls, no new GraphQL operations, no mock-backend changes, no SCSS module of any meaningful size.
-3. **Unblocks the PWA `start_url`.** [public/manifest.webmanifest](../../../peer-web/public/manifest.webmanifest) sets `"start_url": "/"`, so every "Add to Home Screen" launch currently lands on the placeholder. Fixing `/` fixes the installed-app first-run experience for free.
+3. **Unblocks the PWA `start_url`.** [public/manifest.webmanifest](../../..//public/manifest.webmanifest) sets `"start_url": "/"`, so every "Add to Home Screen" launch currently lands on the placeholder. Fixing `/` fixes the installed-app first-run experience for free.
 4. **Removes a footgun for E2E tests.** Playwright specs that probe `/` get nondeterministic content depending on whether anyone has wired `<HomePage/>` to anything.
 
 ### Goals
 
-1. Functional parity with legacy `index.php`: visiting `/` ends up on `/dashboard` (authed) or `/login` (guest). Note: the guest-redirect message deliberately changes from legacy's `?message=unauthorized` to `?message=mustLogin` so the SPA stays consistent with [`AuthGuard`](../../../peer-web/src/components/auth_guard.rs)'s convention. Both values render valid copy in [`login.rs`](../../../peer-web/src/pages/login.rs).
-2. Zero flash of placeholder content during the auth-check window — match the existing pattern in [`AuthGuard`](../../../peer-web/src/components/auth_guard.rs).
+1. Functional parity with legacy `index.php`: visiting `/` ends up on `/dashboard` (authed) or `/login` (guest). Note: the guest-redirect message deliberately changes from legacy's `?message=unauthorized` to `?message=mustLogin` so the SPA stays consistent with [`AuthGuard`](../../..//src/components/auth_guard.rs)'s convention. Both values render valid copy in [`login.rs`](../../..//src/pages/login.rs).
+2. Zero flash of placeholder content during the auth-check window — match the existing pattern in [`AuthGuard`](../../..//src/components/auth_guard.rs).
 3. SSR-safe: server-rendered HTML for `/` should not contain "Welcome to Peer" any more (including the `<Title>`).
-4. Preserve incoming `?redirect=…` through to `/login`; replace any incoming `?message=…` with `mustLogin`. Other arbitrary query keys are dropped, mirroring `AuthGuard`'s drop-everything-but-`message`/`redirect` posture. Note: this is **new behaviour**, not inherited — `AuthGuard` builds `redirect=` from `location.pathname`, never from an inbound `?redirect=` query value (see [`auth_guard.rs`](../../../peer-web/src/components/auth_guard.rs) lines 21–40). `HomePage` is the first place in the SPA that does inbound-query passthrough.
+4. Preserve incoming `?redirect=…` through to `/login`; replace any incoming `?message=…` with `mustLogin`. Other arbitrary query keys are dropped, mirroring `AuthGuard`'s drop-everything-but-`message`/`redirect` posture. Note: this is **new behaviour**, not inherited — `AuthGuard` builds `redirect=` from `location.pathname`, never from an inbound `?redirect=` query value (see [`auth_guard.rs`](../../..//src/components/auth_guard.rs) lines 21–40). `HomePage` is the first place in the SPA that does inbound-query passthrough.
 5. No regression to the PWA install / offline shell behaviour.
 
 ### Non-Goals
@@ -62,7 +62,7 @@ Visiting `/` in the Leptos build renders:
 
 ### In Scope
 
-- [ ] Replace the `HomePage` component in [peer-web/src/app.rs](../../../peer-web/src/app.rs)
+- [ ] Replace the `HomePage` component in [src/app.rs](../../..//src/app.rs)
 - [ ] Auth-aware redirect: `/` → `/dashboard` when `is_authenticated` is true
 - [ ] Auth-aware redirect: `/` → `/login?message=mustLogin` when `is_session_checked` is true and `is_authenticated` is false
 - [ ] Loading sentinel during the `is_session_checked == false` window (visually identical to `AuthGuard`'s `auth-guard-loading` div so QA sees one consistent loader)
@@ -99,7 +99,7 @@ GET /dashboard.php (guest) → 302 /login.php?message=unauthorized
 GET /dashboard.php (auth)  → 200 (renders dashboard)
 ```
 
-The Leptos port substitutes `?message=mustLogin` for `?message=unauthorized` so the guest bounce matches what [`AuthGuard`](../../../peer-web/src/components/auth_guard.rs) emits everywhere else in the SPA. Both messages are handled by [`login.rs`](../../../peer-web/src/pages/login.rs) and surface user-appropriate copy.
+The Leptos port substitutes `?message=mustLogin` for `?message=unauthorized` so the guest bounce matches what [`AuthGuard`](../../..//src/components/auth_guard.rs) emits everywhere else in the SPA. Both messages are handled by [`login.rs`](../../..//src/pages/login.rs) and surface user-appropriate copy.
 
 Two consequences worth preserving:
 
@@ -115,7 +115,7 @@ So the entire job of `/` is "be the redirect node that picks the right destinati
 ### Component Structure
 
 ```
-peer-web/src/app.rs
+src/app.rs
 └── HomePage  (rewritten — no new file)
     ├── reads use_auth()
     ├── reads use_location() to capture incoming query string
@@ -143,7 +143,7 @@ Query-param rules (authed case): incoming query is dropped. `/dashboard` does no
 
 ### Why Client-Side Redirect
 
-Leptos' `<Redirect/>` runs **after** hydration on the client. The closer precedent to copy from is [`AuthGuard`](../../../peer-web/src/components/auth_guard.rs), which already pairs a `<Show>` on `is_session_checked` with a `<Redirect/>` fallback — exactly the shape `HomePage` needs. (`EditProfileRedirect` in `app.rs` solves a related but simpler problem with `use_navigate()` inside an `Effect`; it has no auth gate and so isn't quite the right template here.)
+Leptos' `<Redirect/>` runs **after** hydration on the client. The closer precedent to copy from is [`AuthGuard`](../../..//src/components/auth_guard.rs), which already pairs a `<Show>` on `is_session_checked` with a `<Redirect/>` fallback — exactly the shape `HomePage` needs. (`EditProfileRedirect` in `app.rs` solves a related but simpler problem with `use_navigate()` inside an `Effect`; it has no auth gate and so isn't quite the right template here.)
 
 **Observed SSR behaviour (verified 2026-04-22, `leptos_router` 0.7):** because the outer `<Show when=is_session_checked>` resolves to its *fallback* during SSR (the `check_session` `Resource` is unresolved server-side), the inner `<Redirect/>` never renders and so no `<meta http-equiv="refresh">` is emitted. The SSR shell ships the `auth-guard-loading` sentinel with `<title>Peer Network</title>` and zero placeholder copy. The redirect fires on the client immediately after hydration once the session-check Resource resolves. This is consistent with the rest of the SPA's JS-required posture (see Open Question 3) and is **not** a regression vs the prior placeholder, which also required JS to be useful.
 
@@ -159,7 +159,7 @@ We deliberately do **not** mount an Axum handler at `/` because:
 
 ### Phase 1 — Component Rewrite (~30 LOC)
 
-**File:** [`peer-web/src/app.rs`](../../../peer-web/src/app.rs)
+**File:** [`src/app.rs`](../../..//src/app.rs)
 
 1. Add imports:
    - `use leptos_router::components::Redirect;`
@@ -185,18 +185,18 @@ We deliberately do **not** mount an Axum handler at `/` because:
 
 ### Phase 2 — E2E Test Coverage (~40 LOC)
 
-**File:** new `peer-web/end2end/tests/home.spec.ts`
+**File:** new `end2end/tests/home.spec.ts`
 
-Three Playwright cases, modelled on the existing [`pwa.spec.ts`](../../../peer-web/end2end/tests/pwa.spec.ts):
+Three Playwright cases, modelled on the existing [`pwa.spec.ts`](../../..//end2end/tests/pwa.spec.ts):
 
 1. **Guest redirect.** Fresh context (no cookies) → `goto('/')` → expect URL to settle on `/login?message=mustLogin`.
 2. **Authed redirect.** Sign in (see fixture note below) using `test@peer.com` / `TestPass123` from the mock backend → `goto('/')` → expect URL to settle on `/dashboard`.
 3. **Query preservation.** Fresh context → `goto('/?redirect=%2Fwallet')` → expect URL to settle on `/login?message=mustLogin&redirect=%2Fwallet`.
 
-**Fixture note.** There is no shared login fixture today — [`wallet.spec.ts`](../../../peer-web/end2end/tests/wallet.spec.ts) inlines its own `async function login(page, email, password)` helper (lines 30–34: `goto('/login')` → fill `#loginEmail` / `#loginPassword` → submit). Two acceptable options, in order of preference:
+**Fixture note.** There is no shared login fixture today — [`wallet.spec.ts`](../../..//end2end/tests/wallet.spec.ts) inlines its own `async function login(page, email, password)` helper (lines 30–34: `goto('/login')` → fill `#loginEmail` / `#loginPassword` → submit). Two acceptable options, in order of preference:
 
 - **(a)** Inline the same 5-line `login()` helper in `home.spec.ts`. Cheapest, matches existing conventions, no cross-spec coupling. **Default choice.**
-- **(b)** Extract the helper into `peer-web/end2end/helpers/login.ts` and migrate `wallet.spec.ts` to use it. Cleaner long-term but doubles the diff and pulls an unrelated spec into the PR. Defer to a follow-up unless review specifically asks for it.
+- **(b)** Extract the helper into `end2end/helpers/login.ts` and migrate `wallet.spec.ts` to use it. Cleaner long-term but doubles the diff and pulls an unrelated spec into the PR. Defer to a follow-up unless review specifically asks for it.
 
 **Acceptance for Phase 2:**
 
@@ -215,7 +215,7 @@ Three Playwright cases, modelled on the existing [`pwa.spec.ts`](../../../peer-w
 
 ### Phase 4 — Cleanup Verification
 
-- [x] Grep the repo for any remaining hardcoded reference to the placeholder copy (`Welcome to Peer`) and remove if dead. **Verified 2026-04-22:** removed stale `peer-web/end2end/tests/example.spec.ts` (Playwright starter that asserted the old placeholder title/h1; superseded by `home.spec.ts`). Remaining hits (`register.rs` post-signup success message, `home-implementation.md` plan prose) are intentional and unrelated.
+- [x] Grep the repo for any remaining hardcoded reference to the placeholder copy (`Welcome to Peer`) and remove if dead. **Verified 2026-04-22:** removed stale `end2end/tests/example.spec.ts` (Playwright starter that asserted the old placeholder title/h1; superseded by `home.spec.ts`). Remaining hits (`register.rs` post-signup success message, `home-implementation.md` plan prose) are intentional and unrelated.
 - [ ] Confirm the PWA `start_url` (`/`) installs cleanly and lands on the right destination after auth — both with and without an existing session cookie
 - [ ] Confirm the offline fallback (`offline.html`) is unaffected — the SW's network-first navigation still serves it when `/` is requested offline
 
@@ -227,16 +227,16 @@ Three Playwright cases, modelled on the existing [`pwa.spec.ts`](../../../peer-w
 
 | File | Approx. Δ LOC | Purpose |
 |------|---------------|---------|
-| `peer-web/src/app.rs` | +25 / −6 | Rewrite `HomePage` (mirrors the `<Show>`/`<Show>` shape of `AuthGuard`); current placeholder body is 5 lines (lines 128–133) |
-| `peer-web/src/components/auth_guard.rs` | +1 / −10 | Switch the inline percent-encoding loop to the shared `encode_redirect` helper introduced for `HomePage` (see Architecture → Query-param rules) |
-| `peer-web/src/state/auth.rs` *(or sibling util module)* | +12 / −0 | New `pub(crate) fn encode_redirect(&str) -> String` shared by `HomePage` and `AuthGuard` |
+| `src/app.rs` | +25 / −6 | Rewrite `HomePage` (mirrors the `<Show>`/`<Show>` shape of `AuthGuard`); current placeholder body is 5 lines (lines 128–133) |
+| `src/components/auth_guard.rs` | +1 / −10 | Switch the inline percent-encoding loop to the shared `encode_redirect` helper introduced for `HomePage` (see Architecture → Query-param rules) |
+| `src/state/auth.rs` *(or sibling util module)* | +12 / −0 | New `pub(crate) fn encode_redirect(&str) -> String` shared by `HomePage` and `AuthGuard` |
 | `docs/feature-convergence.md` | +20 / −5 | Tracker + changelog update |
 
 ### New
 
 | File | Approx. LOC | Purpose |
 |------|-------------|---------|
-| `peer-web/end2end/tests/home.spec.ts` | ~40 | Three E2E cases |
+| `end2end/tests/home.spec.ts` | ~40 | Three E2E cases |
 | `docs/plans/home/home-implementation.md` | this doc | Plan |
 
 ### Not Touched

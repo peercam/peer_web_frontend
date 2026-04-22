@@ -65,35 +65,35 @@ The original kickoff blocker asked whether the production backend mirrors `sendC
 
 | Layer | File | Lines | Status |
 |-------|------|-------|--------|
-| **Page** | [peer-web/src/pages/chat.rs](../../../peer-web/src/pages/chat.rs) | 141 | ✅ Auth guard, layout, contacts overlay orchestration |
-| **Route** | [peer-web/src/app.rs](../../../peer-web/src/app.rs) | — | ✅ `/chat` registered |
-| **State** | [peer-web/src/state/chat.rs](../../../peer-web/src/state/chat.rs) | — | ✅ `ChatContext` — chat list, active chat, messages, current user signals |
-| **API — list_chats** | [peer-web/src/api/chat.rs](../../../peer-web/src/api/chat.rs) | — | ✅ Server fn → `LIST_CHATS_QUERY` |
-| **API — send_message** | [peer-web/src/api/chat.rs](../../../peer-web/src/api/chat.rs) | — | ✅ Server fn → `SEND_MESSAGE_MUTATION` |
-| **API — create_chat** | [peer-web/src/api/chat.rs](../../../peer-web/src/api/chat.rs) | — | ✅ Server fn → `CREATE_CHAT_MUTATION` |
-| **Models** | [peer-web/src/models/chat.rs](../../../peer-web/src/models/chat.rs) | — | ✅ `Chat`, `ChatMessage`, `ChatParticipant`, `ChatType`, `format_message_time` |
-| **Component — chat_list** | [peer-web/src/components/chat/chat_list.rs](../../../peer-web/src/components/chat/chat_list.rs) | ~220 | ✅ Private/Group tabs, [+] button, skeleton states — **search input rendered but not filtering** |
-| **Component — chat_item** | [peer-web/src/components/chat/chat_item.rs](../../../peer-web/src/components/chat/chat_item.rs) | — | ✅ Avatar, display name, last message preview, relative time — **no unread badge** |
-| **Component — chat_container** | [peer-web/src/components/chat/chat_container.rs](../../../peer-web/src/components/chat/chat_container.rs) | ~85 | ✅ Header + messages + input composition |
-| **Component — chat_messages** | [peer-web/src/components/chat/chat_messages.rs](../../../peer-web/src/components/chat/chat_messages.rs) | ~80 | ✅ Bubble rendering, auto-scroll anchor |
-| **Component — chat_input** | [peer-web/src/components/chat/chat_input.rs](../../../peer-web/src/components/chat/chat_input.rs) | ~124 | ✅ 500-char limit, Enter-to-send, optimistic append |
-| **Component — contacts_overlay** | [peer-web/src/components/chat/contacts_overlay.rs](../../../peer-web/src/components/chat/contacts_overlay.rs) | — | ✅ Friend list, single/multi select |
-| **Component — group_review** | [peer-web/src/components/chat/group_review.rs](../../../peer-web/src/components/chat/group_review.rs) | — | ✅ Name + image step |
-| **GraphQL** | [peer-web/src/api/graphql.rs](../../../peer-web/src/api/graphql.rs) | — | ✅ `LIST_CHATS_QUERY`, `SEND_MESSAGE_MUTATION`, `CREATE_CHAT_MUTATION` |
-| **SCSS** | [peer-web/style/chat.scss](../../../peer-web/style/chat.scss) | 851 | ✅ Desktop + mobile layout |
-| **Mock Backend** | [tests/mock_backend](../../../tests/mock_backend) | — | ✅ Phase 4 done — `listChats`, `createChat`, `sendChatMessage` + 49 tests |
+| **Page** | [src/pages/chat.rs](../../..//src/pages/chat.rs) | 141 | ✅ Auth guard, layout, contacts overlay orchestration |
+| **Route** | [src/app.rs](../../..//src/app.rs) | — | ✅ `/chat` registered |
+| **State** | [src/state/chat.rs](../../..//src/state/chat.rs) | — | ✅ `ChatContext` — chat list, active chat, messages, current user signals |
+| **API — list_chats** | [src/api/chat.rs](../../..//src/api/chat.rs) | — | ✅ Server fn → `LIST_CHATS_QUERY` |
+| **API — send_message** | [src/api/chat.rs](../../..//src/api/chat.rs) | — | ✅ Server fn → `SEND_MESSAGE_MUTATION` |
+| **API — create_chat** | [src/api/chat.rs](../../..//src/api/chat.rs) | — | ✅ Server fn → `CREATE_CHAT_MUTATION` |
+| **Models** | [src/models/chat.rs](../../..//src/models/chat.rs) | — | ✅ `Chat`, `ChatMessage`, `ChatParticipant`, `ChatType`, `format_message_time` |
+| **Component — chat_list** | [src/components/chat/chat_list.rs](../../..//src/components/chat/chat_list.rs) | ~220 | ✅ Private/Group tabs, [+] button, skeleton states — **search input rendered but not filtering** |
+| **Component — chat_item** | [src/components/chat/chat_item.rs](../../..//src/components/chat/chat_item.rs) | — | ✅ Avatar, display name, last message preview, relative time — **no unread badge** |
+| **Component — chat_container** | [src/components/chat/chat_container.rs](../../..//src/components/chat/chat_container.rs) | ~85 | ✅ Header + messages + input composition |
+| **Component — chat_messages** | [src/components/chat/chat_messages.rs](../../..//src/components/chat/chat_messages.rs) | ~80 | ✅ Bubble rendering, auto-scroll anchor |
+| **Component — chat_input** | [src/components/chat/chat_input.rs](../../..//src/components/chat/chat_input.rs) | ~124 | ✅ 500-char limit, Enter-to-send, optimistic append |
+| **Component — contacts_overlay** | [src/components/chat/contacts_overlay.rs](../../..//src/components/chat/contacts_overlay.rs) | — | ✅ Friend list, single/multi select |
+| **Component — group_review** | [src/components/chat/group_review.rs](../../..//src/components/chat/group_review.rs) | — | ✅ Name + image step |
+| **GraphQL** | [src/api/graphql.rs](../../..//src/api/graphql.rs) | — | ✅ `LIST_CHATS_QUERY`, `SEND_MESSAGE_MUTATION`, `CREATE_CHAT_MUTATION` |
+| **SCSS** | [style/chat.scss](../../..//style/chat.scss) | 851 | ✅ Desktop + mobile layout |
+| **Mock Backend** | [packages/mock_backend](../../../packages/mock_backend) | — | ✅ Phase 4 done — `listChats`, `createChat`, `sendChatMessage` + 49 tests |
 
 ### What Remains 🔲
 
 | # | Task | File(s) | Effort | Blocks |
 |---|------|---------|--------|--------|
-| 1 | **Polling transport** (visibility-aware intervals for chat list and active chat; `listChatMessages(since)` query added to mock + client) | `peer-web/src/state/chat.rs`, `peer-web/src/api/chat.rs`, `peer-web/src/api/graphql.rs`, `tests/mock_backend/src/schema/query/chat.rs` | M | Tasks 2–5 |
-| 2 | **Unread count signal + badge rendering** (per-chat badge + global nav badge) | `peer-web/src/state/chat.rs`, `peer-web/src/components/chat/chat_item.rs`, `peer-web/src/components/chat/chat_list.rs`, `peer-web/src/components/widgets/main_menu.rs` | M | — |
-| 3 | **Mark-as-read on chat open** (localStorage + server mutation) | `peer-web/src/state/chat.rs`, `peer-web/src/api/chat.rs` (new `markChatRead` server fn), mock backend | S | Task 2 correctness |
-| 4 | **Chat search wiring** (filter `Chat` list by display name, last message, participant username — case-insensitive) | `peer-web/src/components/chat/chat_list.rs`, `peer-web/src/state/chat.rs` | S | — |
-| 5 | **Connection-lost banner** (polling error → banner + "Retry now" CTA; `Degraded` strip explaining polling cadence) | `peer-web/src/components/chat/chat_container.rs`, `peer-web/src/state/chat.rs` | S | — |
-| 6 | **Send-failure retry** (persist failed messages with `status: Failed`, render with retry button, re-enqueue on click; backoff on repeat failure) | `peer-web/src/components/chat/chat_input.rs`, `peer-web/src/components/chat/chat_messages.rs`, `peer-web/src/state/chat.rs` | M | — |
-| 7 | **E2E tests** (Playwright: send-then-poll delivery between two browsers, unread badge, polling-error banner, retry, search filter) | `peer-web/end2end/tests/chat.spec.ts` | L | — |
+| 1 | **Polling transport** (visibility-aware intervals for chat list and active chat; `listChatMessages(since)` query added to mock + client) | `src/state/chat.rs`, `src/api/chat.rs`, `src/api/graphql.rs`, `packages/mock_backend/src/schema/query/chat.rs` | M | Tasks 2–5 |
+| 2 | **Unread count signal + badge rendering** (per-chat badge + global nav badge) | `src/state/chat.rs`, `src/components/chat/chat_item.rs`, `src/components/chat/chat_list.rs`, `src/components/widgets/main_menu.rs` | M | — |
+| 3 | **Mark-as-read on chat open** (localStorage + server mutation) | `src/state/chat.rs`, `src/api/chat.rs` (new `markChatRead` server fn), mock backend | S | Task 2 correctness |
+| 4 | **Chat search wiring** (filter `Chat` list by display name, last message, participant username — case-insensitive) | `src/components/chat/chat_list.rs`, `src/state/chat.rs` | S | — |
+| 5 | **Connection-lost banner** (polling error → banner + "Retry now" CTA; `Degraded` strip explaining polling cadence) | `src/components/chat/chat_container.rs`, `src/state/chat.rs` | S | — |
+| 6 | **Send-failure retry** (persist failed messages with `status: Failed`, render with retry button, re-enqueue on click; backoff on repeat failure) | `src/components/chat/chat_input.rs`, `src/components/chat/chat_messages.rs`, `src/state/chat.rs` | M | — |
+| 7 | **E2E tests** (Playwright: send-then-poll delivery between two browsers, unread badge, polling-error banner, retry, search filter) | `end2end/tests/chat.spec.ts` | L | — |
 
 **Legend:** S = Small (< 1 hour), M = Medium (1–3 hours), L = Large (3+ hours)
 
@@ -159,13 +159,13 @@ If any of this is ever needed, promote it into a fresh plan rather than resurrec
 
 **Goal:** Show per-chat unread counts in the sidebar and a single aggregate badge in the global nav.
 
-**Target files for the global badge:** the primary nav lives in [peer-web/src/components/widgets/main_menu.rs](../../../peer-web/src/components/widgets/main_menu.rs) (mounted into every page's right sidebar, including `/chat`). The badge renders next to the Chat menu item there.
+**Target files for the global badge:** the primary nav lives in [src/components/widgets/main_menu.rs](../../..//src/components/widgets/main_menu.rs) (mounted into every page's right sidebar, including `/chat`). The badge renders next to the Chat menu item there.
 
 
 
 **Goal:** Show per-chat unread counts in the sidebar and a single aggregate badge in the global nav.
 
-**Target files for the global badge:** the primary nav lives in [peer-web/src/components/widgets/main_menu.rs](../../../peer-web/src/components/widgets/main_menu.rs) (mounted into every page's right sidebar, including `/chat`). The badge renders next to the Chat menu item there.
+**Target files for the global badge:** the primary nav lives in [src/components/widgets/main_menu.rs](../../..//src/components/widgets/main_menu.rs) (mounted into every page's right sidebar, including `/chat`). The badge renders next to the Chat menu item there.
 
 **Design:**
 
@@ -270,7 +270,7 @@ If `effective_last_read > chat.last_read_at_from_server`, fire `mark_chat_read(c
 
 ### Task 7 — E2E Tests
 
-**File:** `peer-web/end2end/tests/chat.spec.ts`
+**File:** `end2end/tests/chat.spec.ts`
 
 **Scenarios:**
 
@@ -395,27 +395,27 @@ Not in this sprint. Captured in the ADR; a dedicated plan will define DoD when t
 
 **New files:**
 
-- `peer-web/end2end/tests/chat.spec.ts` (~180L)
+- `end2end/tests/chat.spec.ts` (~180L)
 
 **Modified files:**
 
-- `peer-web/src/state/chat.rs` (+~130L — polling timers, unread, connection state, search)
-- `peer-web/src/api/chat.rs` (+~40L — `mark_chat_read`, `list_chat_messages`)
-- `peer-web/src/api/graphql.rs` (+~15L — two new operation constants)
-- `peer-web/src/models/chat.rs` (+~10L — `unread_count`, `MessageStatus`)
-- `peer-web/src/components/chat/chat_list.rs` (+~30L — search filter, context wiring)
-- `peer-web/src/components/chat/chat_item.rs` (+~15L — unread badge)
-- `peer-web/src/components/chat/chat_container.rs` (+~25L — connection banner)
-- `peer-web/src/components/chat/chat_input.rs` (+~20L — retry plumbing)
-- `peer-web/src/components/chat/chat_messages.rs` (+~25L — failed-bubble retry button)
-- `peer-web/src/components/widgets/main_menu.rs` (+~15L — global unread badge)
-- `peer-web/src/pages/chat.rs` (+~5L — start polling on mount)
-- `peer-web/style/chat.scss` (+~80L — badge, banner, failed bubble)
-- `tests/mock_backend/src/state.rs` (+~15L — `last_read_at`, `chat_unread_count`)
-- `tests/mock_backend/src/schema/mutation/chat.rs` (+~40L — `markChatRead`)
-- `tests/mock_backend/src/schema/query/chat.rs` (+~40L — `listChatMessages`, `unreadCount` field)
-- `tests/mock_backend/src/seed.rs` (+~10L — seeded unread state)
-- `tests/mock_backend/tests/chat.rs` (+~90L — 6 new tests)
+- `src/state/chat.rs` (+~130L — polling timers, unread, connection state, search)
+- `src/api/chat.rs` (+~40L — `mark_chat_read`, `list_chat_messages`)
+- `src/api/graphql.rs` (+~15L — two new operation constants)
+- `src/models/chat.rs` (+~10L — `unread_count`, `MessageStatus`)
+- `src/components/chat/chat_list.rs` (+~30L — search filter, context wiring)
+- `src/components/chat/chat_item.rs` (+~15L — unread badge)
+- `src/components/chat/chat_container.rs` (+~25L — connection banner)
+- `src/components/chat/chat_input.rs` (+~20L — retry plumbing)
+- `src/components/chat/chat_messages.rs` (+~25L — failed-bubble retry button)
+- `src/components/widgets/main_menu.rs` (+~15L — global unread badge)
+- `src/pages/chat.rs` (+~5L — start polling on mount)
+- `style/chat.scss` (+~80L — badge, banner, failed bubble)
+- `packages/mock_backend/src/state.rs` (+~15L — `last_read_at`, `chat_unread_count`)
+- `packages/mock_backend/src/schema/mutation/chat.rs` (+~40L — `markChatRead`)
+- `packages/mock_backend/src/schema/query/chat.rs` (+~40L — `listChatMessages`, `unreadCount` field)
+- `packages/mock_backend/src/seed.rs` (+~10L — seeded unread state)
+- `packages/mock_backend/tests/chat.rs` (+~90L — 6 new tests)
 
 **Docs updated:**
 

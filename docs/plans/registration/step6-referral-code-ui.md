@@ -664,9 +664,9 @@ pub mod register;
 
 The referral step requires several static assets from the existing PHP project. These need to be available to the Leptos dev server.
 
-### Assets to copy (or symlink) into `peer-web/public/`
+### Assets to copy (or symlink) into `public/`
 
-| Source (repo root) | Destination (`peer-web/public/`) | Used by |
+| Source (repo root) | Destination (`public/`) | Used by |
 |--------------------|----------------------------------|---------|
 | `img/register.webp` | `img/register.webp` | Phone mockup image |
 | `svg/logo_sw.svg` | `svg/logo_sw.svg` | Phone home-button logo |
@@ -677,7 +677,7 @@ The referral step requires several static assets from the existing PHP project. 
 ### Symlink approach (recommended for development)
 
 ```bash
-cd peer-web/public
+cd public
 ln -s ../../img img
 ln -s ../../svg svg
 ln -s ../../fonts fonts
@@ -796,7 +796,7 @@ cargo leptos build
 - [ ] **6.15f** Implement step visibility toggle with CSS class approach (§6.6.4, Option A).
 - [ ] **6.15g** Update `src/components/mod.rs` to declare `referral` and `validation` modules (§6.9).
 - [ ] **6.15h** Update `src/pages/register.rs` with full `RegisterPage` shell, URL param prefill, and temporary `on_verify` action (§6.7, §6.8).
-- [ ] **6.15i** Symlink or copy static assets into `peer-web/public/` (§6.10).
+- [ ] **6.15i** Symlink or copy static assets into `public/` (§6.10).
 - [ ] **6.15j** Run `cargo leptos build` — confirm both targets compile without errors (§6.13.3).
 - [ ] **6.15k** Run `cargo leptos watch` and manually test all 10 scenarios in §6.13.1.
 - [ ] **6.15l** Verify SSR by viewing page source — referral form HTML should be present (§6.13.1, test 9).

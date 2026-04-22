@@ -59,8 +59,8 @@ View Post is the **next feature** in the migration priority after Dashboard. The
 | # | Task | File(s) | Effort | Notes |
 |---|------|---------|--------|-------|
 | 6 | **Error recovery for API failures** | `components/view_post/comments.rs`, `post_actions.rs` | M | Show toast on failed like/comment/action, revert optimistic state |
-| 7 | **Mock backend: Posts & Comments (Phase 3)** | `tests/mock_backend/` | L | See section below |
-| 8 | **E2E tests (Playwright)** | `peer-web/end2end/` | L | See testing section below |
+| 7 | **Mock backend: Posts & Comments (Phase 3)** | `packages/mock_backend/` | L | See section below |
+| 8 | **E2E tests (Playwright)** | `end2end/` | L | See testing section below |
 | 9 | **SCSS responsive polish** | `style/view-post.scss` | M | Test on actual mobile viewports, verify touch interactions |
 | 10 | **Dashboard → View Post overlay integration** | `src/components/dashboard/`, `src/pages/dashboard.rs` | M | Clicking a PostCard from the feed should open View Post as a modal overlay (not full-page nav). Needs `show_post_overlay` signal + conditional rendering. Deferred until Dashboard is further along. |
 
@@ -84,7 +84,7 @@ All five quick-win and quality-polish tasks have been implemented:
 
 ## Mock Backend: Phase 3 — Posts & Comments
 
-The current mock backend (`tests/mock_backend/`) only supports registration. For View Post (and Dashboard) to be testable end-to-end, the mock needs these operations:
+The current mock backend (`packages/mock_backend/`) only supports registration. For View Post (and Dashboard) to be testable end-to-end, the mock needs these operations:
 
 ### Required Operations
 

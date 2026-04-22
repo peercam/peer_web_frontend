@@ -85,7 +85,7 @@ mutation VerifiedAccount($userId: ID!) {
 ## 0.2 — Directory structure
 
 ```
-tests/mock_backend/
+packages/mock_backend/
 ├── package.json
 ├── server.js              ← Express + express-graphql entry point
 ├── schema.graphql         ← Full type definitions & mutations
@@ -350,7 +350,7 @@ a1b2c3d4-e5f6-7890-abcd-ef1234567890   ← "secondary test referral"
 
 ## 0.7 — Implementation sub-tasks (checklist)
 
-- [ ] **0.7a** Create `tests/mock_backend/` directory and `package.json`.
+- [ ] **0.7a** Create `packages/mock_backend/` directory and `package.json`.
 - [ ] **0.7b** Write `schema.graphql` with the three mutations and all types as specified in §0.3.
 - [ ] **0.7c** Write `state.js` — exports the in-memory sets with seed data.
 - [ ] **0.7d** Write `resolvers.js` — implement the three resolver functions with the logic from §0.4.
@@ -358,13 +358,13 @@ a1b2c3d4-e5f6-7890-abcd-ef1234567890   ← "secondary test referral"
 - [ ] **0.7f** Create all six fixture JSON files in `fixtures/`.
 - [ ] **0.7g** Write `test.js` — a lightweight smoke-test script that starts the server, sends the five curl-equivalent requests below, asserts status codes and response shapes, then exits.
 - [ ] **0.7h** Write `README.md` with setup instructions (`npm install && npm start`), seed data reference, and example curl commands.
-- [ ] **0.7i** Add `tests/mock_backend/node_modules/` to `.gitignore`.
+- [ ] **0.7i** Add `packages/mock_backend/node_modules/` to `.gitignore`.
 
 ---
 
 ## 0.8 — Verification test cases
 
-After running `npm start` in `tests/mock_backend/`, each of these should pass:
+After running `npm start` in `packages/mock_backend/`, each of these should pass:
 
 | # | Test | curl command (abbreviated) | Expected response (key fields) |
 |---|------|---------------------------|-------------------------------|
@@ -379,7 +379,7 @@ After running `npm start` in `tests/mock_backend/`, each of these should pass:
 **Primary smoke-test command:**
 
 ```bash
-cd tests/mock_backend && npm install && npm start &
+cd packages/mock_backend && npm install && npm start &
 sleep 2
 curl -s -X POST http://localhost:4000/graphql \
   -H 'Content-Type: application/json' \

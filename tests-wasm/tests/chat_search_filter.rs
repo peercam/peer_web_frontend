@@ -4,7 +4,7 @@
 //! when the query is cleared.
 //!
 //! The pure filter logic is covered in
-//! `peer-web/tests/chat_client_state.rs` — this layer proves that the
+//! `tests/chat_client_state.rs` — this layer proves that the
 //! `ChatList` view actually reacts to signal changes in a live DOM.
 
 #![cfg(target_arch = "wasm32")]

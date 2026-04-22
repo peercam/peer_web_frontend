@@ -122,7 +122,7 @@ pub fn seconds_until_expiry(token: &str) -> Option<i64> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "hydrate")))]
 mod tests {
     use super::*;
 

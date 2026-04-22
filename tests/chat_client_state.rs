@@ -17,9 +17,9 @@
 //! Both code paths compile on the native target (no DOM, no WASM) so we
 //! cover them here rather than in the slower `tests-wasm` suite. The
 //! browser-level "does the banner render?" check is added alongside,
-//! in `peer-web/tests-wasm/tests/chat_connection_banner.rs`, and the
+//! in `tests-wasm/tests/chat_connection_banner.rs`, and the
 //! "does the empty state render?" check in
-//! `peer-web/tests-wasm/tests/chat_search_filter.rs`.
+//! `tests-wasm/tests/chat_search_filter.rs`.
 //!
 //! Run with: `cargo test --features ssr --test chat_client_state`
 

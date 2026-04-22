@@ -22,7 +22,7 @@
 
 ### What the frontend calls today
 
-**From `peer-web/src/api/comments.rs` and `peer-web/src/api/graphql.rs`:**
+**From `src/api/comments.rs` and `src/api/graphql.rs`:**
 
 | Operation | GraphQL SDL | Frontend file | Auth? |
 |-----------|-------------|---------------|-------|
@@ -32,7 +32,7 @@
 | `likeComment(commentid)` | `mutation LikeComment(...)` | `comments.rs` → `LikeComment` server fn | Yes |
 | `unlikeComment(commentid)` | `mutation UnlikeComment(...)` | `comments.rs` → `UnlikeComment` server fn | Yes |
 
-**From `peer-web/src/api/chat.rs` and `peer-web/src/api/graphql.rs`:**
+**From `src/api/chat.rs` and `src/api/graphql.rs`:**
 
 | Operation | GraphQL SDL | Frontend file | Auth? |
 |-----------|-------------|---------------|-------|
@@ -62,7 +62,7 @@ After this phase, the mock backend will support:
 ### New file tree additions
 
 ```
-tests/mock_backend/src/
+packages/mock_backend/src/
 ├── schema/
 │   ├── query/
 │   │   ├── comments.rs    # NEW: listComments, listChildComments
@@ -104,9 +104,9 @@ tests/mock_backend/src/
 
 All response codes and field names come from:
 - `docs/backend_api/04-comments.md`
-- `peer-web/src/models/comment.rs` (frontend deserialization types)
-- `peer-web/src/models/chat.rs` (frontend deserialization types)
-- `peer-web/src/api/graphql.rs` (exact GraphQL field selections)
+- `src/models/comment.rs` (frontend deserialization types)
+- `src/models/chat.rs` (frontend deserialization types)
+- `src/api/graphql.rs` (exact GraphQL field selections)
 
 ---
 
@@ -263,7 +263,7 @@ pub enum CommentType {
 
 /// Simplified user embedded in comment responses.
 ///
-/// Must match the frontend's `CommentUser` deserialization in `peer-web/src/models/comment.rs`.
+/// Must match the frontend's `CommentUser` deserialization in `src/models/comment.rs`.
 /// Field selections from `LIST_COMMENTS_QUERY` in `graphql.rs`:
 /// `id, username, slug, img, isfollowed, isfollowing`
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
@@ -282,7 +282,7 @@ pub struct CommentUser {
 /// Comment data returned in all comment responses.
 ///
 /// Field names must exactly match the GraphQL schema selections in `graphql.rs`.
-/// The frontend deserializes these via `peer-web/src/models/comment.rs::Comment`.
+/// The frontend deserializes these via `src/models/comment.rs::Comment`.
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 #[graphql(rename_fields = "camelCase")]
 pub struct Comment {
@@ -337,7 +337,7 @@ use super::registration::DefaultResponse;
 
 /// A participant in a chat room.
 ///
-/// Must match the frontend's `ChatParticipant` in `peer-web/src/models/chat.rs`.
+/// Must match the frontend's `ChatParticipant` in `src/models/chat.rs`.
 /// Field selections from `LIST_CHATS_QUERY`:
 /// `userid, img, username, slug, hasaccess`
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
@@ -352,7 +352,7 @@ pub struct ChatParticipant {
 
 /// A single chat message.
 ///
-/// Must match the frontend's `ChatMessage` in `peer-web/src/models/chat.rs`.
+/// Must match the frontend's `ChatMessage` in `src/models/chat.rs`.
 /// Field selections from `LIST_CHATS_QUERY` and `SEND_CHAT_MESSAGE_MUTATION`:
 /// `id, senderid, chatid, content, createdat`
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
@@ -367,7 +367,7 @@ pub struct ChatMessage {
 
 /// A chat room (private or group).
 ///
-/// Must match the frontend's `Chat` in `peer-web/src/models/chat.rs`.
+/// Must match the frontend's `Chat` in `src/models/chat.rs`.
 /// Field selections from `LIST_CHATS_QUERY`:
 /// `id, image, name, createdat, updatedat, chatmessages { ... }, chatparticipants { ... }`
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]

@@ -903,7 +903,7 @@ Run tests:
 
 ```bash
 # Ensure mock backend is running
-cd tests/mock_backend && npm start &
+cd packages/mock_backend && npm start &
 
 # Run integration tests
 cd peer-web

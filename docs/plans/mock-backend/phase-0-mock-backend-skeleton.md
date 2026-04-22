@@ -34,7 +34,7 @@
 ### Target State (Rust)
 
 ```
-tests/mock_backend/
+packages/mock_backend/
 ├── Cargo.toml
 ├── src/
 │   ├── main.rs              # Binary entrypoint
@@ -100,7 +100,7 @@ http-body-util = "0.1"
 
 | # | Task | Files | Notes |
 |---|------|-------|-------|
-| A1 | Create `tests/mock_backend/` directory structure | — | Use `cargo new` or manual |
+| A1 | Create `packages/mock_backend/` directory structure | — | Use `cargo new` or manual |
 | A2 | Write `Cargo.toml` with dependencies | `Cargo.toml` | Pin versions for reproducibility |
 | A3 | Create empty module files with `mod` declarations | All `mod.rs` files | Establish module tree |
 | A4 | Verify `cargo check` passes | — | Should compile with stubs |
@@ -727,7 +727,7 @@ async fn graphql_stateful(state: &Arc<RwLock<MockState>>, query: &str) -> Value 
 
 ### 5.3 Full Test Implementation
 
-See [`tests/integration.rs`](../../../tests/mock_backend/tests/integration.rs) for the
+See [`tests/integration.rs`](../../../packages/mock_backend/tests/integration.rs) for the
 complete implementation. Key patterns:
 
 - **Stateless tests** (`test_valid_referral`, `test_register_success`, etc.) use the `graphql()` helper which creates a fresh `app()` per call.
@@ -740,19 +740,19 @@ complete implementation. Key patterns:
 
 ### Files to Delete (after tests pass)
 
-- [x] `tests/mock_backend/server.js`
-- [x] `tests/mock_backend/resolvers.js`
-- [x] `tests/mock_backend/schema.graphql`
-- [x] `tests/mock_backend/state.js`
-- [x] `tests/mock_backend/test.js`
-- [x] `tests/mock_backend/package.json`
-- [x] `tests/mock_backend/package-lock.json`
-- [x] `tests/mock_backend/node_modules/` (entire directory)
+- [x] `packages/mock_backend/server.js`
+- [x] `packages/mock_backend/resolvers.js`
+- [x] `packages/mock_backend/schema.graphql`
+- [x] `packages/mock_backend/state.js`
+- [x] `packages/mock_backend/test.js`
+- [x] `packages/mock_backend/package.json`
+- [x] `packages/mock_backend/package-lock.json`
+- [x] `packages/mock_backend/node_modules/` (entire directory)
 
 ### Files to Keep
 
-- [x] `tests/mock_backend/fixtures/*.json` — Useful as reference data
-- [x] `tests/mock_backend/README.md` — Update with Rust instructions
+- [x] `packages/mock_backend/fixtures/*.json` — Useful as reference data
+- [x] `packages/mock_backend/README.md` — Update with Rust instructions
 
 ### README.md Updates
 
@@ -764,7 +764,7 @@ A lightweight mock backend for Peer Web frontend development and testing.
 ## Run
 
 ```bash
-cd tests/mock_backend
+cd packages/mock_backend
 cargo run
 ```
 
@@ -829,7 +829,7 @@ cargo test
 ### Integration Ready
 
 - [x] `mock_backend::app()` is exported as public API
-- [x] Can be imported as dev-dependency: `mock_backend = { path = "../../tests/mock_backend" }`
+- [x] Can be imported as dev-dependency: `mock_backend = { path = "../../packages/mock_backend" }`
 - [x] `build_schema()` is exported for potential SDL snapshot tests
 
 ---

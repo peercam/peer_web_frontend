@@ -30,38 +30,38 @@ Finishing this sprint promotes Wallet from 🟡 → ✅ in [feature-convergence.
 
 | Layer | File | Lines | Status |
 |-------|------|-------|--------|
-| **Page** | [peer-web/src/pages/wallet.rs](../../../peer-web/src/pages/wallet.rs) | 146 | ✅ Auth guard, layout, balance + history composition |
-| **Route** | [peer-web/src/app.rs](../../../peer-web/src/app.rs) | — | ✅ `/wallet` registered |
-| **Component — balance_header** | [peer-web/src/components/wallet/balance_header.rs](../../../peer-web/src/components/wallet/balance_header.rs) | — | ✅ Animated logo, balance display, reload button — **uses `format_balance()` (currently no separators)** |
-| **Component — transaction_history** | [peer-web/src/components/wallet/transaction_history.rs](../../../peer-web/src/components/wallet/transaction_history.rs) | — | ✅ Infinite scroll via `use_infinite_scroll`, skeletons, empty state |
-| **Component — transaction_item** | [peer-web/src/components/wallet/transaction_item.rs](../../../peer-web/src/components/wallet/transaction_item.rs) | ~280 | ✅ Bubble + expanded `TransactionDetail` — **no `delivery_info_container`** |
-| **Component — transfer_modal** | [peer-web/src/components/wallet/transfer_modal.rs](../../../peer-web/src/components/wallet/transfer_modal.rs) | 760 | ✅ Friend list, search, amount + fees, message, summary, success/error |
-| **API — wallet** | [peer-web/src/api/wallet.rs](../../../peer-web/src/api/wallet.rs) | 246 | ✅ `get_balance`, `transaction_history`, `transfer_tokens` |
-| **API — shop (read path)** | [peer-web/src/api/shop.rs](../../../peer-web/src/api/shop.rs) | — | ✅ `get_shop_order_details(transaction_id)` server fn — **never called from any component** |
-| **GraphQL** | [peer-web/src/api/graphql.rs](../../../peer-web/src/api/graphql.rs) | — | ✅ `SHOP_ORDER_DETAILS_QUERY`, `ShopOrderDetailsData` wrapper |
-| **Models** | [peer-web/src/models/transaction.rs](../../../peer-web/src/models/transaction.rs) | — | ✅ `ShopOrderDetails`, `ShopItemSpecs`, `DeliveryDetails`, `ShopOrderDetailsResponse` — **`format_balance()` body is wrong** |
-| **SCSS** | [peer-web/style/wallet.scss](../../../peer-web/style/wallet.scss) | 1,092 | ✅ Desktop + mobile, transaction rows, transfer modal, fee breakdown |
-| **Mock Backend — wallet** | [tests/mock_backend/src/schema/{query,mutation}/wallet.rs](../../../tests/mock_backend/src/schema/query/wallet.rs) | — | ✅ Phase 5 done — `getBalance`, `transactionHistory`, `transferTokens` |
-| **Mock Backend — shop_order_details** | [tests/mock_backend/src/schema/query/shop.rs](../../../tests/mock_backend/src/schema/query/shop.rs) | 71 | ✅ Phase 5 done — returns delivery panel for the **buyer** of the order |
+| **Page** | [src/pages/wallet.rs](../../..//src/pages/wallet.rs) | 146 | ✅ Auth guard, layout, balance + history composition |
+| **Route** | [src/app.rs](../../..//src/app.rs) | — | ✅ `/wallet` registered |
+| **Component — balance_header** | [src/components/wallet/balance_header.rs](../../..//src/components/wallet/balance_header.rs) | — | ✅ Animated logo, balance display, reload button — **uses `format_balance()` (currently no separators)** |
+| **Component — transaction_history** | [src/components/wallet/transaction_history.rs](../../..//src/components/wallet/transaction_history.rs) | — | ✅ Infinite scroll via `use_infinite_scroll`, skeletons, empty state |
+| **Component — transaction_item** | [src/components/wallet/transaction_item.rs](../../..//src/components/wallet/transaction_item.rs) | ~280 | ✅ Bubble + expanded `TransactionDetail` — **no `delivery_info_container`** |
+| **Component — transfer_modal** | [src/components/wallet/transfer_modal.rs](../../..//src/components/wallet/transfer_modal.rs) | 760 | ✅ Friend list, search, amount + fees, message, summary, success/error |
+| **API — wallet** | [src/api/wallet.rs](../../..//src/api/wallet.rs) | 246 | ✅ `get_balance`, `transaction_history`, `transfer_tokens` |
+| **API — shop (read path)** | [src/api/shop.rs](../../..//src/api/shop.rs) | — | ✅ `get_shop_order_details(transaction_id)` server fn — **never called from any component** |
+| **GraphQL** | [src/api/graphql.rs](../../..//src/api/graphql.rs) | — | ✅ `SHOP_ORDER_DETAILS_QUERY`, `ShopOrderDetailsData` wrapper |
+| **Models** | [src/models/transaction.rs](../../..//src/models/transaction.rs) | — | ✅ `ShopOrderDetails`, `ShopItemSpecs`, `DeliveryDetails`, `ShopOrderDetailsResponse` — **`format_balance()` body is wrong** |
+| **SCSS** | [style/wallet.scss](../../..//style/wallet.scss) | 1,092 | ✅ Desktop + mobile, transaction rows, transfer modal, fee breakdown |
+| **Mock Backend — wallet** | [packages/mock_backend/src/schema/{query,mutation}/wallet.rs](../../../packages/mock_backend/src/schema/query/wallet.rs) | — | ✅ Phase 5 done — `getBalance`, `transactionHistory`, `transferTokens` |
+| **Mock Backend — shop_order_details** | [packages/mock_backend/src/schema/query/shop.rs](../../../packages/mock_backend/src/schema/query/shop.rs) | 71 | ✅ Phase 5 done — returns delivery panel for the **buyer** of the order |
 
 ### What Remains 🔲
 
 | # | Task | File(s) | Effort | Blocks |
 |---|------|---------|--------|--------|
-| 1 | **Fix `format_balance()` to actually group thousands** with locale-style commas (e.g. `12,345.6789`); cap fractional digits at 4 via `Decimal::round_dp(4)` to match legacy `toLocaleString({ maximumFractionDigits: 4 })`; preserve trailing-zero trimming on the fractional part | `peer-web/src/models/transaction.rs` | S | Tasks 2, 7 |
-| 2 | **Adopt `format_balance()` at every token-amount call site** in `wallet/` (preserves "always show separators" UX from legacy `formatAmount()`); keep `format_decimal()` available for non-amount decimals (currently no callers in `wallet/`). Concrete swap list below in Task 2 details. | `peer-web/src/components/wallet/transaction_item.rs`, `peer-web/src/components/wallet/transfer_modal.rs` | S | — |
-| 3 | **Add `PEER_SHOP_ID` constant** + `is_shop_account()` helper on the auth/profile context, mirroring `js/global.js#L6` | `peer-web/src/state/auth.rs` (or `src/utils/constants.rs`) | S | Task 4 |
-| 4 | **Render delivery panel** inside the expanded `TransactionDetail` when `category == ShopPurchase` and the viewer is the shop account; lazy-load via `Resource::new` keyed on `transaction_id`, swap a "Loading…" / "Unable to load…" placeholder for the `delivery_info_container` markup; reuse legacy `delivery_label` + `price_detail_row` SCSS classes (already in `wallet.scss`) | `peer-web/src/components/wallet/transaction_item.rs`, `peer-web/style/wallet.scss` (verify selectors) | M | Task 5 |
-| 5 | **Fall back gracefully when product metadata is unavailable** — legacy reads `peerShopProducts[shopItemId]` from Firestore for the human-readable item name; until Peer Shop's Firebase integration lands ([peer-shop-implementation.md](../peer-shop/peer-shop-implementation.md) gap), show `"Shop item #<shopItemId>"` (with optional `, size <size>` suffix from `shopItemSpecs.size`) and document the deferred lookup with a `TODO(peer-shop-firebase)` comment that links to the Peer Shop plan | `peer-web/src/components/wallet/transaction_item.rs` | S | — |
-| 6 | **Mock backend: allow shop account to view buyer order details** — the existing resolver gates on `o.buyer_id == user_id`, which blocks the shop-account view path the new UI exercises. Extend the auth check to also pass when the caller's id equals the seeded shop account id (mirrors legacy `PEER_SHOP_ID` gate); add a regression test covering both buyer-view and shop-account-view | `tests/mock_backend/src/schema/query/shop.rs`, `tests/mock_backend/src/seed.rs` (seed shop account + one shop order if not present), `tests/mock_backend/tests/wallet_shop_orders.rs` (new or extend existing wallet test file) | M | Task 4 verification |
-| 7 | **Unit tests for `format_balance()`** — table-driven cases: `0`, `1`, `999`, `1000` → `1,000`, `1234567` → `1,234,567`, `1234.5` → `1,234.5`, `1234.5000` → `1,234.5`, very small fractions, negative values | `peer-web/src/models/transaction.rs` (`#[cfg(test)]`) | S | — |
-| 8 | **E2E tests (Playwright)** covering: balance renders with separators (`/12,345/` regex), open transaction → fee breakdown visible, transfer modal happy-path (friend → amount → message → confirm → success), shop-purchase row in shop-account session shows delivery panel after expand | `peer-web/end2end/tests/wallet.spec.ts` (new) | L | Tasks 1–6 |
+| 1 | **Fix `format_balance()` to actually group thousands** with locale-style commas (e.g. `12,345.6789`); cap fractional digits at 4 via `Decimal::round_dp(4)` to match legacy `toLocaleString({ maximumFractionDigits: 4 })`; preserve trailing-zero trimming on the fractional part | `src/models/transaction.rs` | S | Tasks 2, 7 |
+| 2 | **Adopt `format_balance()` at every token-amount call site** in `wallet/` (preserves "always show separators" UX from legacy `formatAmount()`); keep `format_decimal()` available for non-amount decimals (currently no callers in `wallet/`). Concrete swap list below in Task 2 details. | `src/components/wallet/transaction_item.rs`, `src/components/wallet/transfer_modal.rs` | S | — |
+| 3 | **Add `PEER_SHOP_ID` constant** + `is_shop_account()` helper on the auth/profile context, mirroring `js/global.js#L6` | `src/state/auth.rs` (or `src/utils/constants.rs`) | S | Task 4 |
+| 4 | **Render delivery panel** inside the expanded `TransactionDetail` when `category == ShopPurchase` and the viewer is the shop account; lazy-load via `Resource::new` keyed on `transaction_id`, swap a "Loading…" / "Unable to load…" placeholder for the `delivery_info_container` markup; reuse legacy `delivery_label` + `price_detail_row` SCSS classes (already in `wallet.scss`) | `src/components/wallet/transaction_item.rs`, `style/wallet.scss` (verify selectors) | M | Task 5 |
+| 5 | **Fall back gracefully when product metadata is unavailable** — legacy reads `peerShopProducts[shopItemId]` from Firestore for the human-readable item name; until Peer Shop's Firebase integration lands ([peer-shop-implementation.md](../peer-shop/peer-shop-implementation.md) gap), show `"Shop item #<shopItemId>"` (with optional `, size <size>` suffix from `shopItemSpecs.size`) and document the deferred lookup with a `TODO(peer-shop-firebase)` comment that links to the Peer Shop plan | `src/components/wallet/transaction_item.rs` | S | — |
+| 6 | **Mock backend: allow shop account to view buyer order details** — the existing resolver gates on `o.buyer_id == user_id`, which blocks the shop-account view path the new UI exercises. Extend the auth check to also pass when the caller's id equals the seeded shop account id (mirrors legacy `PEER_SHOP_ID` gate); add a regression test covering both buyer-view and shop-account-view | `packages/mock_backend/src/schema/query/shop.rs`, `packages/mock_backend/src/seed.rs` (seed shop account + one shop order if not present), `packages/mock_backend/tests/wallet_shop_orders.rs` (new or extend existing wallet test file) | M | Task 4 verification |
+| 7 | **Unit tests for `format_balance()`** — table-driven cases: `0`, `1`, `999`, `1000` → `1,000`, `1234567` → `1,234,567`, `1234.5` → `1,234.5`, `1234.5000` → `1,234.5`, very small fractions, negative values | `src/models/transaction.rs` (`#[cfg(test)]`) | S | — |
+| 8 | **E2E tests (Playwright)** covering: balance renders with separators (`/12,345/` regex), open transaction → fee breakdown visible, transfer modal happy-path (friend → amount → message → confirm → success), shop-purchase row in shop-account session shows delivery panel after expand | `end2end/tests/wallet.spec.ts` (new) | L | Tasks 1–6 |
 
 **Legend:** S = Small (< 1 hour), M = Medium (1–3 hours), L = Large (3+ hours)
 
 **Critical path:** 1 → 2 → 7 (formatting track), 3 → 4 → 5 (delivery panel track), 6 in parallel with track 2, 8 last.
 
-**Rollback note for Task 1:** `format_balance()` is currently only consumed by `balance_header.rs` and no test asserts on its un-grouped output (`grep -rn format_balance peer-web/`). Changing the implementation is safe; downstream callers added in Task 2 are written against the new behaviour from the start.
+**Rollback note for Task 1:** `format_balance()` is currently only consumed by `balance_header.rs` and no test asserts on its un-grouped output (`grep -rn format_balance /`). Changing the implementation is safe; downstream callers added in Task 2 are written against the new behaviour from the start.
 
 ---
 
@@ -69,7 +69,7 @@ Finishing this sprint promotes Wallet from 🟡 → ✅ in [feature-convergence.
 
 ### Task 1 — Fix `format_balance()` to group thousands
 
-**Current behaviour** ([models/transaction.rs#L325-L329](../../../peer-web/src/models/transaction.rs)):
+**Current behaviour** ([models/transaction.rs#L325-L329](../../..//src/models/transaction.rs)):
 
 ```rust
 /// Format a balance with thousand separators.
@@ -127,9 +127,9 @@ pub fn format_balance(balance: Decimal) -> String {
 
 ### Task 2 — Adopt `format_balance()` in amount cells
 
-Every `format_decimal()` call inside `wallet/` today renders a token amount. Replace them all. Concrete call-site list (verified via `grep -n 'format_decimal' peer-web/src/components/wallet/`):
+Every `format_decimal()` call inside `wallet/` today renders a token amount. Replace them all. Concrete call-site list (verified via `grep -n 'format_decimal' src/components/wallet/`):
 
-**`peer-web/src/components/wallet/transaction_item.rs`** — 6 sites:
+**`src/components/wallet/transaction_item.rs`** — 6 sites:
 - Line 161 — `amount` (transaction amount)
 - Line 165 — `net_amount` (base amount)
 - Line 172 — `fees.total` (fees included)
@@ -137,7 +137,7 @@ Every `format_decimal()` call inside `wallet/` today renders a token amount. Rep
 - Line 180 — `fees.burn` (burn fee subitem)
 - Line 185 — `inv` (investor fee subitem)
 
-**`peer-web/src/components/wallet/transfer_modal.rs`** — 9 sites:
+**`src/components/wallet/transfer_modal.rs`** — 9 sites:
 - Lines 197, 199 — running balance / available balance preview
 - Line 560 — `(Available: …)` hint under amount input
 - Lines 579, 606, 692 — fee total / final total
@@ -145,7 +145,7 @@ Every `format_decimal()` call inside `wallet/` today renders a token amount. Rep
 - Line 696 — summary `amt`
 - Line 700 — summary `fees.total`
 
-Also update the import line in each file (`use crate::models::transaction::{…, format_decimal}` → `…, format_balance`). After the swap, `grep -n 'format_decimal' peer-web/src/components/wallet/` MUST return zero results — that grep is the DoD assertion. `format_decimal()` itself stays exported for future non-amount callers.
+Also update the import line in each file (`use crate::models::transaction::{…, format_decimal}` → `…, format_balance`). After the swap, `grep -n 'format_decimal' src/components/wallet/` MUST return zero results — that grep is the DoD assertion. `format_decimal()` itself stays exported for future non-amount callers.
 
 ---
 
@@ -253,7 +253,7 @@ This deliberately avoids creating a dependency between this sprint and the large
 
 ### Task 6 — Mock backend: shop-account view path
 
-Current mock resolver ([tests/mock_backend/src/schema/query/shop.rs](../../../tests/mock_backend/src/schema/query/shop.rs#L40)):
+Current mock resolver ([packages/mock_backend/src/schema/query/shop.rs](../../../packages/mock_backend/src/schema/query/shop.rs#L40)):
 
 ```rust
 .find(|o| o.transaction_id.to_string() == transaction_id && o.buyer_id == user_id);
@@ -269,13 +269,13 @@ let order = state.shop_orders.iter().find(|o| {
 });
 ```
 
-**Seed updates** (`tests/mock_backend/src/seed.rs`):
+**Seed updates** (`packages/mock_backend/src/seed.rs`):
 
 - Add a "shop" user with the same UUID as the client constant (`292bebb1-…`), a known email + password (document both at the top of the seed file), and any required session-token plumbing so Playwright can authenticate via the existing login helper without bespoke setup.
 - Seed at least one `ShopOrder` with full delivery details (name, email, address line 1+2, city, zipcode, country) so the panel renders all rows in the E2E test.
 - **Side-effect audit:** confirm the new shop user does not silently inflate counters used by unrelated tests (friend lists, follower counts, dashboard feed totals, referral leaderboard). If any test asserts on exact totals, update those expectations in the same commit.
 
-**New tests** (extend the existing `wallet_*.rs` test file in `tests/mock_backend/tests/` or add a new `wallet_shop_orders.rs`):
+**New tests** (extend the existing `wallet_*.rs` test file in `packages/mock_backend/tests/` or add a new `wallet_shop_orders.rs`):
 
 - `test_shop_order_details_buyer_can_view_own` — passes today, regression coverage.
 - `test_shop_order_details_shop_account_can_view_any` — new path enabled by this task.
@@ -321,7 +321,7 @@ mod tests {
 
 ### Task 8 — E2E coverage
 
-New file: `peer-web/end2end/tests/wallet.spec.ts`. Suggested cases:
+New file: `end2end/tests/wallet.spec.ts`. Suggested cases:
 
 1. **Balance with separators** — login as seeded user with a known balance (e.g. `12345.6789`); assert balance text matches `/\d{1,3}(,\d{3})+(\.\d+)?/` (this regex actually requires at least one grouping comma; the previous `/^[\d,]+/` form falsely passed on un-grouped digits). Optionally assert exact string `12,345.6789`.
 2. **Transaction expand → fee breakdown** — click first row, assert `Fees included` row visible with grouped amount (regex same as case 1).
@@ -335,8 +335,8 @@ New file: `peer-web/end2end/tests/wallet.spec.ts`. Suggested cases:
 ## Definition of Done
 
 - [ ] `format_balance()` produces `1,234,567.89` style output for the table-driven cases in Task 7, including the rounding-to-4dp cases.
-- [ ] All token-amount call sites in `wallet/` use `format_balance()`; `grep -rn 'format_decimal' peer-web/src/components/wallet/` returns zero matches.
-- [ ] `PEER_SHOP_ID` constant + `is_shop_account()` helper exported from a single canonical module; only one definition exists in the workspace (`grep -rn 292bebb1 peer-web/src` returns one match).
+- [ ] All token-amount call sites in `wallet/` use `format_balance()`; `grep -rn 'format_decimal' src/components/wallet/` returns zero matches.
+- [ ] `PEER_SHOP_ID` constant + `is_shop_account()` helper exported from a single canonical module; only one definition exists in the workspace (`grep -rn 292bebb1 src` returns one match).
 - [ ] Expanded `SHOP_PURCHASE` row rendered from a shop-account session displays the delivery panel with all available fields, falling back to `"N/A"` per missing field.
 - [ ] Delivery panel fetch is lazy: no `shopOrderDetails` network request fires on row construction or while the row is collapsed; exactly one fires on first expand. Verified by Playwright network assertion (Task 8 case 4).
 - [ ] Non-shop-account viewers do **not** see the delivery panel for any transaction (UI gate, asserted by Task 8 case 5) — independent of the server gate, which still allows buyer-self-view for legacy parity.
@@ -357,8 +357,8 @@ New file: `peer-web/end2end/tests/wallet.spec.ts`. Suggested cases:
 | 2 | Hard-coded `PEER_SHOP_ID` couples client + mock to a single UUID. | Acceptable for v1 (mirrors legacy). If a deploy-time override is later required, lift to `option_env!("PEER_SHOP_ID")` with the current value as the default. |
 | 3 | Product-name lookup is stubbed pending Peer Shop Firebase. | Documented `TODO(peer-shop-firebase)` + plan link; not a blocker for promoting Wallet to ✅ because the legacy delivery panel also degrades to `"Shop Item"` when `peerShopProducts` is empty (`js/wallet.js#L223`). |
 | 4 | `format_balance()` is exported and may be called outside `wallet/` after this sprint. | The function is currently used only in `balance_header.rs`. After Task 2 it will be used in `transaction_item.rs` + possibly `transfer_modal.rs`. No other modules import it. Safe to change the implementation. |
-| 5 | Mock backend seed already has a shop user? | Verify in `tests/mock_backend/src/seed.rs` before adding; if absent, add. If present with a different UUID than the client constant, prefer aligning the seed UUID to the client constant rather than the reverse (the client constant is the one referenced by production data). |
-| 6 | E2E currently has no `wallet.spec.ts`. | Confirmed via search — `peer-web/end2end/tests/` has no wallet coverage. Greenfield file; no merge conflict risk. |
+| 5 | Mock backend seed already has a shop user? | Verify in `packages/mock_backend/src/seed.rs` before adding; if absent, add. If present with a different UUID than the client constant, prefer aligning the seed UUID to the client constant rather than the reverse (the client constant is the one referenced by production data). |
+| 6 | E2E currently has no `wallet.spec.ts`. | Confirmed via search — `end2end/tests/` has no wallet coverage. Greenfield file; no merge conflict risk. |
 | 7 | Project i18n helper for the new delivery-panel strings — does one exist? | Audit one neighbouring wallet component (e.g. `transfer_modal.rs`) for an existing `t!()` / `tr()` / `i18n!()` macro before coding. If present, use it; if absent, ship plain literals and open a follow-up issue, linking it from the inline TODO. Do not block this sprint on standing up an i18n layer. |
 | 8 | Convergence percentage in the Summary section is currently quoted as ~87% but recomputing 12/20 = 60%, 13/20 = 65%. The denominator-vs-percentage mismatch lives in [feature-convergence.md](../../feature-convergence.md) itself. | Out of scope to recompute the entire tracker here; this sprint will only update its own row + summary counts and flag the discrepancy in the convergence-doc commit message so it can be fixed separately. |
 

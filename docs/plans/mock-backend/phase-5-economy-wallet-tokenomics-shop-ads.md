@@ -22,7 +22,7 @@
 
 ### What the frontend calls today
 
-**From `peer-web/src/api/wallet.rs` and `peer-web/src/api/graphql.rs`:**
+**From `src/api/wallet.rs` and `src/api/graphql.rs`:**
 
 | Operation | GraphQL SDL | Frontend file | Auth? |
 |-----------|-------------|---------------|-------|
@@ -32,7 +32,7 @@
 | `shopOrderDetails(transactionId)` | `query ShopOrderDetails(...)` | `graphql.rs` → `ShopOrderDetailsData` wrapper | Yes |
 | `listAdvertisementPosts(offset, limit, contentFilterBy, title, tag)` | `query ListAdvertisementPosts(...)` | `graphql.rs` → `ListAdPostsData` wrapper | Yes |
 
-**From `peer-web/src/api/posts.rs` (already partially wired):**
+**From `src/api/posts.rs` (already partially wired):**
 
 | Operation | GraphQL SDL | Frontend file | Auth? |
 |-----------|-------------|---------------|-------|
@@ -74,7 +74,7 @@ After this phase, the mock backend will support:
 ### New file tree additions
 
 ```
-tests/mock_backend/src/
+packages/mock_backend/src/
 ├── schema/
 │   ├── query/
 │   │   ├── wallet.rs       # NEW: balance, getTransactionHistory, transactionHistory, listWinLogs, listPaymentLogs, listTodaysInteractions
@@ -123,9 +123,9 @@ All response codes and field names come from:
 - `docs/backend_api/06-tokenomics-gems-and-minting.md`
 - `docs/backend_api/07-advertisements.md`
 - `docs/backend_api/08-shop.md`
-- `peer-web/src/models/transaction.rs` (frontend deserialization types)
-- `peer-web/src/models/post.rs` (advertisement types)
-- `peer-web/src/api/graphql.rs` (exact GraphQL field selections)
+- `src/models/transaction.rs` (frontend deserialization types)
+- `src/models/post.rs` (advertisement types)
+- `src/api/graphql.rs` (exact GraphQL field selections)
 
 ---
 
@@ -419,7 +419,7 @@ pub enum DayFilterType {
 
 /// Basic user info embedded in transaction responses.
 ///
-/// Must match the frontend's `TransactionUser` in `peer-web/src/models/transaction.rs`.
+/// Must match the frontend's `TransactionUser` in `src/models/transaction.rs`.
 /// Field selections from `TRANSACTION_HISTORY_QUERY`:
 /// `userid, img, username, slug, visibilityStatus, hasActiveReports, isHiddenForUsers`
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
@@ -451,7 +451,7 @@ pub struct TransactionFees {
 
 /// A single transaction history item.
 ///
-/// Must match the frontend's `Transaction` in `peer-web/src/models/transaction.rs`.
+/// Must match the frontend's `Transaction` in `src/models/transaction.rs`.
 /// Field selections from `TRANSACTION_HISTORY_QUERY`:
 /// `transactionId, operationid, transactionCategory, transactiontype, tokenamount,
 ///  netTokenAmount, message, createdat, sender { ... }, recipient { ... }, fees { ... }`
@@ -786,7 +786,7 @@ pub struct AdvCreator {
 
 /// An advertised post (post + advertisement metadata).
 ///
-/// Must match frontend's `AdvertisementPost` in `peer-web/src/models/post.rs`.
+/// Must match frontend's `AdvertisementPost` in `src/models/post.rs`.
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 #[graphql(rename_fields = "camelCase")]
 pub struct AdvertisementPost {

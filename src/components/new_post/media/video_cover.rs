@@ -27,8 +27,8 @@ pub fn VideoCover() -> impl IntoView {
 
             let target = ev.target().unwrap();
             let input: web_sys::HtmlInputElement = target.unchecked_into();
-            if let Some(files) = input.files() {
-                if let Some(file) = files.get(0) {
+            if let Some(files) = input.files()
+                && let Some(file) = files.get(0) {
                     let name = file.name();
                     let mime_type = file.type_();
 
@@ -49,7 +49,6 @@ pub fn VideoCover() -> impl IntoView {
                         });
                     }
                 }
-            }
         }
         let _ = ev;
     };

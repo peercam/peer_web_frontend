@@ -141,7 +141,7 @@ The only call site ([`js/global.js:620`](../../../js/global.js#L620)) is **comme
 ### Module layout
 
 ```
-peer-web/src/
+src/
 ├── main.rs                 ← register .route("/download", get(download_handler))
 ├── server/
 │   ├── mod.rs              ← #[cfg(feature = "ssr")] pub mod download;
@@ -201,7 +201,7 @@ Both the default host list and the env var should be revisited once the actual p
 
 ### Route registration
 
-In `peer-web/src/main.rs`:
+In `src/main.rs`:
 
 ```rust
 use peer_web::server::download::{download_handler, DownloadConfig};
@@ -388,7 +388,7 @@ fn validate_url(raw: &str, allowed_hosts: &std::collections::HashSet<String>)
 
 ### WASM client helper
 
-`peer-web/src/utils/download.rs`:
+`src/utils/download.rs`:
 
 ```rust
 #[cfg(feature = "hydrate")]
@@ -497,7 +497,7 @@ This mirrors the legacy `forceDownload(url)` semantics while adding an optional 
   - Migration Priority: mark #18 complete
   - Changelog entry
 - [ ] Update `docs/leptos-rewrite-study.md` Download row: `No` → `Yes`
-- [ ] Add a brief security note to `peer-web/README.md` describing `DOWNLOAD_ALLOWED_HOSTS`
+- [ ] Add a brief security note to `/README.md` describing `DOWNLOAD_ALLOWED_HOSTS`
 
 ---
 
@@ -505,16 +505,16 @@ This mirrors the legacy `forceDownload(url)` semantics while adding an optional 
 
 | Path | New / Modified | Approx. Lines | Notes |
 |------|----------------|---------------|-------|
-| `peer-web/src/server/download.rs` | New | ~240 | handler, config, validation, sanitisation, streaming |
-| `peer-web/src/utils/download.rs` | New (Phase 6 only) | ~30 | WASM `force_download()` helper |
-| `peer-web/src/utils/mod.rs` | Modified (Phase 6 only) | +1 | register module |
-| `peer-web/src/lib.rs` | Modified | +3 | `#[cfg(feature = "ssr")] pub mod server { pub mod download; }` — gate lives here, not in a separate `server/mod.rs` |
-| `peer-web/src/main.rs` | Modified | +3 | construct `DownloadConfig`, register route with state |
-| `peer-web/Cargo.toml` | Modified | +1 | `percent-encoding = "2"` (direct dep, ssr feature) |
-| `peer-web/tests/download_proxy.rs` | New | ~200 | integration tests with mock upstream |
+| `src/server/download.rs` | New | ~240 | handler, config, validation, sanitisation, streaming |
+| `src/utils/download.rs` | New (Phase 6 only) | ~30 | WASM `force_download()` helper |
+| `src/utils/mod.rs` | Modified (Phase 6 only) | +1 | register module |
+| `src/lib.rs` | Modified | +3 | `#[cfg(feature = "ssr")] pub mod server { pub mod download; }` — gate lives here, not in a separate `server/mod.rs` |
+| `src/main.rs` | Modified | +3 | construct `DownloadConfig`, register route with state |
+| `Cargo.toml` | Modified | +1 | `percent-encoding = "2"` (direct dep, ssr feature) |
+| `tests/download_proxy.rs` | New | ~200 | integration tests with mock upstream |
 | `docs/feature-convergence.md` | Modified | +~10 | promotion + changelog + row description correction (per Open Question #0) |
 | `docs/leptos-rewrite-study.md` | Modified | +1 | flip Download row |
-| `peer-web/README.md` | Modified | +~10 | env var + rate-limit documentation |
+| `/README.md` | Modified | +~10 | env var + rate-limit documentation |
 
 **Total new code:** ~470 lines (server: 240, helper: 30, tests: 200). Helper + utils/mod.rs changes (~31 LOC) are conditional on Open Question #5.
 
@@ -564,7 +564,7 @@ OWASP Top-10 mapping: A10 (SSRF) — primary mitigation; A05 (Security Misconfig
 - Filename sanitisation matrix (7 cases above)
 - `content_disposition()` formatting
 
-### Integration (`peer-web/tests/download_proxy.rs`)
+### Integration (`tests/download_proxy.rs`)
 - Spin up a mock upstream on a random `127.0.0.1:0` port
 - Inject its origin into `DOWNLOAD_ALLOWED_HOSTS` for the test process
 - Drive the real `download_handler` via `axum::Router::oneshot`

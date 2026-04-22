@@ -31,18 +31,19 @@ jobs:
 
           ".security/.*": "security",
 
-          "css/.*": "web",
-          "js/.*": "web",
-          "admin/.*": "web",
-          "template-parts/.*": "web",
+          "src/.*": "rust",
+          "style/.*": "rust",
+          "tests/.*": "rust",
+          "tests-wasm/.*": "rust",
+          "end2end/.*": "rust",
+          "packages/.*": "rust",
+          "Cargo\\..*": "rust",
 
-          ".*\\.php$": "web",
+          "public/.*": "assets",
 
-          "img/.*": "assets",
-          "svg.*/.*": "assets",
-          "fonts/.*": "assets",
-          "json/.*": "assets",
+          "legacy/.*": "legacy",
 
+          "docs/.*": "documentation",
           "README.*": "documentation"
         }
 

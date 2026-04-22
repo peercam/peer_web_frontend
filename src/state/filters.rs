@@ -65,8 +65,8 @@ impl FilterState {
         };
 
         // Load content types
-        if let Ok(Some(json)) = storage.get_item(storage_keys::CONTENT_TYPES) {
-            if let Ok(types) = serde_json::from_str::<Vec<String>>(&json) {
+        if let Ok(Some(json)) = storage.get_item(storage_keys::CONTENT_TYPES)
+            && let Ok(types) = serde_json::from_str::<Vec<String>>(&json) {
                 let parsed: Vec<PostFilterType> = types
                     .iter()
                     .filter_map(|s| match s.as_str() {
@@ -79,7 +79,6 @@ impl FilterState {
                     .collect();
                 self.content_types.set(parsed);
             }
-        }
 
         // Load feed filter
         if let Ok(Some(feed)) = storage.get_item(storage_keys::FEED_FILTER) {

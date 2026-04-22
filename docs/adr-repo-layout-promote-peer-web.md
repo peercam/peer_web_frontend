@@ -1,7 +1,8 @@
 # ADR: Promote `peer-web/` to Repository Root and Archive Legacy PHP and Static Assets
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-04-22
+**Accepted:** 2026-04-22
 **Authors:** —
 **Supersedes:** Current dual-stack layout where the legacy PHP frontend lives at the repo root and the Rust/Leptos rewrite is nested under `peer-web/`.
 

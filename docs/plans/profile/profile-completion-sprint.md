@@ -38,9 +38,9 @@ My Profile and View Profile are ~85% implemented. Edit Profile (❌ Not Started)
 | **API — Profile** | `src/api/profile.rs` | — | ✅ getProfile, listUserPosts, toggleFollow, listFollowRelations, listFriends, fetchBiography, blockUser, reportUser |
 | **API — Posts** | `src/api/posts.rs` | 409 | ✅ listPosts, listAdPosts, postAction, createPost, searchTags |
 | **API — Settings** | `src/api/settings.rs` | 282 | ✅ updateBio, updateProfileImage, updateUsername, updatePassword, updateEmail, updateContentPreferences, deleteAccount |
-| **Mock Backend — Users** | `tests/mock_backend/src/schema/query/users.rs` | — | ✅ getProfile, listUsersV2, getUserInfo, listFollowRelations, listFriends |
-| **Mock Backend — Profile mutations** | `tests/mock_backend/src/schema/mutation/profile.rs` | — | ✅ toggleUserFollowStatus, blockUser, reportUser, updateBio, updateProfileImage, updateUsername, updatePassword, updateEmail, deleteAccount |
-| **Mock Backend — Posts** | `tests/mock_backend/src/schema/query/posts.rs` | — | ✅ listPosts with pagination, filters, sorting |
+| **Mock Backend — Users** | `packages/mock_backend/src/schema/query/users.rs` | — | ✅ getProfile, listUsersV2, getUserInfo, listFollowRelations, listFriends |
+| **Mock Backend — Profile mutations** | `packages/mock_backend/src/schema/mutation/profile.rs` | — | ✅ toggleUserFollowStatus, blockUser, reportUser, updateBio, updateProfileImage, updateUsername, updatePassword, updateEmail, deleteAccount |
+| **Mock Backend — Posts** | `packages/mock_backend/src/schema/query/posts.rs` | — | ✅ listPosts with pagination, filters, sorting |
 | **SCSS** | `style/profile.scss` | — | ✅ Desktop layout, responsive, header, posts grid |
 
 ### What Remains 🔲
@@ -55,7 +55,7 @@ My Profile and View Profile are ~85% implemented. Edit Profile (❌ Not Started)
 | 6 | **Infinite scroll inside RelationsModal** | `src/components/profile/relations_modal.rs` | M | P2 | ✅ Done |
 | 7 | **Deactivate/Delete account UI** | `src/components/settings/` | M | P2 | ✅ Done |
 | 8 | **Settings: bio + image save fix** | `src/components/settings/profile.rs` | S | P3 | ✅ Done |
-| 9 | **E2E tests (Playwright)** | `peer-web/end2end/` | L | P2 | ❌ Not Started |
+| 9 | **E2E tests (Playwright)** | `end2end/` | L | P2 | ❌ Not Started |
 
 **Legend:** S = Small (< 1 hour), M = Medium (1–3 hours), L = Large (3+ hours)
 

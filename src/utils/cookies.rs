@@ -42,13 +42,11 @@ fn get_document_cookie() -> Option<String> {
 #[cfg(feature = "hydrate")]
 fn set_document_cookie(cookie: &str) {
     use wasm_bindgen::JsCast;
-    if let Some(window) = leptos::web_sys::window() {
-        if let Some(document) = window.document() {
-            if let Ok(html_doc) = document.dyn_into::<leptos::web_sys::HtmlDocument>() {
+    if let Some(window) = leptos::web_sys::window()
+        && let Some(document) = window.document()
+            && let Ok(html_doc) = document.dyn_into::<leptos::web_sys::HtmlDocument>() {
                 let _ = html_doc.set_cookie(cookie);
             }
-        }
-    }
 }
 
 /// Set a cookie with optional max-age in days.

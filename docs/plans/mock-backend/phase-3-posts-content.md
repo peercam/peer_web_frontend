@@ -24,7 +24,7 @@
 
 ### What the frontend calls today
 
-From `peer-web/src/api/posts.rs` and `peer-web/src/api/graphql.rs`:
+From `src/api/posts.rs` and `src/api/graphql.rs`:
 
 | Operation | GraphQL SDL | Frontend file | Auth? |
 |-----------|-------------|---------------|-------|
@@ -38,7 +38,7 @@ From `peer-web/src/api/posts.rs` and `peer-web/src/api/graphql.rs`:
 | `createPost(action, input)` | `mutation CreatePost(...)` | `posts.rs` → `CreatePost` server fn | Yes |
 | `searchTags(tagName, offset, limit)` | `query SearchTags(...)` | `posts.rs` → via `SEARCH_TAGS_QUERY` | Yes |
 
-From `peer-web/src/api/posts.rs` (search/user lookup — arguably cross-cutting but wired in posts module):
+From `src/api/posts.rs` (search/user lookup — arguably cross-cutting but wired in posts module):
 
 | Operation | GraphQL SDL | Frontend file | Auth? |
 |-----------|-------------|---------------|-------|
@@ -70,7 +70,7 @@ After this phase, the mock backend will support:
 ### New file tree additions
 
 ```
-tests/mock_backend/src/
+packages/mock_backend/src/
 ├── schema/
 │   ├── query/
 │   │   └── posts.rs          # NEW: listPosts, guestListPost, postEligibility, searchTags, listTags, listAdvertisementPosts, postInteractions
@@ -99,8 +99,8 @@ tests/mock_backend/src/
 
 All response codes and field names come from:
 - `docs/backend_api/03-posts-and-content.md`
-- `peer-web/src/models/post.rs` (frontend deserialization types)
-- `peer-web/src/api/graphql.rs` (exact GraphQL field selections)
+- `src/models/post.rs` (frontend deserialization types)
+- `src/api/graphql.rs` (exact GraphQL field selections)
 
 ---
 
@@ -118,7 +118,7 @@ All response codes and field names come from:
 | A6 | Define `PostActionType` enum | `LIKE`, `DISLIKE`, `REPORT`, `VIEW`, `SHARE`, `SAVE` (plus undo variants `UNLIKE`, `UNDISLIKE`, `UNSAVE`) |
 | A7 | Define `PostType` enum | `POST` (used by `createPost`) |
 | A8 | Define `PostUser` struct (SimpleObject) | `id`, `username`, `slug`, `img`, `isfollowed`, `isfollowing`, `isfriend` — must match frontend's `PostUser` deserialization |
-| A9 | Define `Post` struct (SimpleObject) | All fields from `peer-web/src/models/post.rs`: `id`, `contenttype`, `title`, `media`, `cover`, `mediadescription`, `createdat`, amounts, interaction booleans, `tags`, `hasActiveReports`, `visibilityStatus`, `isHiddenForUsers`, `user: PostUser`, `comments: Vec<Comment>` |
+| A9 | Define `Post` struct (SimpleObject) | All fields from `src/models/post.rs`: `id`, `contenttype`, `title`, `media`, `cover`, `mediadescription`, `createdat`, amounts, interaction booleans, `tags`, `hasActiveReports`, `visibilityStatus`, `isHiddenForUsers`, `user: PostUser`, `comments: Vec<Comment>` |
 | A10 | Define `PostListResponse` struct | `meta: DefaultResponse`, `counter: Int`, `affectedRows: Option<Vec<Post>>` |
 | A11 | Define `PostResponse` struct | `meta: DefaultResponse`, `affectedRows: Option<Post>` (for single-post guest query) |
 | A12 | Define `PostInput` (InputObject) | `title`, `mediadescription`, `contenttype`, `media`, `cover`, `tags`, `uploadedFiles` |
@@ -389,7 +389,7 @@ pub enum GetOnly {
 
 /// User embedded in post responses.
 ///
-/// Must match the frontend's `PostUser` deserialization in `peer-web/src/models/post.rs`.
+/// Must match the frontend's `PostUser` deserialization in `src/models/post.rs`.
 /// Field selections from `LIST_POSTS_QUERY` in `graphql.rs`:
 /// `id, username, slug, img, isfollowed, isfollowing, isfriend`
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
@@ -410,7 +410,7 @@ pub struct PostUser {
 /// Full post type returned in all post responses.
 ///
 /// Field names must exactly match the GraphQL schema selections in `graphql.rs`.
-/// The frontend deserializes these via `peer-web/src/models/post.rs::Post`.
+/// The frontend deserializes these via `src/models/post.rs::Post`.
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 #[graphql(rename_fields = "camelCase")]
 pub struct Post {
@@ -2325,7 +2325,7 @@ async fn test_list_advertisement_posts() {
 
 ### Response Shape Compatibility
 
-- [x] `Post` fields match the frontend's `PostUser` and `Post` structs in `peer-web/src/models/post.rs`
+- [x] `Post` fields match the frontend's `PostUser` and `Post` structs in `src/models/post.rs`
 - [x] `PostListResponse` has `meta` (DefaultResponse), `counter` (Int), `affectedRows` (Vec<Post>)
 - [x] `CreatePostResponse` has `meta`, `affectedRows` with `id`, `contenttype`, `title`
 - [x] `PostEligibilityResponse` has `meta`, `eligibilityToken`

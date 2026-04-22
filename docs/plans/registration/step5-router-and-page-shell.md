@@ -77,32 +77,32 @@ Step 5 establishes the routing and page-level component structure that Steps 6�
 
 ## 5.3 — Copy Static Assets into the Leptos Project
 
-The Leptos project serves static files from `peer-web/public/` (or `peer-web/style/` for CSS). Copy the necessary assets so they are accessible at dev time.
+The Leptos project serves static files from `public/` (or `style/` for CSS). Copy the necessary assets so they are accessible at dev time.
 
 ### 5.3.1 — CSS
 
 ```bash
 # From the repo root
-cp css/login-register.css peer-web/style/login-register.css
+cp css/login-register.css style/login-register.css
 ```
 
 ### 5.3.2 — Fonts
 
 ```bash
-mkdir -p peer-web/public/fonts
-cp -r fonts/font-poppins peer-web/public/fonts/font-poppins
-cp -r fonts/peer-icon-font peer-web/public/fonts/peer-icon-font
+mkdir -p public/fonts
+cp -r fonts/font-poppins public/fonts/font-poppins
+cp -r fonts/peer-icon-font public/fonts/peer-icon-font
 ```
 
 ### 5.3.3 — Images and SVGs
 
 ```bash
-mkdir -p peer-web/public/img peer-web/public/svg
-cp img/register.webp peer-web/public/img/register.webp
-cp svg/logo_sw.svg peer-web/public/svg/logo_sw.svg
-cp svg/logo_farbe.svg peer-web/public/svg/logo_farbe.svg
-cp svg/blueglow.svg peer-web/public/svg/blueglow.svg
-cp svg/blueglow1.svg peer-web/public/svg/blueglow1.svg
+mkdir -p public/img public/svg
+cp img/register.webp public/img/register.webp
+cp svg/logo_sw.svg public/svg/logo_sw.svg
+cp svg/logo_farbe.svg public/svg/logo_farbe.svg
+cp svg/blueglow.svg public/svg/blueglow.svg
+cp svg/blueglow1.svg public/svg/blueglow1.svg
 ```
 
 > **Note:** These are copies, not symlinks, so the Leptos project is self-contained. When visual parity work begins (Step 14), these will be reconciled.
@@ -112,10 +112,10 @@ cp svg/blueglow1.svg peer-web/public/svg/blueglow1.svg
 The copied `login-register.css` references fonts and SVGs using _relative_ paths (`../fonts/...`, `../svg/...`). Since the Leptos project serves static assets from `/`, update the CSS background URLs:
 
 ```bash
-# Inside peer-web/style/login-register.css, update paths:
-sed -i '' "s|url('../svg/|url('/svg/|g" peer-web/style/login-register.css
-sed -i '' "s|url('../fonts/|url('/fonts/|g" peer-web/style/login-register.css
-sed -i '' "s|url('../img/|url('/img/|g" peer-web/style/login-register.css
+# Inside style/login-register.css, update paths:
+sed -i '' "s|url('../svg/|url('/svg/|g" style/login-register.css
+sed -i '' "s|url('../fonts/|url('/fonts/|g" style/login-register.css
+sed -i '' "s|url('../img/|url('/img/|g" style/login-register.css
 ```
 
 ---
@@ -124,7 +124,7 @@ sed -i '' "s|url('../img/|url('/img/|g" peer-web/style/login-register.css
 
 ### 5.4.1 — Update `Cargo.toml` style settings
 
-Ensure `cargo-leptos` knows about the stylesheet. In `peer-web/Cargo.toml`, under the `[package.metadata.leptos]` section:
+Ensure `cargo-leptos` knows about the stylesheet. In `Cargo.toml`, under the `[package.metadata.leptos]` section:
 
 ```toml
 [package.metadata.leptos]
@@ -142,7 +142,7 @@ assets-dir = "public"
 
 ### 5.4.2 — Import login-register.css from the main stylesheet
 
-In `peer-web/style/main.scss`, add at the top:
+In `style/main.scss`, add at the top:
 
 ```scss
 /* Import the registration/login styles from the legacy PHP app */
@@ -860,7 +860,7 @@ Open `http://localhost:3000/register` in a browser:
 | Page is blank, content appears after JS loads | SSR not working; app is client-only rendering | Confirm `shell()` is used in the Axum setup (`src/main.rs`); run with `cargo leptos watch` not `trunk serve` |
 | CSS not applied / unstyled page | `login-register.css` not bundled | Check `style/main.scss` has the `@import`; verify `cargo leptos watch` output mentions the CSS file |
 | Peer icons show as empty boxes | Icon font files not found | Check `public/fonts/peer-icon-font/` exists and CSS `@font-face` paths are correct (no `../` prefix) |
-| Phone mockup image missing | `register.webp` not in `public/img/` | Copy with `cp img/register.webp peer-web/public/img/register.webp` |
+| Phone mockup image missing | `register.webp` not in `public/img/` | Copy with `cp img/register.webp public/img/register.webp` |
 | `RwSignal` not found | Wrong Leptos import | Use `use leptos::prelude::*;` which re-exports `RwSignal` |
 | `use_query_map` not found | Missing `leptos_router` import | Add `use leptos_router::hooks::use_query_map;` |
 | `web_sys::window()` error during SSR | `web-sys` called on server | Ensure the `window.location` code is inside `#[cfg(feature = "hydrate")]` |

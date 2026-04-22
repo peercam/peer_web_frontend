@@ -192,17 +192,15 @@ pub fn VoiceRecorder(
         #[cfg(feature = "hydrate")]
         {
             use wasm_bindgen::JsCast;
-            if let Some(doc) = web_sys::window().and_then(|w| w.document()) {
-                if let Some(el) = doc.get_element_by_id("voice-recorder-preview") {
-                    if let Ok(audio) = el.dyn_into::<web_sys::HtmlMediaElement>() {
+            if let Some(doc) = web_sys::window().and_then(|w| w.document())
+                && let Some(el) = doc.get_element_by_id("voice-recorder-preview")
+                    && let Ok(audio) = el.dyn_into::<web_sys::HtmlMediaElement>() {
                         if audio.paused() {
                             let _ = audio.play();
                         } else {
                             audio.pause().ok();
                         }
                     }
-                }
-            }
         }
     };
 

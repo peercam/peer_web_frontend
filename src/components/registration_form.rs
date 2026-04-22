@@ -535,15 +535,12 @@ pub fn focus_field(field_id: &str) {
     #[cfg(feature = "hydrate")]
     {
         use wasm_bindgen::JsCast;
-        if let Some(window) = web_sys::window() {
-            if let Some(document) = window.document() {
-                if let Some(element) = document.get_element_by_id(field_id) {
-                    if let Some(html_el) = element.dyn_ref::<web_sys::HtmlElement>() {
+        if let Some(window) = web_sys::window()
+            && let Some(document) = window.document()
+                && let Some(element) = document.get_element_by_id(field_id)
+                    && let Some(html_el) = element.dyn_ref::<web_sys::HtmlElement>() {
                         let _ = html_el.focus();
                     }
-                }
-            }
-        }
     }
     #[cfg(not(feature = "hydrate"))]
     {
@@ -556,15 +553,13 @@ fn focus_first_invalid_field() {
     #[cfg(feature = "hydrate")]
     {
         use wasm_bindgen::JsCast;
-        if let Some(window) = web_sys::window() {
-            if let Some(document) = window.document() {
+        if let Some(window) = web_sys::window()
+            && let Some(document) = window.document() {
                 // Query for the first input inside an .invalid container
-                if let Ok(Some(element)) = document.query_selector(".input-field.invalid input") {
-                    if let Some(html_el) = element.dyn_ref::<web_sys::HtmlElement>() {
+                if let Ok(Some(element)) = document.query_selector(".input-field.invalid input")
+                    && let Some(html_el) = element.dyn_ref::<web_sys::HtmlElement>() {
                         let _ = html_el.focus();
                     }
-                }
             }
-        }
     }
 }

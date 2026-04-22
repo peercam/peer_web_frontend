@@ -29,7 +29,7 @@ This document outlines 15 incremental steps to convert the Peer Network **regist
 
 ## Step 1 — Scaffold Leptos Project ✅
 
-**Goal:** Initialize the `cargo-leptos` project in a new `peer-web/` directory alongside the existing PHP app.
+**Goal:** Initialize the `cargo-leptos` project in a new `/` directory alongside the existing PHP app.
 
 **Detailed plan:** [step1-scaffold-leptos-project.md](step1-scaffold-leptos-project.md)
 

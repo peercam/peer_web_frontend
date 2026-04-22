@@ -2,7 +2,7 @@
 
 > **Parent Plan:** [mock-backend-rust-rewrite.md](./mock-backend-rust-rewrite.md)
 > **Depends on:** All phases (1–6) completed — the refactor touches tests from every phase.
-> **Goal:** Break up the monolithic 7,675-line `tests/mock_backend/tests/integration.rs` into a well-organised, maintainable multi-module test suite with shared helpers, reduced boilerplate, and clear domain boundaries.
+> **Goal:** Break up the monolithic 7,675-line `packages/mock_backend/tests/integration.rs` into a well-organised, maintainable multi-module test suite with shared helpers, reduced boilerplate, and clear domain boundaries.
 > **Plan Quality:** ⭐⭐⭐⭐⭐ (5/5)
 
 ---
@@ -107,7 +107,7 @@
 ### File tree
 
 ```
-tests/mock_backend/tests/
+packages/mock_backend/tests/
 ├── common/
 │   ├── mod.rs              # Re-exports everything below
 │   ├── client.rs           # graphql(), graphql_stateful(), graphql_with_auth()
@@ -421,7 +421,7 @@ Each commit in Phase B is atomic — if a domain extraction breaks something, re
 ### Before refactor (baseline)
 
 ```bash
-cd tests/mock_backend
+cd packages/mock_backend
 cargo test 2>&1 | tail -1
 # Expected: test result: ok. ~140 passed; 0 failed; 0 ignored
 ```

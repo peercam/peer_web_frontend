@@ -13,10 +13,10 @@ Before starting this step, confirm:
 | Requirement | Verification | Expected |
 |-------------|--------------|----------|
 | Steps 0–14 complete | `cargo leptos build` | Compiles with no errors; registration flow is functional end-to-end |
-| Mock backend starts | `cd tests/mock_backend && node server.js` | Prints "Mock Peer backend running at http://localhost:4000/graphql" |
+| Mock backend starts | `cd packages/mock_backend && node server.js` | Prints "Mock Peer backend running at http://localhost:4000/graphql" |
 | Leptos app starts | `cd peer-web && cargo leptos watch` | Serves at `http://localhost:3000` |
-| Existing Playwright scaffold | `cat peer-web/end2end/package.json` | `@playwright/test` is already a dev dependency |
-| All browsers installed | `cd peer-web/end2end && npx playwright install` | Chromium, Firefox, and WebKit binaries present |
+| Existing Playwright scaffold | `cat end2end/package.json` | `@playwright/test` is already a dev dependency |
+| All browsers installed | `cd end2end && npx playwright install` | Chromium, Firefox, and WebKit binaries present |
 | Visual parity confirmed (Step 14) | Manual inspection | Leptos `/register` page matches the PHP version |
 
 ---
@@ -79,7 +79,7 @@ Before starting this step, confirm:
 
 Before the E2E tests can run reliably in sequence, the mock backend needs an endpoint to reset its in-memory state between tests.
 
-### 15.3.1 — Add reset endpoint to `tests/mock_backend/server.js`
+### 15.3.1 — Add reset endpoint to `packages/mock_backend/server.js`
 
 Add this **before** the `app.all("/graphql", ...)` line:
 
@@ -104,7 +104,7 @@ curl -X POST http://localhost:4000/reset
 ## 15.4 — File Structure
 
 ```
-peer-web/end2end/
+end2end/
 ├── playwright.config.ts              ← Updated: baseURL, globalSetup/Teardown, projects
 ├── package.json                      ← Updated: add test scripts
 ├── tsconfig.json                     ← Existing (no changes)
@@ -128,7 +128,7 @@ peer-web/end2end/
 
 ## 15.5 — Implementation: Playwright Configuration Update
 
-### 15.5.1 — Update `peer-web/end2end/playwright.config.ts`
+### 15.5.1 — Update `end2end/playwright.config.ts`
 
 ```typescript
 import { defineConfig, devices } from "@playwright/test";
@@ -192,7 +192,7 @@ export default defineConfig({
 
 ## 15.6 — Implementation: Update `package.json` Scripts
 
-### 15.6.1 — Update `peer-web/end2end/package.json`
+### 15.6.1 — Update `end2end/package.json`
 
 ```json
 {
@@ -487,7 +487,7 @@ async function globalSetup(config: FullConfig) {
   console.log("\n🔧 Starting mock backend...");
 
   const mockBackend = spawn("node", ["server.js"], {
-    cwd: path.resolve(__dirname, "../../tests/mock_backend"),
+    cwd: path.resolve(__dirname, "../../packages/mock_backend"),
     stdio: "pipe",
     detached: true,
   });
@@ -585,7 +585,7 @@ export default globalTeardown;
 
 ### 15.8.3 — Add `.test-pids.json` to `.gitignore`
 
-Append to `peer-web/end2end/.gitignore`:
+Append to `end2end/.gitignore`:
 
 ```
 .test-pids.json
@@ -987,7 +987,7 @@ test.describe("Registration — Navigation & Back Button", () => {
 
 ```bash
 # From the end2end directory
-cd peer-web/end2end
+cd end2end
 
 # Install dependencies (first time only)
 npm install
@@ -1018,13 +1018,13 @@ If you prefer to manage the servers yourself (faster iteration during developmen
 
 ```bash
 # Terminal 1: Start mock backend
-cd tests/mock_backend && node server.js
+cd packages/mock_backend && node server.js
 
 # Terminal 2: Start Leptos app
 cd peer-web && GRAPHQL_ENDPOINT=http://localhost:4000/graphql cargo leptos serve
 
 # Terminal 3: Run tests (skip globalSetup/Teardown)
-cd peer-web/end2end
+cd end2end
 SKIP_GLOBAL_SETUP=true npx playwright test
 ```
 
@@ -1073,8 +1073,8 @@ name: E2E Tests
 on:
   pull_request:
     paths:
-      - "peer-web/**"
-      - "tests/mock_backend/**"
+      - "/**"
+      - "packages/mock_backend/**"
   push:
     branches: [main]
 
@@ -1103,13 +1103,13 @@ jobs:
           node-version: 20
 
       - name: Install mock backend dependencies
-        run: cd tests/mock_backend && npm ci
+        run: cd packages/mock_backend && npm ci
 
       - name: Install E2E dependencies
-        run: cd peer-web/end2end && npm ci
+        run: cd end2end && npm ci
 
       - name: Install Playwright browsers
-        run: cd peer-web/end2end && npx playwright install --with-deps chromium
+        run: cd end2end && npx playwright install --with-deps chromium
 
       - name: Build Leptos app
         run: cd peer-web && cargo leptos build --release
@@ -1117,7 +1117,7 @@ jobs:
           GRAPHQL_ENDPOINT: http://localhost:4000/graphql
 
       - name: Run E2E tests
-        run: cd peer-web/end2end && npm test
+        run: cd end2end && npm test
         env:
           CI: true
 
@@ -1126,7 +1126,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: peer-web/end2end/playwright-report/
+          path: end2end/playwright-report/
           retention-days: 7
 
       - name: Upload failure screenshots
@@ -1134,7 +1134,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-failures
-          path: peer-web/end2end/test-results/
+          path: end2end/test-results/
           retention-days: 7
 ```
 
@@ -1216,20 +1216,20 @@ test("A11y: registration page has no critical accessibility violations", async (
 
 | File | Action | Description |
 |------|--------|-------------|
-| `tests/mock_backend/server.js` | **Edit** | Add `POST /reset` endpoint for test isolation |
-| `peer-web/end2end/playwright.config.ts` | **Edit** | Update with `baseURL`, `globalSetup`, `globalTeardown`, single worker |
-| `peer-web/end2end/package.json` | **Edit** | Add test scripts, `tree-kill` and `@axe-core/playwright` dependencies |
-| `peer-web/end2end/.gitignore` | **Edit** | Add `.test-pids.json`, `test-results/`, `playwright-report/` |
-| `peer-web/end2end/global-setup.ts` | **Create** | Starts mock backend + Leptos app, saves PIDs |
-| `peer-web/end2end/global-teardown.ts` | **Create** | Kills both processes using saved PIDs |
-| `peer-web/end2end/helpers/wait-for-server.ts` | **Create** | TCP port readiness check utility |
-| `peer-web/end2end/helpers/mock-server.ts` | **Create** | `resetMockState()` and `preRegisterEmail()` utilities |
-| `peer-web/end2end/helpers/registration-page.ts` | **Create** | Page object model for `/register` |
-| `peer-web/end2end/tests/registration/happy-path.spec.ts` | **Create** | T1 (full happy path), T8 (URL prefill), T10 (auth redirect), SSR check, a11y check |
-| `peer-web/end2end/tests/registration/referral.spec.ts` | **Create** | T2 (invalid format), T3 (server rejection) |
-| `peer-web/end2end/tests/registration/form-validation.spec.ts` | **Create** | T5 (weak password), T6 (mismatch), T7 (unchecked checkboxes) |
-| `peer-web/end2end/tests/registration/server-errors.spec.ts` | **Create** | T4 (duplicate email), T4b (server error) |
-| `peer-web/end2end/tests/registration/navigation.spec.ts` | **Create** | T9 (back button preserves state), T9b/c/d (navigation edge cases) |
+| `packages/mock_backend/server.js` | **Edit** | Add `POST /reset` endpoint for test isolation |
+| `end2end/playwright.config.ts` | **Edit** | Update with `baseURL`, `globalSetup`, `globalTeardown`, single worker |
+| `end2end/package.json` | **Edit** | Add test scripts, `tree-kill` and `@axe-core/playwright` dependencies |
+| `end2end/.gitignore` | **Edit** | Add `.test-pids.json`, `test-results/`, `playwright-report/` |
+| `end2end/global-setup.ts` | **Create** | Starts mock backend + Leptos app, saves PIDs |
+| `end2end/global-teardown.ts` | **Create** | Kills both processes using saved PIDs |
+| `end2end/helpers/wait-for-server.ts` | **Create** | TCP port readiness check utility |
+| `end2end/helpers/mock-server.ts` | **Create** | `resetMockState()` and `preRegisterEmail()` utilities |
+| `end2end/helpers/registration-page.ts` | **Create** | Page object model for `/register` |
+| `end2end/tests/registration/happy-path.spec.ts` | **Create** | T1 (full happy path), T8 (URL prefill), T10 (auth redirect), SSR check, a11y check |
+| `end2end/tests/registration/referral.spec.ts` | **Create** | T2 (invalid format), T3 (server rejection) |
+| `end2end/tests/registration/form-validation.spec.ts` | **Create** | T5 (weak password), T6 (mismatch), T7 (unchecked checkboxes) |
+| `end2end/tests/registration/server-errors.spec.ts` | **Create** | T4 (duplicate email), T4b (server error) |
+| `end2end/tests/registration/navigation.spec.ts` | **Create** | T9 (back button preserves state), T9b/c/d (navigation edge cases) |
 | `.github/workflows/e2e.yml` | **Create** | GitHub Actions CI pipeline |
 
 ---
@@ -1266,7 +1266,7 @@ Before considering step 15 complete, verify:
 
 | # | Check | Command / Action | Expected |
 |---|-------|------------------|----------|
-| 1 | All 10 core tests pass locally | `cd peer-web/end2end && npm test` | 10/10 green (plus supplementary tests) |
+| 1 | All 10 core tests pass locally | `cd end2end && npm test` | 10/10 green (plus supplementary tests) |
 | 2 | Tests pass in headless mode | `npm test` (default) | Same result as headed |
 | 3 | HTML report generates | `npm run test:report` | Opens browser with detailed pass/fail report |
 | 4 | Failure screenshots captured | Intentionally break a test, run `npm test` | `test-results/` contains a `.png` screenshot |

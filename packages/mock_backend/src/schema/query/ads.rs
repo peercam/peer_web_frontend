@@ -168,10 +168,10 @@ impl AdQuery {
                 user_ads.sort_by(|a, b| a.created_at.cmp(&b.created_at));
             }
             Some(AdvertisementSort::BiggestCost) => {
-                user_ads.sort_by(|a, b| b.token_cost.cmp(&a.token_cost));
+                user_ads.sort_by_key(|a| std::cmp::Reverse(a.token_cost));
             }
             Some(AdvertisementSort::SmallestCost) => {
-                user_ads.sort_by(|a, b| a.token_cost.cmp(&b.token_cost));
+                user_ads.sort_by_key(|a| a.token_cost);
             }
             _ => {
                 user_ads.sort_by(|a, b| b.created_at.cmp(&a.created_at));

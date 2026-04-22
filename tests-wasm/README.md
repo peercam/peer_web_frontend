@@ -36,7 +36,7 @@ relative `path = "../peer-web"` dependency) means:
 cargo install wasm-pack --locked
 
 # Run the suite (Chrome — uses Playwright's bundled chromium if present)
-cd peer-web/tests-wasm
+cd tests-wasm
 wasm-pack test --headless --chrome
 
 # Or Firefox / Safari

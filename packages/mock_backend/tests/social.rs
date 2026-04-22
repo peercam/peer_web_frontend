@@ -6,29 +6,7 @@ async fn test_toggle_follow() {
     let state = default_shared_state();
     let token = login_default(&state).await;
 
-    // Follow alice
-    let res = graphql_with_auth(
-        &state,
-        &format!(
-            r#"
-        mutation {{
-            toggleUserFollowStatus(userid: "{}") {{
-                meta {{ ResponseCode }}
-                isfollowing
-            }}
-        }}
-    "#,
-            SEED_USER_ALICE
-        ),
-        &token,
-    )
-    .await;
-
-    let data = &res["data"]["toggleUserFollowStatus"];
-    assert_eq!(data["meta"]["ResponseCode"], "11104");
-    assert_eq!(data["isfollowing"], true);
-
-    // Unfollow alice
+    // Default user (verified) already follows alice via seed; first toggle unfollows.
     let res = graphql_with_auth(
         &state,
         &format!(
@@ -49,6 +27,28 @@ async fn test_toggle_follow() {
     let data = &res["data"]["toggleUserFollowStatus"];
     assert_eq!(data["meta"]["ResponseCode"], "11103");
     assert_eq!(data["isfollowing"], false);
+
+    // Re-follow alice
+    let res = graphql_with_auth(
+        &state,
+        &format!(
+            r#"
+        mutation {{
+            toggleUserFollowStatus(userid: "{}") {{
+                meta {{ ResponseCode }}
+                isfollowing
+            }}
+        }}
+    "#,
+            SEED_USER_ALICE
+        ),
+        &token,
+    )
+    .await;
+
+    let data = &res["data"]["toggleUserFollowStatus"];
+    assert_eq!(data["meta"]["ResponseCode"], "11104");
+    assert_eq!(data["isfollowing"], true);
 }
 
 #[tokio::test]

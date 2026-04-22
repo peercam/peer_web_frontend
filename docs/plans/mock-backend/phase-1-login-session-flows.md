@@ -23,7 +23,7 @@
 
 ### What the frontend calls today
 
-From `peer-web/src/api/auth.rs` and `peer-web/src/api/graphql.rs`, the Leptos app uses three core auth mutations:
+From `src/api/auth.rs` and `src/api/graphql.rs`, the Leptos app uses three core auth mutations:
 
 | Mutation | GraphQL SDL | Frontend file |
 |----------|-------------|---------------|
@@ -31,7 +31,7 @@ From `peer-web/src/api/auth.rs` and `peer-web/src/api/graphql.rs`, the Leptos ap
 | `refreshToken(refreshToken)` | `mutation RefreshToken($refreshToken: String!) { refreshToken(...) { status ResponseCode accessToken refreshToken } }` | `auth.rs` → `RefreshAccessToken` server fn |
 | `logout(refreshToken)` | `mutation Logout($refreshToken: String!) { logout(...) { status ResponseCode } }` | `auth.rs` → `LogoutUser` server fn |
 
-From `peer-web/src/api/settings.rs` and `peer-web/src/api/graphql.rs`:
+From `src/api/settings.rs` and `src/api/graphql.rs`:
 
 | Mutation | GraphQL SDL | Frontend file |
 |----------|-------------|---------------|
@@ -60,7 +60,7 @@ After this phase, the mock backend will support:
 ### New file tree additions
 
 ```
-tests/mock_backend/src/
+packages/mock_backend/src/
 ├── schema/
 │   └── mutation/
 │       └── auth.rs          # NEW: 9 auth/account mutations
@@ -86,7 +86,7 @@ tests/mock_backend/src/
 
 All response codes and field names in this plan come from:
 - `docs/backend_api/01-authentication-and-account.md`
-- `peer-web/src/models/auth.rs` (frontend deserialization types)
+- `src/models/auth.rs` (frontend deserialization types)
 
 ---
 
@@ -194,7 +194,7 @@ use super::registration::DefaultResponse;
 
 /// Response for login and refreshToken mutations.
 ///
-/// Must match the frontend's deserialization in `peer-web/src/models/auth.rs`:
+/// Must match the frontend's deserialization in `src/models/auth.rs`:
 /// ```
 /// AuthPayload { status, ResponseCode, accessToken, refreshToken }
 /// ```

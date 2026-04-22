@@ -545,7 +545,7 @@ features = ["ssr", "nightly"]  # or whichever features you're using
 
 ## 4.8 — Integration Test File
 
-Create `peer-web/tests/server_functions_integration.rs`:
+Create `tests/server_functions_integration.rs`:
 
 ```rust
 //! Integration tests for registration server functions.
@@ -942,7 +942,7 @@ First, start both servers in separate terminals:
 
 ```bash
 # Terminal 1: Mock backend
-cd tests/mock_backend
+cd packages/mock_backend
 npm start
 # → "Mock Peer GraphQL server running at http://localhost:4000/graphql"
 

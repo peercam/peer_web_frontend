@@ -285,7 +285,7 @@ The existing `handle_back` closure also navigates to `/login` for Step 1, but th
 
 **Prerequisite:** Task 6 (mock backend endpoints) must be complete.
 
-**File:** `peer-web/end2end/tests/forgot-password.spec.ts` (new)
+**File:** `end2end/tests/forgot-password.spec.ts` (new)
 
 | # | Test | Steps |
 |---|------|-------|
@@ -310,7 +310,7 @@ The existing `handle_back` closure also navigates to `/login` for Step 1, but th
 
 **Context:** The mock backend (Rust, axum + async-graphql) currently supports Phases 0–3 (registration, login/session, users/profiles, posts/content). Password reset endpoints are not yet implemented. These 3 mutations belong to the guest schema and are needed for E2E testing.
 
-**File:** `tests/mock_backend/src/schema/mutation/auth.rs` (extend existing)
+**File:** `packages/mock_backend/src/schema/mutation/auth.rs` (extend existing)
 
 | Mutation | Schema | Behavior |
 |----------|--------|----------|

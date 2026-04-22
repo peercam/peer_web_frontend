@@ -1,4 +1,4 @@
-// peer-web/tests/mock_connectivity.rs
+// tests/mock_connectivity.rs
 //!
 //! Sanity check: the `mock_backend` crate is embedded as a library and
 //! serves a minimal GraphQL request in-process. No external service required.

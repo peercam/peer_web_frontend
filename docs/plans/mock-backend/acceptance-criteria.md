@@ -32,11 +32,11 @@ The acceptance criteria serve as the **single source of truth** for determining 
 
 | Layer | What it checks | How it runs |
 |-------|----------------|-------------|
-| Unit tests | Individual resolver logic, state mutations | `cargo test` in `tests/mock_backend` |
+| Unit tests | Individual resolver logic, state mutations | `cargo test` in `packages/mock_backend` |
 | Integration tests | Full GraphQL request → response roundtrips via tower `oneshot` | `cargo test --test integration` |
 | SDL snapshot | Schema structure hasn't drifted | `cargo insta test` in CI |
 | Clippy + fmt | Code quality, idiomatic Rust | `cargo clippy -- -D warnings && cargo fmt --check` |
-| E2E tests | Leptos frontend ↔ mock backend via HTTP | Playwright in `peer-web/end2end/` |
+| E2E tests | Leptos frontend ↔ mock backend via HTTP | Playwright in `end2end/` |
 | Manual smoke test | Server starts, responds to curl | `cargo run` + `curl` |
 | Response code audit | Codes match `docs/backend_api/*.md` and `json/response-codes.json` | Dedicated audit test |
 
@@ -77,7 +77,7 @@ Each phase has a self-contained gate. A phase is **not complete** until every it
 
 | # | Criterion | Verification method |
 |---|-----------|---------------------|
-| 0.1 | `cargo build` succeeds for `tests/mock_backend` with no errors | `cargo build 2>&1; echo $?` → `0` |
+| 0.1 | `cargo build` succeeds for `packages/mock_backend` with no errors | `cargo build 2>&1; echo $?` → `0` |
 | 0.2 | `cargo test` passes all 7 parity tests | `cargo test --test integration` → 7/7 pass |
 | 0.3 | `cargo run` starts HTTP server on `:4000` | `cargo run &` then `curl -s http://localhost:4000/graphql -X POST -H 'Content-Type: application/json' -d '{"query":"{ _health }"}'` → `{"data":{"_health":true}}` |
 | 0.4 | `POST /reset` resets state to defaults | `curl -s -X POST http://localhost:4000/reset` → 200 OK |
@@ -90,7 +90,7 @@ Each phase has a self-contained gate. A phase is **not complete** until every it
 | 0.11 | `register` with `fail@` prefix returns `40601` | Integration test #7 |
 | 0.12 | Response field names match Node.js mock exactly (PascalCase for `DefaultResponse` fields) | SDL snapshot comparison |
 | 0.13 | `peer-web` can import `mock_backend::app()` as dev-dependency | `cd peer-web && cargo check --tests` succeeds |
-| 0.14 | Node.js files removed: `server.js`, `resolvers.js`, `schema.graphql`, `state.js`, `test.js`, `package.json`, `package-lock.json` | `ls tests/mock_backend/*.js tests/mock_backend/package*.json` → "No such file" |
+| 0.14 | Node.js files removed: `server.js`, `resolvers.js`, `schema.graphql`, `state.js`, `test.js`, `package.json`, `package-lock.json` | `ls packages/mock_backend/*.js packages/mock_backend/package*.json` → "No such file" |
 
 ### Gate 1 — Login & Session Flows ✅
 
@@ -205,7 +205,7 @@ Each phase has a self-contained gate. A phase is **not complete** until every it
 
 | # | Criterion | Verification method |
 |---|-----------|---------------------|
-| CI.1 | `.github/workflows/mock-backend.yml` exists and triggers on `tests/mock_backend/**` | CI run on PR touching mock backend |
+| CI.1 | `.github/workflows/mock-backend.yml` exists and triggers on `packages/mock_backend/**` | CI run on PR touching mock backend |
 | CI.2 | `cargo fmt --check` step fails PR on formatting violations | Deliberate bad format → PR fails |
 | CI.3 | `cargo clippy -- -D warnings` step fails PR on warnings | Deliberate warning → PR fails |
 | CI.4 | `cargo test --all-targets` runs all mock backend tests in CI | CI log shows test count |
@@ -263,7 +263,7 @@ These requirements apply to **every phase** and **every resolver**. They are not
 |---|-------------|--------------|
 | CC.18 | `cargo clippy -- -D warnings` passes | CI + local run |
 | CC.19 | `cargo fmt --check` passes | CI + local run |
-| CC.20 | No runtime dependencies on Node.js, npm, or any non-Rust tooling | `grep -r 'node\|npm' tests/mock_backend/Cargo.toml` → 0 matches; no `package.json` |
+| CC.20 | No runtime dependencies on Node.js, npm, or any non-Rust tooling | `grep -r 'node\|npm' packages/mock_backend/Cargo.toml` → 0 matches; no `package.json` |
 | CC.21 | All dependencies use recent, maintained versions | `cargo audit` (if available) or manual check |
 | CC.22 | No `unsafe` code in resolver paths | `grep -rn 'unsafe' src/` → 0 matches (or justified with comment) |
 
@@ -282,7 +282,7 @@ These requirements apply to **every phase** and **every resolver**. They are not
 
 ### 5.1 Response Code Audit Test
 
-Create `tests/mock_backend/tests/response_code_audit.rs` that programmatically verifies all response codes used in the mock are valid:
+Create `packages/mock_backend/tests/response_code_audit.rs` that programmatically verifies all response codes used in the mock are valid:
 
 ```rust
 // tests/response_code_audit.rs
@@ -343,7 +343,7 @@ fn all_mock_response_codes_exist_in_response_codes_json() {
 
 ### 5.2 Resolver Coverage Audit Test
 
-Create `tests/mock_backend/tests/resolver_coverage.rs` to verify every resolver has at least one test:
+Create `packages/mock_backend/tests/resolver_coverage.rs` to verify every resolver has at least one test:
 
 ```rust
 // tests/resolver_coverage.rs
@@ -667,18 +667,18 @@ These checks verify the old Node.js mock is fully replaced and nothing was lost 
 
 | File | Expected state after migration |
 |------|-------------------------------|
-| `tests/mock_backend/server.js` | **DELETED** |
-| `tests/mock_backend/resolvers.js` | **DELETED** |
-| `tests/mock_backend/schema.graphql` | **DELETED** |
-| `tests/mock_backend/state.js` | **DELETED** |
-| `tests/mock_backend/test.js` | **DELETED** |
-| `tests/mock_backend/package.json` | **DELETED** |
-| `tests/mock_backend/package-lock.json` | **DELETED** |
-| `tests/mock_backend/node_modules/` | **DELETED** |
-| `tests/mock_backend/fixtures/` | **KEPT** (as reference) or migrated to Rust snapshot files |
-| `tests/mock_backend/Cargo.toml` | **EXISTS** |
-| `tests/mock_backend/src/` | **EXISTS** with all phase modules |
-| `tests/mock_backend/tests/` | **EXISTS** with integration + audit tests |
+| `packages/mock_backend/server.js` | **DELETED** |
+| `packages/mock_backend/resolvers.js` | **DELETED** |
+| `packages/mock_backend/schema.graphql` | **DELETED** |
+| `packages/mock_backend/state.js` | **DELETED** |
+| `packages/mock_backend/test.js` | **DELETED** |
+| `packages/mock_backend/package.json` | **DELETED** |
+| `packages/mock_backend/package-lock.json` | **DELETED** |
+| `packages/mock_backend/node_modules/` | **DELETED** |
+| `packages/mock_backend/fixtures/` | **KEPT** (as reference) or migrated to Rust snapshot files |
+| `packages/mock_backend/Cargo.toml` | **EXISTS** |
+| `packages/mock_backend/src/` | **EXISTS** with all phase modules |
+| `packages/mock_backend/tests/` | **EXISTS** with integration + audit tests |
 
 ### 9.2 Behavioural Equivalence
 
@@ -763,9 +763,9 @@ All items must be checked before the Rust mock backend rewrite is considered **c
 
 - [ ] All Node.js files deleted (`server.js`, `resolvers.js`, `schema.graphql`, `state.js`, `test.js`, `package.json`, `package-lock.json`, `node_modules/`)
 - [ ] `fixtures/` kept as reference or migrated
-- [ ] `tests/mock_backend/target/` in `.gitignore`
+- [ ] `packages/mock_backend/target/` in `.gitignore`
 - [ ] `README.md` updated to reference Rust mock
-- [ ] `peer-web/Cargo.toml` includes `mock_backend` as dev-dependency
+- [ ] `Cargo.toml` includes `mock_backend` as dev-dependency
 
 ### Per-Phase Gates (summary)
 

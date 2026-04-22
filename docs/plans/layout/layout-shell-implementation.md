@@ -34,7 +34,7 @@ This plan promotes the layout chrome into a single, well-typed shell so:
 - Extracting page-specific sidebar widgets (filter checkboxes, sort radios, profile widget chrome). Those are already separate components or stay page-local.
 - A header/footer on the unauthenticated pages (`login`, `register`, `forgot_password`, `invite`). Those use the `LeftPanel` shared layout already and are out of scope.
 - A new design / restyle. This is a pure refactor — pixel parity is the bar.
-- Touching the SCSS files in [peer-web/style/](../../../peer-web/style/). The shell emits the existing class names verbatim.
+- Touching the SCSS files in [style/](../../..//style/). The shell emits the existing class names verbatim.
 - Server-side route extraction (the SSR/CSR boundary is unchanged).
 
 ---
@@ -43,7 +43,7 @@ This plan promotes the layout chrome into a single, well-typed shell so:
 
 ### In Scope
 
-- [ ] New module `peer-web/src/components/layout/` with `mod.rs`, `site_shell.rs`, `site_header.rs`, `mobile_footer.rs`, `right_rail.rs`, `left_rail.rs`
+- [ ] New module `src/components/layout/` with `mod.rs`, `site_shell.rs`, `site_header.rs`, `mobile_footer.rs`, `right_rail.rs`, `left_rail.rs`
 - [ ] Migrate `dashboard.rs` to use the shell (this page already has `LeftSidebar` / `RightSidebar` components — verify the new `LeftRail`/`RightRail` wrappers compose cleanly with them, otherwise leave dashboard's bespoke sidebars alone for this sprint)
 - [ ] Migrate `wallet.rs`, `chat.rs`, `settings.rs`, `referral_board.rs`, `version_history.rs`, `profile.rs`, `view_profile.rs`, `my_ads.rs`, `peer_shop.rs`, `admin.rs`, `new_post.rs` to the new shell where they currently roll their own header / footer / aside
 - [ ] Delete the 10 private `fn MobileFooter` copies (and `peer_shop.rs`'s inline `<footer class="mobile-footer">`) once the shared component is live
@@ -89,7 +89,7 @@ This plan promotes the layout chrome into a single, well-typed shell so:
 ### Behavioural Contract (Preserved)
 
 - `MobileFooter` renders the same five nav items in the same order; the `active` class is computed from `use_location().pathname` matching the link's `href` (or its prefix for `/profile/*`, `/chat/*`). Active computation is reactive on `pathname` so SSR (request URI) and post-hydration (`window.location`) agree without warning.
-- `SiteHeader` emits `<header class="site-header header-{modifier}">` by default (the spelling used by Wallet / My Ads / Referral Board / Settings / Version History — verified in [peer-web/style/](../../../peer-web/style/), where `.site-header.header-{slug}` selectors live in [dashboard.scss](../../../peer-web/style/dashboard.scss)). A `spelling: HeaderSpelling::Underscore` prop opts in to `<header class="site_header">` for callers that match Chat's shape ([chat.scss](../../../peer-web/style/chat.scss) scopes `.site_header` inside `.chat`).
+- `SiteHeader` emits `<header class="site-header header-{modifier}">` by default (the spelling used by Wallet / My Ads / Referral Board / Settings / Version History — verified in [style/](../../..//style/), where `.site-header.header-{slug}` selectors live in [dashboard.scss](../../..//style/dashboard.scss)). A `spelling: HeaderSpelling::Underscore` prop opts in to `<header class="site_header">` for callers that match Chat's shape ([chat.scss](../../..//style/chat.scss) scopes `.site_header` inside `.chat`).
 - `LeftRail` / `RightRail` accept a `slug: &'static str` and emit `class="left-sidebar left-sidebar-{slug}"` / `class="right-sidebar right-sidebar-{slug}"` respectively. The `inner-scroll` wrapper is always present.
 - `SiteShell`'s root element is `<div id="{id}" class="site_layout {modifier}">` so existing per-page CSS (`.wallet-layout`, `.profile-layout`, …) keeps working.
 
@@ -100,7 +100,7 @@ This plan promotes the layout chrome into a single, well-typed shell so:
 ### Module Layout
 
 ```
-peer-web/src/components/
+src/components/
 └── layout/
     ├── mod.rs           // re-exports
     ├── site_shell.rs    // SiteShell composition
@@ -152,7 +152,7 @@ pub fn SiteShell(
 ) -> impl IntoView
 ```
 
-> Existing precedent in the workspace uses single-`Children` props ([toast.rs's `ToastProvider`](../../../peer-web/src/components/toast.rs), [auth_guard.rs's `AuthGuard`](../../../peer-web/src/components/auth_guard.rs)). The `#[slot]` macro from `leptos` is the supported way to expose more than one named region; verify against the `leptos` version pinned in [peer-web/Cargo.toml](../../../peer-web/Cargo.toml) before Phase 1 lands and fall back to `ViewFn` props if the macro shape has shifted.
+> Existing precedent in the workspace uses single-`Children` props ([toast.rs's `ToastProvider`](../../..//src/components/toast.rs), [auth_guard.rs's `AuthGuard`](../../..//src/components/auth_guard.rs)). The `#[slot]` macro from `leptos` is the supported way to expose more than one named region; verify against the `leptos` version pinned in [Cargo.toml](../../..//Cargo.toml) before Phase 1 lands and fall back to `ViewFn` props if the macro shape has shifted.
 
 ```rust
 // site_header.rs
@@ -234,7 +234,7 @@ let is_active = move |prefix: &'static str| {
 };
 ```
 
-The class attribute must be reactive (e.g. `class:active=move || is_active("/dashboard")`), **not** computed once into a `String`, so SSR (request URI) and post-hydration (`window.location`) produce identical markup without a hydration warning. [components/widgets/main_menu.rs](../../../peer-web/src/components/widgets/main_menu.rs) is the precedent.
+The class attribute must be reactive (e.g. `class:active=move || is_active("/dashboard")`), **not** computed once into a `String`, so SSR (request URI) and post-hydration (`window.location`) produce identical markup without a hydration warning. [components/widgets/main_menu.rs](../../..//src/components/widgets/main_menu.rs) is the precedent.
 
 Active rules (one per nav item):
 
@@ -265,22 +265,22 @@ Two-pass refactor:
 
 **Files (new):**
 
-- `peer-web/src/components/layout/mod.rs` (re-exports)
-- `peer-web/src/components/layout/site_shell.rs`
-- `peer-web/src/components/layout/site_header.rs`
-- `peer-web/src/components/layout/mobile_footer.rs`
-- `peer-web/src/components/layout/left_rail.rs`
-- `peer-web/src/components/layout/right_rail.rs` (+ `StandardRightRail`)
+- `src/components/layout/mod.rs` (re-exports)
+- `src/components/layout/site_shell.rs`
+- `src/components/layout/site_header.rs`
+- `src/components/layout/mobile_footer.rs`
+- `src/components/layout/left_rail.rs`
+- `src/components/layout/right_rail.rs` (+ `StandardRightRail`)
 
 **Files (modified):**
 
-- `peer-web/src/components/mod.rs` — `pub mod layout;`
+- `src/components/mod.rs` — `pub mod layout;`
 
 **Tasks:**
 
 1. Implement the five components per the surface above.
-2. `MobileFooter` uses a reactive class binding on `location.pathname`; on SSR the signal returns the request path and on hydration it returns `window.location.pathname`, so a reactive binding produces identical markup on both sides (precedent: [main_menu.rs](../../../peer-web/src/components/widgets/main_menu.rs)). A non-reactive `String` would risk a hydration warning.
-3. `SiteHeader`'s default spelling is `HeaderSpelling::Hyphen` (used by Wallet / My Ads / Referral Board / Settings / Version History) and emits `class="site-header header-{modifier}"`. The `Underscore` spelling emits `class="site_header"` for Chat / Profile / View Profile / Peer Shop. Both spellings reuse the same inner markup (`.site_header_inner` → `.logo_box` → `.page-title h1` → `.header-actions`); verify against [chat.scss](../../../peer-web/style/chat.scss) and [dashboard.scss](../../../peer-web/style/dashboard.scss) before deleting any per-page header.
+2. `MobileFooter` uses a reactive class binding on `location.pathname`; on SSR the signal returns the request path and on hydration it returns `window.location.pathname`, so a reactive binding produces identical markup on both sides (precedent: [main_menu.rs](../../..//src/components/widgets/main_menu.rs)). A non-reactive `String` would risk a hydration warning.
+3. `SiteHeader`'s default spelling is `HeaderSpelling::Hyphen` (used by Wallet / My Ads / Referral Board / Settings / Version History) and emits `class="site-header header-{modifier}"`. The `Underscore` spelling emits `class="site_header"` for Chat / Profile / View Profile / Peer Shop. Both spellings reuse the same inner markup (`.site_header_inner` → `.logo_box` → `.page-title h1` → `.header-actions`); verify against [chat.scss](../../..//style/chat.scss) and [dashboard.scss](../../..//style/dashboard.scss) before deleting any per-page header.
 4. `SiteShell` accepts an optional `modifier` and emits `class="site_layout {modifier}"` (no trailing space when modifier is `None`).
 5. `StandardRightRail` composes `RightRail` + the four widgets; the widget stack imports are local to `right_rail.rs`.
 
@@ -336,7 +336,7 @@ Land in a follow-up PR — not gating for the ❌ → ✅ flip on Header / Foote
 
 ### Phase 5 — E2E Coverage (≈80 LOC)
 
-**File (new):** `peer-web/end2end/tests/layout.spec.ts`
+**File (new):** `end2end/tests/layout.spec.ts`
 
 Cases:
 
@@ -360,8 +360,8 @@ Cases:
    - **Settings preset** (Home / Chat / New Post / Wallet / Profile) — unlabelled, `mobile-nav-item` class.
 
    Default in this plan: ship the Dashboard preset as the canonical shared nav. **This is a UX regression for Settings**, which loses Wallet and Chat shortcuts. Resolution before Phase 2: either (a) accept the regression and document it, (b) extend the canonical nav to 6 items (add Wallet), or (c) make the nav list a prop until design ships a final answer. Owner: design.
-2. **Settings drift — known behaviour change, not an open question.** Grep of [peer-web/style/](../../../peer-web/style/) shows only `.nav-item` styled (in [dashboard.scss](../../../peer-web/style/dashboard.scss#L946)); `mobile-nav-item` is unstyled. Settings's mobile footer is therefore **silently unstyled today** and Phase 2 will fix it as a side effect. Call out as a behaviour change in the Phase 4 changelog entry.
-3. **`SiteHeader` class spelling — resolved by audit.** Grep of [peer-web/style/](../../../peer-web/style/) shows the hyphenated `.site-header.header-{slug}` pattern is the broadly-styled form ([dashboard.scss](../../../peer-web/style/dashboard.scss#L48), and the `header-{slug}` modifier is the load-bearing selector for Wallet / My Ads / Referral Board / Settings / Version History). The underscore `.site_header` is scoped under `.chat` ([chat.scss](../../../peer-web/style/chat.scss#L20)) and used by Chat / Profile / View Profile / Peer Shop. `SiteHeader` therefore exposes a `HeaderSpelling` enum (default `Hyphen`) and a required-when-`Hyphen` `modifier` prop.
+2. **Settings drift — known behaviour change, not an open question.** Grep of [style/](../../..//style/) shows only `.nav-item` styled (in [dashboard.scss](../../..//style/dashboard.scss#L946)); `mobile-nav-item` is unstyled. Settings's mobile footer is therefore **silently unstyled today** and Phase 2 will fix it as a side effect. Call out as a behaviour change in the Phase 4 changelog entry.
+3. **`SiteHeader` class spelling — resolved by audit.** Grep of [style/](../../..//style/) shows the hyphenated `.site-header.header-{slug}` pattern is the broadly-styled form ([dashboard.scss](../../..//style/dashboard.scss#L48), and the `header-{slug}` modifier is the load-bearing selector for Wallet / My Ads / Referral Board / Settings / Version History). The underscore `.site_header` is scoped under `.chat` ([chat.scss](../../..//style/chat.scss#L20)) and used by Chat / Profile / View Profile / Peer Shop. `SiteHeader` therefore exposes a `HeaderSpelling` enum (default `Hyphen`) and a required-when-`Hyphen` `modifier` prop.
 4. **`peer_shop.rs` and `admin.rs`.** Both have bespoke layouts that may not fit `SiteShell`'s `header / left / main / right / footer` rectangle. Audit during Phase 1; if either resists adoption, defer it to Pass 2 / a follow-up plan and note the exception in the convergence tracker.
 
 ---
@@ -372,8 +372,8 @@ Cases:
 |------|------------|
 | Visual regression on a page with bespoke chrome (Admin, Peer Shop) | Phase 2 audits each page individually; pages that resist adoption stay on their bespoke implementation and are noted in the changelog. |
 | `MobileFooter` route-active class breaks a CSS selector that depends on `data-active` or similar | Grep `style/` for `.active`, `[data-active]`, and `aria-current` before merging Phase 1. The contract is "match what one of the existing copies does" — pick the most-correct one. |
-| Hydration warning on `MobileFooter` when SSR'd `pathname` differs from hydrate-time `window.location` | Use a reactive class binding (`class:active=move || is_active("/dashboard")`) so Leptos re-renders the attribute after hydration instead of comparing baked strings. Precedent: [main_menu.rs](../../../peer-web/src/components/widgets/main_menu.rs). |
-| `#[slot]` macro shape differs from the version pinned in [peer-web/Cargo.toml](../../../peer-web/Cargo.toml) | Verify in Phase 1; fall back to `ViewFn`-typed props (`header: Option<ViewFn>`, …) if needed. |
+| Hydration warning on `MobileFooter` when SSR'd `pathname` differs from hydrate-time `window.location` | Use a reactive class binding (`class:active=move || is_active("/dashboard")`) so Leptos re-renders the attribute after hydration instead of comparing baked strings. Precedent: [main_menu.rs](../../..//src/components/widgets/main_menu.rs). |
+| `#[slot]` macro shape differs from the version pinned in [Cargo.toml](../../..//Cargo.toml) | Verify in Phase 1; fall back to `ViewFn`-typed props (`header: Option<ViewFn>`, …) if needed. |
 | Pass 2 widens the diff and slows review | Pass 2 is explicitly out-of-scope for this sprint; only Pass 1 + the new components are required to flip the ❌ rows. |
 
 ---
@@ -395,18 +395,18 @@ Cases:
 
 **New (≈180 LOC across 6 files):**
 
-- `peer-web/src/components/layout/mod.rs`
-- `peer-web/src/components/layout/site_shell.rs`
-- `peer-web/src/components/layout/site_header.rs`
-- `peer-web/src/components/layout/mobile_footer.rs`
-- `peer-web/src/components/layout/left_rail.rs`
-- `peer-web/src/components/layout/right_rail.rs`
-- `peer-web/end2end/tests/layout.spec.ts` (≈80 LOC)
+- `src/components/layout/mod.rs`
+- `src/components/layout/site_shell.rs`
+- `src/components/layout/site_header.rs`
+- `src/components/layout/mobile_footer.rs`
+- `src/components/layout/left_rail.rs`
+- `src/components/layout/right_rail.rs`
+- `end2end/tests/layout.spec.ts` (≈80 LOC)
 
 **Modified (12 page files; net **negative** LOC after Pass 1):**
 
-- `peer-web/src/components/mod.rs`
-- `peer-web/src/pages/{dashboard,wallet,chat,settings,view_profile,version_history,profile,my_ads,peer_shop,referral_board,admin,new_post}.rs`
+- `src/components/mod.rs`
+- `src/pages/{dashboard,wallet,chat,settings,view_profile,version_history,profile,my_ads,peer_shop,referral_board,admin,new_post}.rs`
 - `docs/feature-convergence.md`
 
 **Deleted markup:** 10 private `fn MobileFooter` blocks (~25 LOC each → ~250 LOC) + `peer_shop.rs`'s inline footer; inline `<aside>` wrappers and `<header>` blocks where Pass 2 is applied.

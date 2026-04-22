@@ -20,7 +20,7 @@ Before starting this step, confirm:
 
 ## 2.2 — Directory structure to create
 
-Starting from the `peer-web/src/` directory, create the following module structure:
+Starting from the `src/` directory, create the following module structure:
 
 ```
 src/
@@ -59,7 +59,7 @@ src/
 ### Commands to create directories
 
 ```bash
-cd peer-web/src
+cd src
 mkdir -p api models components pages state fixtures
 ```
 

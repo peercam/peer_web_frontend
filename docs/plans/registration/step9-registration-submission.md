@@ -702,7 +702,7 @@ async fn test_registration_missing_fields() {
 
 Update the mock backend to handle registration scenarios:
 
-### File: `tests/mock_backend/resolvers/register.js`
+### File: `packages/mock_backend/resolvers/register.js`
 
 ```javascript
 const KNOWN_EMAILS = new Set(['existing@example.com', 'taken@peer.com']);
@@ -811,7 +811,7 @@ cargo test --features ssr --test server_functions
 | `src/pages/register.rs` | Modified | Added register action, effects, backend error signals, submit handler |
 | `src/utils/response_codes.rs` | Modified | Added registration-specific response code mappings |
 | `tests/registration_submission.rs` | Created | Integration tests for registration flow |
-| `tests/mock_backend/resolvers/register.js` | Modified | Added register mutation resolver |
+| `packages/mock_backend/resolvers/register.js` | Modified | Added register mutation resolver |
 
 ---
 

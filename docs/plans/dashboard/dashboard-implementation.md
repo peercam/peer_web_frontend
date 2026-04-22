@@ -1297,7 +1297,7 @@ pub fn MainMenu() -> impl IntoView {
 | `src/api/graphql.rs` | Add post queries/mutations |
 | `src/components/mod.rs` | Export dashboard, posts, filters, widgets submodules |
 | `src/pages/mod.rs` | Export dashboard page |
-| `peer-web/Cargo.toml` | Add `web-sys` IntersectionObserver features |
+| `Cargo.toml` | Add `web-sys` IntersectionObserver features |
 | `src/pages/mod.rs` | Export dashboard page |
 
 ---

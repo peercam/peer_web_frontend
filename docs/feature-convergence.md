@@ -25,7 +25,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Feature | Legacy File | peer-web Status | Notes |
 |---------|-------------|-----------------|-------|
 | **Landing** ||||
-| Home / Landing | `index.php` | ✅ Implemented | Auth-aware redirect node at `/` (`src/app.rs::HomePage`): authed → `/dashboard`, guest → `/login?message=mustLogin` (preserves inbound `?redirect=…`). Matches legacy `index.php`'s server-side 302 chain (`/` → `dashboard.php` → `login.php?message=…`). Loading sentinel reuses the shared `auth-guard-loading` selector to avoid placeholder flash during the session-check window. Percent-encoding factored into shared [`encode_redirect`](../peer-web/src/state/auth.rs) helper used by both `HomePage` and `AuthGuard` ([docs](plans/home/home-implementation.md)). |
+| Home / Landing | `index.php` | ✅ Implemented | Auth-aware redirect node at `/` (`src/app.rs::HomePage`): authed → `/dashboard`, guest → `/login?message=mustLogin` (preserves inbound `?redirect=…`). Matches legacy `index.php`'s server-side 302 chain (`/` → `dashboard.php` → `login.php?message=…`). Loading sentinel reuses the shared `auth-guard-loading` selector to avoid placeholder flash during the session-check window. Percent-encoding factored into shared [`encode_redirect`](..//src/state/auth.rs) helper used by both `HomePage` and `AuthGuard` ([docs](plans/home/home-implementation.md)). |
 | **Authentication** ||||
 | Login | `login.php` | ✅ Implemented | Email/password, remember-me, auto-login, redirect handling ([docs](plans/login/login-auth-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation |
@@ -61,9 +61,9 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Component | Legacy Location | peer-web Status | Notes |
 |-----------|----------------|-----------------|-------|
 | **Layout** ||||
-| Header | `template-parts/` | ✅ Implemented | `SiteHeader` component (`peer-web/src/components/layout/site_header.rs`) — Hyphen / Underscore spelling, optional icon + actions slot. Adopted opportunistically (Pass 2); Pass 1 wraps existing inline headers in [`SiteShell`](../peer-web/src/components/layout/site_shell.rs) ([docs](plans/layout/layout-shell-implementation.md)) |
-| Footer | `template-parts/footer.php` | ✅ Implemented | Route-aware `MobileFooter` (`peer-web/src/components/layout/mobile_footer.rs`) — single shared component replaces 10 private `fn MobileFooter` copies + 1 inline `<footer>`; reactive `active` class against `use_location()`. Auto-rendered by [`SiteShell`](../peer-web/src/components/layout/site_shell.rs). **Behaviour change:** Settings's previously unstyled `mobile-nav-item` markup is now the canonical Dashboard preset (Home / Search / New Post / Alerts / Profile) — see Open Question 1 in [the plan](plans/layout/layout-shell-implementation.md). |
-| Sidebars | `template-parts/sidebars/` | ✅ Implemented | `LeftRail` / `RightRail` wrappers + `StandardRightRail` widget-stack preset (`peer-web/src/components/layout/{left_rail,right_rail}.rs`) reusing the shared `AddPostButton` widget; page-specific filter sidebars stay page-local ([docs](plans/layout/layout-shell-implementation.md)) |
+| Header | `template-parts/` | ✅ Implemented | `SiteHeader` component (`src/components/layout/site_header.rs`) — Hyphen / Underscore spelling, optional icon + actions slot. Adopted opportunistically (Pass 2); Pass 1 wraps existing inline headers in [`SiteShell`](..//src/components/layout/site_shell.rs) ([docs](plans/layout/layout-shell-implementation.md)) |
+| Footer | `template-parts/footer.php` | ✅ Implemented | Route-aware `MobileFooter` (`src/components/layout/mobile_footer.rs`) — single shared component replaces 10 private `fn MobileFooter` copies + 1 inline `<footer>`; reactive `active` class against `use_location()`. Auto-rendered by [`SiteShell`](..//src/components/layout/site_shell.rs). **Behaviour change:** Settings's previously unstyled `mobile-nav-item` markup is now the canonical Dashboard preset (Home / Search / New Post / Alerts / Profile) — see Open Question 1 in [the plan](plans/layout/layout-shell-implementation.md). |
+| Sidebars | `template-parts/sidebars/` | ✅ Implemented | `LeftRail` / `RightRail` wrappers + `StandardRightRail` widget-stack preset (`src/components/layout/{left_rail,right_rail}.rs`) reusing the shared `AddPostButton` widget; page-specific filter sidebars stay page-local ([docs](plans/layout/layout-shell-implementation.md)) |
 | **Posts** ||||
 | Post Card | `js/posts.js` | 🚧 In Progress | 304-line component with like/dislike/save actions, view tracking |
 | Post List | `js/load_posts.js` | 🚧 In Progress | 209 lines, infinite scroll, ad interleaving, filter integration |
@@ -170,29 +170,29 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 ## Changelog
 
 ### 2026-04-22 (Home / Landing Implemented)
-- **`HomePage` rewritten** ([`peer-web/src/app.rs`](../peer-web/src/app.rs)): the placeholder `<h1>Welcome to Peer</h1>` + `/register` link is replaced with an auth-aware redirect that mirrors legacy `index.php`'s 302 to `dashboard.php`. Authed visitors land on `/dashboard`; guests land on `/login?message=mustLogin`. The session-check window renders the shared `auth-guard-loading` sentinel to suppress flash. ([docs](plans/home/home-implementation.md))
-- **Behaviour change vs. legacy:** the guest bounce uses `?message=mustLogin` rather than legacy's `?message=unauthorized`, matching the convention `AuthGuard` already emits everywhere else in the SPA. Both message keys render valid copy in [`login.rs`](../peer-web/src/pages/login.rs).
+- **`HomePage` rewritten** ([`src/app.rs`](..//src/app.rs)): the placeholder `<h1>Welcome to Peer</h1>` + `/register` link is replaced with an auth-aware redirect that mirrors legacy `index.php`'s 302 to `dashboard.php`. Authed visitors land on `/dashboard`; guests land on `/login?message=mustLogin`. The session-check window renders the shared `auth-guard-loading` sentinel to suppress flash. ([docs](plans/home/home-implementation.md))
+- **Behaviour change vs. legacy:** the guest bounce uses `?message=mustLogin` rather than legacy's `?message=unauthorized`, matching the convention `AuthGuard` already emits everywhere else in the SPA. Both message keys render valid copy in [`login.rs`](..//src/pages/login.rs).
 - **New behaviour vs. legacy:** inbound `?redirect=…` on `/` is now preserved through to the login URL (re-encoded via the shared helper). Legacy `index.php` was a static 302 with no query passthrough; this is the first place in the SPA that does inbound-query passthrough on a redirect node.
-- **Shared encoder:** new `pub(crate) fn encode_redirect(&str) -> String` in [`peer-web/src/state/auth.rs`](../peer-web/src/state/auth.rs); `AuthGuard`'s inline percent-encoding loop is replaced with a call to it so the two redirect paths cannot drift.
-- **E2E:** new [`peer-web/end2end/tests/home.spec.ts`](../peer-web/end2end/tests/home.spec.ts) covers (1) guest redirect, (2) authed redirect, (3) `?redirect=` passthrough.
+- **Shared encoder:** new `pub(crate) fn encode_redirect(&str) -> String` in [`src/state/auth.rs`](..//src/state/auth.rs); `AuthGuard`'s inline percent-encoding loop is replaced with a call to it so the two redirect paths cannot drift.
+- **E2E:** new [`end2end/tests/home.spec.ts`](..//end2end/tests/home.spec.ts) covers (1) guest redirect, (2) authed redirect, (3) `?redirect=` passthrough.
 - **Pages table:** Home / Landing 🚧 In Progress → ✅ Implemented.
 - **Summary counts:** ✅ 13 → 14, 🚧 3 → 2; convergence 13/21 (~62%) → 14/21 (~67%) implemented, 18/21 (~86%) → 19/21 (~90%) near-complete.
 - **Migration Priority:** added entry #20 (`Home / Landing`).
 - Build: `cargo build --features ssr` ✅, `cargo clippy --features ssr -- -D warnings` ✅. Pre-existing clippy/fmt issues outside the touched files unchanged.
 
 ### 2026-04-22 (Layout Shell Implemented)
-- **Shared layout shell landed** — new `peer-web/src/components/layout/` module with `SiteShell`, `SiteHeader` (Hyphen / Underscore spellings), `MobileFooter` (route-aware via `use_location()`), `LeftRail`, `RightRail`, and the `StandardRightRail` widget-stack preset ([docs](plans/layout/layout-shell-implementation.md)).
-- **Pass-1 migration:** `dashboard`, `chat`, `wallet`, `settings`, `view_profile`, `version_history`, `profile`, `my_ads`, `peer_shop`, `referral_board`, `new_post`, `admin` now wrap their existing chrome in `<SiteShell…>`. Ten private `fn MobileFooter` copies and one inline `<footer class="mobile-footer">` (in `peer_shop.rs`) deleted. `grep "fn MobileFooter"` is now zero in `peer-web/src/pages/`; `grep "site_layout"` is zero in `pages/`.
+- **Shared layout shell landed** — new `src/components/layout/` module with `SiteShell`, `SiteHeader` (Hyphen / Underscore spellings), `MobileFooter` (route-aware via `use_location()`), `LeftRail`, `RightRail`, and the `StandardRightRail` widget-stack preset ([docs](plans/layout/layout-shell-implementation.md)).
+- **Pass-1 migration:** `dashboard`, `chat`, `wallet`, `settings`, `view_profile`, `version_history`, `profile`, `my_ads`, `peer_shop`, `referral_board`, `new_post`, `admin` now wrap their existing chrome in `<SiteShell…>`. Ten private `fn MobileFooter` copies and one inline `<footer class="mobile-footer">` (in `peer_shop.rs`) deleted. `grep "fn MobileFooter"` is now zero in `src/pages/`; `grep "site_layout"` is zero in `pages/`.
 - **Components table:** Header / Footer / Sidebars rows ❌ Not Started → ✅ Implemented. Page summary counts unchanged (these are component rows). Home / Landing note updated to drop the now-stale "compounded by…" caveat.
 - **Migration Priority:** added entry #19 (`Layout shell`).
-- **Behaviour change — Settings / Version History / My Ads mobile nav:** these pages previously rendered an unstyled `mobile-nav-item` preset (Home / Chat / NewPost / Wallet / Profile, no labels). The shared `MobileFooter` ships the canonical Dashboard preset (Home / Search / NewPost / Alerts / Profile, labelled, `nav-item` class) per Open Question 1's default in the plan. Those pages now show the canonical nav; the legacy preset is dropped. Documented as a behaviour change rather than a regression because the legacy preset had no SCSS coverage in `peer-web/style/` (silently unstyled).
+- **Behaviour change — Settings / Version History / My Ads mobile nav:** these pages previously rendered an unstyled `mobile-nav-item` preset (Home / Chat / NewPost / Wallet / Profile, no labels). The shared `MobileFooter` ships the canonical Dashboard preset (Home / Search / NewPost / Alerts / Profile, labelled, `nav-item` class) per Open Question 1's default in the plan. Those pages now show the canonical nav; the legacy preset is dropped. Documented as a behaviour change rather than a regression because the legacy preset had no SCSS coverage in `style/` (silently unstyled).
 - **Latent bug fixed:** the `active` class on the mobile footer was hard-coded per-page (Wallet pinned `/wallet`, Settings pinned nothing). It is now computed reactively against the URL, so navigating without a page reload no longer leaves the wrong link highlighted.
-- **New files (6):** `peer-web/src/components/layout/{mod,site_shell,site_header,mobile_footer,left_rail,right_rail}.rs`.
-- **Modified files (13):** `peer-web/src/components/mod.rs` + 12 page files in `peer-web/src/pages/`.
+- **New files (6):** `src/components/layout/{mod,site_shell,site_header,mobile_footer,left_rail,right_rail}.rs`.
+- **Modified files (13):** `src/components/mod.rs` + 12 page files in `src/pages/`.
 - Build: `cargo build --features ssr` ✅, `cargo-leptos leptos build` ✅ (SSR + WASM hydrate). Pre-existing `cargo clippy` / `cargo fmt --check` issues outside the layout module unchanged.
 
 ### 2026-04-22 (New Post Doc Drift Reconciled)
-- **New Post completion sprint Task 1 — documentation accuracy pass.** A code audit of [`peer-web/src/components/new_post/`](../peer-web/src/components/new_post/) showed several items the parent plan and tracker still labelled "stubbed" are in fact fully implemented (image cropper canvas draw/drag/zoom, aspect ratio wiring, cropped output, MediaRecorder voice capture + timer + playback + reset, video trimmer drag handles + clamp, two responsive breakpoints).
+- **New Post completion sprint Task 1 — documentation accuracy pass.** A code audit of [`src/components/new_post/`](..//src/components/new_post/) showed several items the parent plan and tracker still labelled "stubbed" are in fact fully implemented (image cropper canvas draw/drag/zoom, aspect ratio wiring, cropped output, MediaRecorder voice capture + timer + playback + reset, video trimmer drag handles + clamp, two responsive breakpoints).
 - **Parent plan** [new-post-implementation.md](plans/new-post/new-post-implementation.md): flipped 8 checkboxes from `[ ]` to `[x]` (image cropping modal, aspect ratio toggle, cropped image preview, voice recording, recording timer, playback controls, record again, responsive layout); preserved unchecked items now link to the relevant completion-sprint tasks; bumped Updated to today and replaced the corrupted "� In Progress" status glyph.
 - **Components table:** Image Cropper 🚧 → ✅ Implemented; Audio Player 🚧 → 🟡 Mostly Implemented (waveform note); Video Encoder 🚧 → 🟡 Mostly Implemented (frame thumbnails + server-side trim note).
 - **Pages table / summary counts unchanged** — New Post row stays 🚧 In Progress until the remaining sprint tasks (real-time waveform, video duration extraction, frame thumbnails, server-side trim plumbing, tag history, mobile review, E2E) close. Promotion to ✅ is gated on the sprint's Definition of Done.
@@ -200,13 +200,13 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 
 ### 2026-04-22 (Home Page Stub Documented)
 - Manual smoke test of `cargo leptos watch` against the Rust mock backend revealed `/` renders as bare HTML (`<h1>Welcome to Peer</h1>` + a `/register` link) with no styling, imagery, or shared chrome.
-- Root cause: `HomePage` component in `peer-web/src/app.rs` is a placeholder; legacy `index.php` marketing surface has not been ported, and `Header`/`Footer`/`Sidebars` are not yet extracted as shared components (already noted in Components table).
+- Root cause: `HomePage` component in `src/app.rs` is a placeholder; legacy `index.php` marketing surface has not been ported, and `Header`/`Footer`/`Sidebars` are not yet extracted as shared components (already noted in Components table).
 - Tracker updated to surface the home/landing page as 🚧 In Progress so it stops being an invisible gap.
 - **Summary counts updated:** Total 20 → 21, 🚧 In Progress 2 → 3; convergence 65% → ~62% implemented, 90% → ~86% near-complete.
 - No code changes.
 
 ### 2026-04-22 (Wallet Promoted to ✅)
-- **Wallet completion sprint closed** — shop delivery panel wired into expanded transaction row (lazy `shopOrderDetails` fetch, gated to Peer Shop viewer); `format_balance()` produces grouped thousands with 4dp rounding matching legacy `toLocaleString`; new `tests/mock_backend` shop-purchase seed transaction so the row appears in wallet history; new Playwright `wallet.spec.ts` (6 cases including lazy-load network assertion + non-shop viewer gate) ([sprint](plans/wallet/wallet-completion-sprint.md))
+- **Wallet completion sprint closed** — shop delivery panel wired into expanded transaction row (lazy `shopOrderDetails` fetch, gated to Peer Shop viewer); `format_balance()` produces grouped thousands with 4dp rounding matching legacy `toLocaleString`; new `packages/mock_backend` shop-purchase seed transaction so the row appears in wallet history; new Playwright `wallet.spec.ts` (6 cases including lazy-load network assertion + non-shop viewer gate) ([sprint](plans/wallet/wallet-completion-sprint.md))
 - **Pages table:** Wallet 🟡 Implemented (tests pending) → ✅ Implemented
 - **Summary counts:** ✅ 12 → 13, 🟡 6 → 5; ratio 12/20 → 13/20 (the previous "~87%" headline was inconsistent with its own ratio — replaced with two explicit fractions: 13/20 implemented (65%), 18/20 ≥ near-complete (90%))
 - **Migration Priority:** #9 promoted to ✅
@@ -217,13 +217,13 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 - **Summary counts:** ✅ 11 → 12, ❌ 1 → 0; convergence ~82% → ~87% (**100% Started**)
 - **Migration Priority:** #18 complete
 - **New files (3):**
-  - `peer-web/src/server/mod.rs` — new `server` module (sibling to `api`) for SSR-only HTTP routes outside Leptos
-  - `peer-web/src/server/download.rs` — handler, config, URL validator, filename sanitiser, streaming adapter, 24 unit tests (~470L incl. tests)
-  - `peer-web/tests/download_proxy.rs` — integration tests (7 cases: scheme/host/userinfo validation, upstream unreachable, error content-type)
+  - `src/server/mod.rs` — new `server` module (sibling to `api`) for SSR-only HTTP routes outside Leptos
+  - `src/server/download.rs` — handler, config, URL validator, filename sanitiser, streaming adapter, 24 unit tests (~470L incl. tests)
+  - `tests/download_proxy.rs` — integration tests (7 cases: scheme/host/userinfo validation, upstream unreachable, error content-type)
 - **Modified files (4):**
-  - `peer-web/Cargo.toml` — added ssr-only direct deps: `percent-encoding`, `futures-util`, `bytes`; reqwest gained `stream` feature
-  - `peer-web/src/lib.rs` — `#[cfg(feature = "ssr")] pub mod server;`
-  - `peer-web/src/main.rs` — constructs `DownloadConfig::from_env()`, mounts `/download` *before* `leptos_routes` so it cannot be shadowed
+  - `Cargo.toml` — added ssr-only direct deps: `percent-encoding`, `futures-util`, `bytes`; reqwest gained `stream` feature
+  - `src/lib.rs` — `#[cfg(feature = "ssr")] pub mod server;`
+  - `src/main.rs` — constructs `DownloadConfig::from_env()`, mounts `/download` *before* `leptos_routes` so it cannot be shadowed
   - `docs/feature-convergence.md` — this entry
 - **Security posture:** HTTPS-only + host allow-list (closes SSRF), no redirect following, no userinfo, `Cache-Control: private, no-store`, forced `application/octet-stream` + `X-Content-Type-Options: nosniff`, RFC 5987 `Content-Disposition` with ASCII fallback, per-request connect + total timeouts, streaming body with hard byte cap that aborts mid-response if upstream exceeds the limit
 - **Configuration (env vars, read once at server start):** `DOWNLOAD_ALLOWED_HOSTS` (default `media.peer.network,cdn.peer.network` — **confirm against production CDN before shipping**), `DOWNLOAD_MAX_BYTES` (default 256 MiB), `DOWNLOAD_TIMEOUT_SECS` (default 300)
@@ -236,21 +236,21 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 - **Components table:** added `Install Prompt` row under UI
 - **Migration Priority:** added PWA at #17 (Download renumbered to #18)
 - **New files (18):**
-  - `peer-web/public/manifest.webmanifest` — full v1 manifest (id, scope, start_url, display_override, screenshots, shortcuts, 5 icons incl. maskable + monochrome)
-  - `peer-web/public/sw.js` — hand-written service worker (~220L): install/activate/fetch, network-only for `/api/` + `/graphql` + `/admin`, network-first navigation with offline fallback, stale-while-revalidate for `/pkg/`, cache-first + 30-day expiry for static assets
-  - `peer-web/public/offline.html` — branded offline fallback shell
-  - `peer-web/public/img/pwa/` — 9 icons (any + maskable + monochrome + apple-touch + 2 screenshots) + 3 iOS splash PNGs
-  - `peer-web/src/utils/pwa.rs` — SW registration (+ SSR no-op stub), `beforeinstallprompt` capture, update polling (visibilitychange + 60s interval), `?nosw` escape hatch, `apply_service_worker_update()` for `SKIP_WAITING`
-  - `peer-web/src/components/pwa.rs` — `InstallBanner` (Install / Not-now-14d / Never), `IosHint`, `UpdateBanner`
-  - `peer-web/style/pwa.scss` — bottom-sheet on mobile, top-right card on desktop, update-banner pill
-  - `peer-web/tests/pwa_manifest.rs` — asserts manifest shape + `.webmanifest` MIME resolution
-  - `peer-web/end2end/tests/pwa.spec.ts` — Playwright coverage: manifest MIME, controller after reload, offline fallback
+  - `public/manifest.webmanifest` — full v1 manifest (id, scope, start_url, display_override, screenshots, shortcuts, 5 icons incl. maskable + monochrome)
+  - `public/sw.js` — hand-written service worker (~220L): install/activate/fetch, network-only for `/api/` + `/graphql` + `/admin`, network-first navigation with offline fallback, stale-while-revalidate for `/pkg/`, cache-first + 30-day expiry for static assets
+  - `public/offline.html` — branded offline fallback shell
+  - `public/img/pwa/` — 9 icons (any + maskable + monochrome + apple-touch + 2 screenshots) + 3 iOS splash PNGs
+  - `src/utils/pwa.rs` — SW registration (+ SSR no-op stub), `beforeinstallprompt` capture, update polling (visibilitychange + 60s interval), `?nosw` escape hatch, `apply_service_worker_update()` for `SKIP_WAITING`
+  - `src/components/pwa.rs` — `InstallBanner` (Install / Not-now-14d / Never), `IosHint`, `UpdateBanner`
+  - `style/pwa.scss` — bottom-sheet on mobile, top-right card on desktop, update-banner pill
+  - `tests/pwa_manifest.rs` — asserts manifest shape + `.webmanifest` MIME resolution
+  - `end2end/tests/pwa.spec.ts` — Playwright coverage: manifest MIME, controller after reload, offline fallback
 - **Modified files (5):** `src/app.rs` (manifest link, Apple meta, 3 splash media queries, mount `<InstallPrompt/>`, `register_service_worker()`), `src/components/mod.rs` + `src/utils/mod.rs` (module registration), `style/main.scss` (`@use "pwa"`), `Cargo.toml` (web-sys features for `ServiceWorker*` + `MessageEvent` + `MediaQueryList` + `VisibilityState`, `hash-files = false` pinned, `mime_guess` dev-dep)
 - **Build hash:** `BUILD_HASH` composed at compile time from `env!("CARGO_PKG_VERSION")` + `option_env!("GIT_SHA")`; passed to the SW via `/sw.js?v=<HASH>` query string (no `build.rs` / template substitution)
 - **Builds clean** on both `cargo build --features ssr` and `cargo build --features hydrate --target wasm32-unknown-unknown`
 
 ### 2026-04-21 (Doc Accuracy Pass)
-- **Integration Test Refactor row added** to Mock Backend table — discovered during plan audit that commit `c8cf7b7` (2026-04-16) split the monolithic `tests/mock_backend/tests/integration.rs` (7,675L) into 18 per-domain test files (7,391L total) plus shared `common/` helpers (`assertions.rs`, `auth.rs`, `client.rs`, `fragments.rs`, `state.rs`); all 266 tests still pass, build clean — refactor was implemented but not previously tracked
+- **Integration Test Refactor row added** to Mock Backend table — discovered during plan audit that commit `c8cf7b7` (2026-04-16) split the monolithic `packages/mock_backend/tests/integration.rs` (7,675L) into 18 per-domain test files (7,391L total) plus shared `common/` helpers (`assertions.rs`, `auth.rs`, `client.rs`, `fragments.rs`, `state.rs`); all 266 tests still pass, build clean — refactor was implemented but not previously tracked
 - **Summary counts corrected:** ✅ 10→11, ❌ 2→1 (Pages table actually contains 11 ✅ rows after Admin + Version History promotions on 2026-04-16; convergence ~82% was already correct)
 - **Migration Priority renumbered** 1–17 (removed `3b.` duplicate numbering, every item now sequential)
 - **Forgot Password gap clarified:** "BackButton not reused" → "shared `BackButton` component exists but not wired in" (avoids contradiction with Components table where BackButton is ✅ Implemented)
@@ -305,7 +305,7 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
   - Parallel save race condition in `settings/profile.rs` replaced with single sequential `spawn_local` (race-free, no `futures` dep needed)
   - `callback.forget()` memory leak fixed in all IntersectionObserver call sites (observer + closure now stored together in cleanup)
 - **Files modified:** `src/hooks/mod.rs`, `src/hooks/use_infinite_scroll.rs` (new), `src/pages/profile.rs`, `src/pages/view_profile.rs`, `src/components/posts/post_list.rs`, `src/components/profile/relations_modal.rs`, `src/components/my_ads/ad_list.rs`, `src/components/wallet/transaction_history.rs`, `src/components/settings/deactivate.rs`, `src/components/settings/profile.rs`
-- **Task 9 (E2E tests) remains ❌ Not Started** — `peer-web/end2end/tests/` has no profile/settings test coverage yet
+- **Task 9 (E2E tests) remains ❌ Not Started** — `end2end/tests/` has no profile/settings test coverage yet
 - **Dashboard gap note updated** — removed "profile widget not wired to auth context" (now resolved)
 
 ### 2026-04-16 (Plan Status Audit)
@@ -373,7 +373,7 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 ### 2026-04-14 (Mock Backend Phase 2 Plan Quality Review)
 - Phase 2 plan reviewed and rated ⭐⭐⭐⭐⭐ (5/5)
 - **Strong:** Exhaustive 75+ task breakdown across 8 sub-phases (A–H); full Rust code for all types (26 structs/enums), state extensions, 2 query resolvers (getProfile, searchUser) + 9 mutation resolvers; seed data with 4 new users, pre-existing follow/block/referral relationships; content filtering module with 5 filter specs + pagination helper; 42 integration tests covering success, error, auth, pagination, and multi-step interaction flows; comprehensive Definition of Done (50+ checklist items) with build gates, response shape compatibility checks, and state isolation requirements
-- **Perfect model alignment** — `ProfileGql`, `ProfileUserGql`, `BasicUserInfoGql`, `FollowStatusResponseGql`, `UpdateResponseGql`, `UserPreferencesResponseGql` all verified field-by-field against `peer-web/src/models/profile.rs` and `peer-web/src/models/settings.rs`; GraphQL query shapes match `SEARCH_USERS_QUERY` and `GET_USER_QUERY` exactly
+- **Perfect model alignment** — `ProfileGql`, `ProfileUserGql`, `BasicUserInfoGql`, `FollowStatusResponseGql`, `UpdateResponseGql`, `UserPreferencesResponseGql` all verified field-by-field against `src/models/profile.rs` and `src/models/settings.rs`; GraphQL query shapes match `SEARCH_USERS_QUERY` and `GET_USER_QUERY` exactly
 - **Correctly identifies** QueryRoot `#[Object]` → `MergedObject` refactoring needed for schema assembly
 - **Minor gaps (now resolved above):** 9 of 11 query resolvers left as "follows the same pattern"; `require_auth()` helper referenced but not defined; `filter_users()` module location ambiguous; test helper signatures inconsistent with codebase; `referralList` query missing from test section
 

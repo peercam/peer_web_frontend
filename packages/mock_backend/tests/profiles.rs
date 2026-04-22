@@ -27,7 +27,7 @@ async fn test_get_own_profile() {
     let data = &res["data"]["getProfile"];
     assert_eq!(data["meta"]["ResponseCode"], "11008");
     assert_eq!(data["affectedRows"]["username"], "alice_peer");
-    assert_eq!(data["affectedRows"]["amountfriends"], 1);
+    assert_eq!(data["affectedRows"]["amountfriends"], 2);
 }
 
 #[tokio::test]

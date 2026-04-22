@@ -2,11 +2,11 @@
 
 SVG sources for the PWA icon set, splash screens, and manifest screenshots.
 
-These are **design-time only** — they are not served at runtime. The runtime PNGs live in `peer-web/public/img/pwa/`.
+These are **design-time only** — they are not served at runtime. The runtime PNGs live in `public/img/pwa/`.
 
 ## Regenerating PNGs
 
-From `peer-web/` (macOS — uses built-in `qlmanage` + `sips`):
+From the repo root (macOS — uses built-in `qlmanage` + `sips`):
 
 ```sh
 gen() {

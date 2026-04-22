@@ -76,7 +76,7 @@ After this phase, the mock backend will support:
 ### New file tree additions
 
 ```
-tests/mock_backend/src/
+packages/mock_backend/src/
 ├── schema/
 │   ├── query/
 │   │   ├── moderation.rs   # NEW: moderationStats, moderationItems

@@ -21,7 +21,7 @@
 
 ### What the frontend calls today
 
-From `peer-web/src/api/profile.rs` and `peer-web/src/api/graphql.rs`, the Leptos app uses these queries:
+From `src/api/profile.rs` and `src/api/graphql.rs`, the Leptos app uses these queries:
 
 | Query | GraphQL SDL | Frontend file |
 |-------|-------------|---------------|
@@ -74,7 +74,7 @@ After this phase, the mock backend will support:
 ### New file tree additions
 
 ```
-tests/mock_backend/src/
+packages/mock_backend/src/
 ├── schema/
 │   ├── query/
 │   │   └── users.rs           # NEW: getProfile, listUsersV2, searchUser, getUser,
@@ -115,9 +115,9 @@ tests/mock_backend/src/
 
 All response codes and field names in this plan come from:
 - `docs/backend_api/02-users-and-profiles.md`
-- `peer-web/src/models/profile.rs` (frontend deserialization types)
-- `peer-web/src/models/settings.rs` (settings response types)
-- `peer-web/src/api/graphql.rs` (exact GraphQL query/mutation strings)
+- `src/models/profile.rs` (frontend deserialization types)
+- `src/models/settings.rs` (settings response types)
+- `src/api/graphql.rs` (exact GraphQL query/mutation strings)
 
 ---
 
@@ -130,10 +130,10 @@ All response codes and field names in this plan come from:
 | A1 | Create `types/user.rs` with `ContentVisibilityStatus` enum | `NORMAL`, `HIDDEN`, `ILLEGAL` |
 | A2 | Define `ContentFilterType` enum (InputEnum) | `MYGRANDMALIKES`, `MYGRANDMAHATES` |
 | A3 | Define `OnboardingType` enum (InputEnum) | `INTROONBOARDING` |
-| A4 | Define `ProfileGql` struct (SimpleObject) | Full profile with social stats — mirrors `peer-web/src/models/profile.rs::Profile` |
+| A4 | Define `ProfileGql` struct (SimpleObject) | Full profile with social stats — mirrors `src/models/profile.rs::Profile` |
 | A5 | Define `ProfileInfoResponse` wrapper | `meta: DefaultResponse`, `affectedRows: Option<ProfileGql>` |
-| A6 | Define `ProfileUserGql` struct (SimpleObject) | Used in follow lists — mirrors `peer-web/src/models/profile.rs::ProfileUser` |
-| A7 | Define `BasicUserInfoGql` struct (SimpleObject) | Used in friends list — mirrors `peer-web/src/models/profile.rs::BasicUserInfo` |
+| A6 | Define `ProfileUserGql` struct (SimpleObject) | Used in follow lists — mirrors `src/models/profile.rs::ProfileUser` |
+| A7 | Define `BasicUserInfoGql` struct (SimpleObject) | Used in friends list — mirrors `src/models/profile.rs::BasicUserInfo` |
 | A8 | Define `SearchUserResult` struct (SimpleObject) | Minimal: `id`, `username`, `slug`, `img` — matches `SEARCH_USERS_QUERY` response |
 | A9 | Define `UserListResponse` wrapper | `meta`, `counter`, `affectedRows: Option<Vec<SearchUserResult>>` |
 | A10 | Define `FollowRelationsGql` struct | `followers: Vec<ProfileUserGql>`, `following: Vec<ProfileUserGql>` |
@@ -349,7 +349,7 @@ pub enum OnboardingType {
 
 /// Full profile with social statistics.
 ///
-/// Must match frontend's `peer-web/src/models/profile.rs::Profile` deserialization.
+/// Must match frontend's `src/models/profile.rs::Profile` deserialization.
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 #[graphql(rename_fields = "camelCase")]
 pub struct ProfileGql {
@@ -400,7 +400,7 @@ pub struct ProfileInfoResponse {
 
 /// User representation in follow lists (followers/following).
 ///
-/// Must match frontend's `peer-web/src/models/profile.rs::ProfileUser` deserialization.
+/// Must match frontend's `src/models/profile.rs::ProfileUser` deserialization.
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 #[graphql(rename_fields = "camelCase")]
 pub struct ProfileUserGql {
@@ -444,7 +444,7 @@ pub struct FollowRelationsResponseGql {
 
 /// Basic user info for friends/peers list.
 ///
-/// Must match frontend's `peer-web/src/models/profile.rs::BasicUserInfo` deserialization.
+/// Must match frontend's `src/models/profile.rs::BasicUserInfo` deserialization.
 /// Note: `updatedat` is included because the backend schema returns it; the frontend
 /// struct doesn't deserialize it (serde ignores unknown fields by default).
 #[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
@@ -3039,16 +3039,16 @@ async fn test_blocked_user_excluded_from_search() {
 
 ### Response Shape Compatibility
 
-- [x] `ProfileInfoResponse` shape matches `peer-web/src/models/profile.rs::ProfileResponse`
-- [x] `ProfileUserGql` fields match `peer-web/src/models/profile.rs::ProfileUser` (including `isfollowed`/`isfollowing`)
-- [x] `BasicUserInfoGql` fields match `peer-web/src/models/profile.rs::BasicUserInfo`
-- [x] `FollowRelationsResponseGql` shape matches `peer-web/src/models/profile.rs::FollowRelationsResponse`
-- [x] `FriendsResponseGql` shape matches `peer-web/src/models/profile.rs::FriendsResponse`
-- [x] `FollowStatusResponseGql` shape matches `peer-web/src/models/profile.rs::FollowStatusResponse`
+- [x] `ProfileInfoResponse` shape matches `src/models/profile.rs::ProfileResponse`
+- [x] `ProfileUserGql` fields match `src/models/profile.rs::ProfileUser` (including `isfollowed`/`isfollowing`)
+- [x] `BasicUserInfoGql` fields match `src/models/profile.rs::BasicUserInfo`
+- [x] `FollowRelationsResponseGql` shape matches `src/models/profile.rs::FollowRelationsResponse`
+- [x] `FriendsResponseGql` shape matches `src/models/profile.rs::FriendsResponse`
+- [x] `FollowStatusResponseGql` shape matches `src/models/profile.rs::FollowStatusResponse`
 - [x] `SearchUserResponse` shape matches `SEARCH_USERS_QUERY` response (includes `id`, `username`, `slug`, `img`)
 - [x] `GetUserResponseGql` shape matches `GET_USER_QUERY` response (includes preferences)
-- [x] `UpdateResponseGql` fields match `peer-web/src/models/settings.rs::UpdateResponse` (`status` + `ResponseCode` PascalCase)
-- [x] `UserPreferencesResponseGql` shape matches `peer-web/src/models/settings.rs::UserPreferencesUpdateResponse`
+- [x] `UpdateResponseGql` fields match `src/models/settings.rs::UpdateResponse` (`status` + `ResponseCode` PascalCase)
+- [x] `UserPreferencesResponseGql` shape matches `src/models/settings.rs::UserPreferencesUpdateResponse`
 - [x] `DefaultResponse` fields: `status`, `RequestId`, `ResponseCode`, `ResponseMessage` (all PascalCase)
 
 ### State & Isolation

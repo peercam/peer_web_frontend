@@ -90,7 +90,7 @@ The mock backend already has full support: `moderationStats`, `moderationItems` 
 ### File Tree (New Files)
 
 ```
-peer-web/src/
+src/
 ├── api/
 │   └── moderation.rs           # NEW — server functions for moderation queries/mutations
 ├── models/
@@ -117,7 +117,7 @@ peer-web/src/
 ### Modified Files
 
 ```
-peer-web/src/
+src/
 ├── api/mod.rs                  # Add `pub mod moderation;`
 ├── models/mod.rs               # Add `pub mod moderation;`
 ├── pages/mod.rs                # Add `pub mod admin;`, `pub use admin::AdminPage;`
@@ -212,9 +212,9 @@ Add the following query/mutation constants. These are **new queries** — not di
 
 | Constant | GraphQL Operation | Mock Backend Support |
 |----------|-------------------|-----------------------|
-| `MODERATION_STATS_QUERY` | `query { moderationStats { ... } }` | `tests/mock_backend/tests/moderation.rs` |
-| `MODERATION_ITEMS_QUERY` | `query($offset: Int!, $limit: Int!, $contentType: ModerationContentType, $status: ModerationStatus) { moderationItems(offset: $offset, limit: $limit, contentType: $contentType, status: $status) { ... } }` | `tests/mock_backend/tests/moderation.rs` |
-| `PERFORM_MODERATION_MUTATION` | `mutation($moderationTicketId: ID!, $moderationAction: ModerationStatus!) { performModeration(moderationTicketId: $moderationTicketId, moderationAction: $moderationAction) { ... } }` | `tests/mock_backend/tests/moderation.rs` |
+| `MODERATION_STATS_QUERY` | `query { moderationStats { ... } }` | `packages/mock_backend/tests/moderation.rs` |
+| `MODERATION_ITEMS_QUERY` | `query($offset: Int!, $limit: Int!, $contentType: ModerationContentType, $status: ModerationStatus) { moderationItems(offset: $offset, limit: $limit, contentType: $contentType, status: $status) { ... } }` | `packages/mock_backend/tests/moderation.rs` |
+| `PERFORM_MODERATION_MUTATION` | `mutation($moderationTicketId: ID!, $moderationAction: ModerationStatus!) { performModeration(moderationTicketId: $moderationTicketId, moderationAction: $moderationAction) { ... } }` | `packages/mock_backend/tests/moderation.rs` |
 
 **Note:** The legacy panel has separate queries for `LIST_POST`, `LIST_COMMENT`, `LIST_USER` with narrower field selections. The Leptos version uses a single `MODERATION_ITEMS_QUERY` with the full field set and passes `contentType` + `status` as variables. This simplifies the API layer (1 query vs 4).
 

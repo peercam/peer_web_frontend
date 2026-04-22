@@ -424,7 +424,7 @@ Approximate structure mirroring `css/myAds.css` (682 lines):
 
 | # | Task | File(s) | Status | Notes |
 |---|------|---------|--------|-------|
-| 5.1 | Add ad history fixture data to mock backend | `tests/mock_backend/` | ❌ | Requires Mock Backend Phase 5 (Economy) |
+| 5.1 | Add ad history fixture data to mock backend | `packages/mock_backend/` | ❌ | Requires Mock Backend Phase 5 (Economy) |
 | 5.2 | E2E: page loads, stats header visible | `end2end/` | ❌ | Playwright test |
 | 5.3 | E2E: ad card expand/collapse | `end2end/` | ❌ | Click ad → detail panel opens |
 | 5.4 | E2E: infinite scroll loads more ads | `end2end/` | ❌ | Scroll to bottom → new batch |

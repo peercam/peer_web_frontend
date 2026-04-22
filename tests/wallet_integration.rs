@@ -41,7 +41,7 @@ const SEED_USER_ALICE: &str = "00000000-0000-4000-a000-000000000003";
 const SEED_USER_BOB: &str = "00000000-0000-4000-a000-000000000004";
 
 // System accounts the mock backend rejects transfers to.
-const SYSTEM_BURN_ACCOUNT: &str = "00000000-0000-4000-b000-000000000001";
+const SYSTEM_BURN_ACCOUNT: &str = "eeeeeeee-eeee-4eee-aeee-000000000001";
 
 // Default seeded balance for non-mint users (see `DEFAULT_USER_BALANCE`).
 const DEFAULT_USER_BALANCE: &str = "1000.0";

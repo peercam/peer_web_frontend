@@ -32,9 +32,9 @@ pub fn ImageUploadModal(
                 .target()
                 .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok());
 
-            if let Some(input) = input {
-                if let Some(files) = input.files() {
-                    if let Some(file) = files.get(0) {
+            if let Some(input) = input
+                && let Some(files) = input.files()
+                    && let Some(file) = files.get(0) {
                         let reader = match web_sys::FileReader::new() {
                             Ok(r) => r,
                             Err(_) => return,
@@ -43,11 +43,10 @@ pub fn ImageUploadModal(
                         let reader_clone = reader.clone();
                         let onload = wasm_bindgen::closure::Closure::wrap(Box::new(
                             move |_: web_sys::Event| {
-                                if let Ok(result) = reader_clone.result() {
-                                    if let Some(data_url) = result.as_string() {
+                                if let Ok(result) = reader_clone.result()
+                                    && let Some(data_url) = result.as_string() {
                                         preview_src.set(data_url);
                                     }
-                                }
                             },
                         )
                             as Box<dyn FnMut(_)>);
@@ -57,8 +56,6 @@ pub fn ImageUploadModal(
 
                         let _ = reader.read_as_data_url(&file);
                     }
-                }
-            }
         }
 
         // SSR fallback - does nothing

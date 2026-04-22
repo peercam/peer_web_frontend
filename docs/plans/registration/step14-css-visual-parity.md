@@ -23,7 +23,7 @@ Before starting this step, confirm:
 ## 14.2 — Architecture Overview
 
 ```
-peer-web/
+/
 ├── public/                          ← cargo-leptos copies everything here to target/site/
 │   ├── fonts/
 │   │   ├── font-poppins/            ← symlink or copy of ../../fonts/font-poppins/
@@ -92,7 +92,7 @@ The Poppins font family and the Peer icon font must be available under `public/`
 **Option A — Symlinks (development, recommended):**
 
 ```bash
-cd peer-web/public
+cd public
 mkdir -p fonts
 ln -s ../../../fonts/font-poppins fonts/font-poppins
 ln -s ../../../fonts/peer-icon-font fonts/peer-icon-font
@@ -101,8 +101,8 @@ ln -s ../../../fonts/peer-icon-font fonts/peer-icon-font
 **Option B — Copy (CI / production):**
 
 ```bash
-cp -r ../../fonts/font-poppins peer-web/public/fonts/font-poppins
-cp -r ../../fonts/peer-icon-font peer-web/public/fonts/peer-icon-font
+cp -r ../../fonts/font-poppins public/fonts/font-poppins
+cp -r ../../fonts/peer-icon-font public/fonts/peer-icon-font
 ```
 
 > **Note:** Symlinks keep a single source of truth and avoid drift. The CI build script should use `cp -r` since symlinks may not survive Docker layers.
@@ -110,7 +110,7 @@ cp -r ../../fonts/peer-icon-font peer-web/public/fonts/peer-icon-font
 ### 14.4.2 — Images & SVGs
 
 ```bash
-cd peer-web/public
+cd public
 mkdir -p img svg
 
 # Phone mockup image
@@ -202,7 +202,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 ### 14.6.1 — Copy the CSS
 
 ```bash
-cp css/login-register.css peer-web/style/login-register.css
+cp css/login-register.css style/login-register.css
 ```
 
 ### 14.6.2 — Path Adjustments
@@ -654,14 +654,14 @@ Use **BackstopJS** for visual regression testing. It captures screenshots at spe
 ### 14.11.2 — Setup
 
 ```bash
-cd peer-web/end2end
+cd end2end
 npm install backstopjs --save-dev
 npx backstop init
 ```
 
 ### 14.11.3 — BackstopJS Configuration
 
-Create/update `peer-web/end2end/backstop.json`:
+Create/update `end2end/backstop.json`:
 
 ```json
 {
@@ -755,7 +755,7 @@ php -S localhost:8080 &
 
 # Update backstop.json URLs to http://localhost:8080/register.php
 # Then capture references:
-cd peer-web/end2end
+cd end2end
 npx backstop reference
 ```
 

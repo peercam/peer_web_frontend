@@ -55,6 +55,7 @@ struct ReferralResponse {
 }
 
 #[tokio::test]
+#[ignore = "requires live leptos+mock_backend servers"]
 async fn test_verify_referral_valid_code() {
     let result: Result<ReferralResponse, _> = call_server_fn(
         "/api/verify_referral",
@@ -69,6 +70,7 @@ async fn test_verify_referral_valid_code() {
 }
 
 #[tokio::test]
+#[ignore = "requires live leptos+mock_backend servers"]
 async fn test_verify_referral_invalid_format() {
     let result: Result<ReferralResponse, _> = call_server_fn(
         "/api/verify_referral",
@@ -81,6 +83,7 @@ async fn test_verify_referral_invalid_format() {
 }
 
 #[tokio::test]
+#[ignore = "requires live leptos+mock_backend servers"]
 async fn test_verify_referral_unknown_code() {
     let result: Result<ReferralResponse, _> = call_server_fn(
         "/api/verify_referral",
@@ -107,6 +110,7 @@ struct RegResponse {
 }
 
 #[tokio::test]
+#[ignore = "requires live leptos+mock_backend servers"]
 async fn test_register_user_success() {
     let unique_email = format!("servfn_{}@example.com", uuid::Uuid::new_v4());
 
@@ -129,6 +133,7 @@ async fn test_register_user_success() {
 }
 
 #[tokio::test]
+#[ignore = "requires live leptos+mock_backend servers"]
 async fn test_register_user_invalid_email() {
     let result: Result<RegResponse, _> = call_server_fn(
         "/api/register_user",
@@ -146,6 +151,7 @@ async fn test_register_user_invalid_email() {
 }
 
 #[tokio::test]
+#[ignore = "requires live leptos+mock_backend servers"]
 async fn test_register_user_short_password() {
     let result: Result<RegResponse, _> = call_server_fn(
         "/api/register_user",
@@ -163,6 +169,7 @@ async fn test_register_user_short_password() {
 }
 
 #[tokio::test]
+#[ignore = "requires live leptos+mock_backend servers"]
 async fn test_register_user_duplicate_email() {
     let email = format!("dup_sf_{}@example.com", uuid::Uuid::new_v4());
 
@@ -208,6 +215,7 @@ struct VerifyResponse {
 }
 
 #[tokio::test]
+#[ignore = "requires live leptos+mock_backend servers"]
 async fn test_verify_account_success() {
     // First register a user to get a userid
     let unique_email = format!("verify_sf_{}@example.com", uuid::Uuid::new_v4());
@@ -237,6 +245,7 @@ async fn test_verify_account_success() {
 }
 
 #[tokio::test]
+#[ignore = "requires live leptos+mock_backend servers"]
 async fn test_verify_account_empty_userid() {
     let result: Result<VerifyResponse, _> =
         call_server_fn("/api/verify_account", json!({ "userid": "" })).await;

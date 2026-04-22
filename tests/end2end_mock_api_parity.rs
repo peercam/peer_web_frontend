@@ -1,9 +1,9 @@
 //! Parity tests for every mock-backend API call issued by the Playwright
-//! suite in `peer-web/end2end/`. Each end2end helper or `*.spec.ts` that
+//! suite in `end2end/`. Each end2end helper or `*.spec.ts` that
 //! reaches the mock backend must have a direct counterpart here so that
 //! changes to the mock API surface are caught without booting a browser.
 //!
-//! End2end ↔ peer-web/tests mapping (this file + siblings):
+//! End2end ↔ tests/ mapping (this file + siblings):
 //!
 //!   * `helpers/mock-server.ts::resetMockState`              → `test_reset_endpoint_*`
 //!   * `helpers/mock-server.ts::preRegisterEmail`            → `test_pre_register_email_helper_mutation`

@@ -83,7 +83,7 @@ Defines all GraphQL output types, input types, and enums needed by Phase 2 resol
 
 | Mock type | Frontend deserialization target | Verified fields |
 |-----------|-------------------------------|-----------------|
-| `ProfileGql` | `peer-web/src/models/profile.rs::Profile` | All 17 fields match (camelCase GraphQL names) |
+| `ProfileGql` | `src/models/profile.rs::Profile` | All 17 fields match (camelCase GraphQL names) |
 | `ProfileUserGql` | `profile.rs::ProfileUser` | `userid, username, slug, img, visibilityStatus, isHiddenForUsers, hasActiveReports, isfollowed, isfollowing` |
 | `BasicUserInfoGql` | `profile.rs::BasicUserInfo` | `userid, img, username, slug, biography, visibilityStatus, isHiddenForUsers, hasActiveReports` |
 | `FollowStatusResponseGql` | `profile.rs::FollowStatusResponse` | `meta, isfollowing` |

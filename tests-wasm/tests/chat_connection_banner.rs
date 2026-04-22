@@ -4,7 +4,7 @@
 //! recovery.
 //!
 //! The debouncing logic that decides *when* to flip to Lost is covered
-//! in `peer-web/tests/chat_client_state.rs`. This test covers the
+//! in `tests/chat_client_state.rs`. This test covers the
 //! browser-level rendering contract the E2E assertion
 //! `expect(page.locator(".connection-lost-banner")).toBeVisible()`
 //! relies on.

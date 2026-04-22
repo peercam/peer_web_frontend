@@ -7,8 +7,12 @@ use crate::models::version::VersionRelease;
 /// Fetch version releases from the static JSON file.
 #[server(GetVersionReleases, "/api")]
 pub async fn get_version_releases() -> Result<Vec<VersionRelease>, ServerFnError> {
-    // Try peer-web/json/ first, then fall back to ../json/ (repo root)
+    // After the repo-layout flattening (see docs/adr-repo-layout-promote-peer-web.md)
+    // the legacy JSON fixtures live under legacy/assets/json/. The first entry is
+    // the new canonical location; the others are kept as fallbacks for any
+    // out-of-tree deploy that still mirrors the old paths.
     let paths = [
+        "legacy/assets/json/version_releases.json",
         "json/version_releases.json",
         "../json/version_releases.json",
     ];

@@ -2,7 +2,7 @@
 
 > Implements ADR: [adr-mock-backend-rust-rewrite.md](../adr-mock-backend-rust-rewrite.md)
 
-**Goal:** Replace the Node.js mock backend (`tests/mock_backend/`) with an idiomatic Rust crate built on async-graphql + Axum, achieving parity with the existing 3 mutations and then incrementally expanding to cover all 10 backend API domains documented in `docs/backend_api/`.
+**Goal:** Replace the Node.js mock backend (`packages/mock_backend/`) with an idiomatic Rust crate built on async-graphql + Axum, achieving parity with the existing 3 mutations and then incrementally expanding to cover all 10 backend API domains documented in `docs/backend_api/`.
 
 ---
 
@@ -36,7 +36,7 @@
 
 ### What the Leptos frontend already calls
 
-From `peer-web/src/api/mod.rs`, the frontend has API modules for:
+From `src/api/mod.rs`, the frontend has API modules for:
 
 | Module | GraphQL operations used |
 |--------|------------------------|
@@ -64,7 +64,7 @@ From `peer-web/src/api/mod.rs`, the frontend has API modules for:
 The Node.js files have been replaced with a Rust project:
 
 ```
-tests/mock_backend/
+packages/mock_backend/
 ├── Cargo.toml
 ├── README.md
 ├── fixtures/              # Kept from Node.js as reference
@@ -317,9 +317,9 @@ All 9 tests pass using `tower::ServiceExt::oneshot` (in-process, no port binding
 ### Step 0.11 — Wire into peer-web as dev-dependency
 
 ```toml
-# peer-web/Cargo.toml
+# Cargo.toml
 [dev-dependencies]
-mock_backend = { path = "../../tests/mock_backend" }
+mock_backend = { path = "../../packages/mock_backend" }
 ```
 
 ### Step 0.12 — Remove Node.js files
@@ -350,7 +350,7 @@ Once all 7 tests pass in Rust and CI is green:
 > **Status:** Complete (14 April 2026) — [Detailed plan](./phase-1-login-session-flows.md)
 
 **Depends on:** Phase 0
-**Driven by:** `peer-web/src/pages/login.rs`, `peer-web/src/api/auth.rs`
+**Driven by:** `src/pages/login.rs`, `src/api/auth.rs`
 
 **Outcome:** 9 new auth/account mutations, auth middleware, 2 seeded users, 24 new integration tests (33 total).
 
@@ -364,7 +364,7 @@ Once all 7 tests pass in Rust and CI is green:
 ### File tree after Phase 1
 
 ```
-tests/mock_backend/src/
+packages/mock_backend/src/
 ├── lib.rs               # Updated: CurrentUser struct, auth context extraction
 ├── main.rs
 ├── state.rs             # Updated: User, ContactMessage, token/password maps
@@ -489,7 +489,7 @@ The Phase 0 `register` mutation was updated to also create a `User` record and s
 > **Status:** Complete (14 April 2026) — [Detailed plan](./phase-2-users-and-profiles.md) | [Implementation notes](./phase-2-implementation.md)
 
 **Depends on:** Phase 1 (requires auth)
-**Driven by:** `peer-web/src/pages/profile.rs`, `peer-web/src/pages/view_profile.rs`, `peer-web/src/api/profile.rs`
+**Driven by:** `src/pages/profile.rs`, `src/pages/view_profile.rs`, `src/api/profile.rs`
 
 **Outcome:** 10 user queries, 8 profile mutations, content filtering, 6 seeded users, 40 new integration tests (73 total).
 
@@ -542,7 +542,7 @@ pub struct MockState {
 ## 5. Phase 3 — Posts & Content
 
 **Depends on:** Phase 2 (requires user profiles)
-**Driven by:** `peer-web/src/pages/new_post.rs`, `peer-web/src/pages/view_post.rs`, `peer-web/src/pages/dashboard.rs`, `peer-web/src/api/posts.rs`
+**Driven by:** `src/pages/new_post.rs`, `src/pages/view_post.rs`, `src/pages/dashboard.rs`, `src/api/posts.rs`
 **Detailed plan:** [phase-3-posts-content.md](./phase-3-posts-content.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
 
 ### New files
@@ -603,7 +603,7 @@ pub struct MockState {
 > **Status:** Complete (14 April 2026) — [Detailed plan](./phase-4-social-comments-chat.md)
 
 **Depends on:** Phase 3 (requires posts)
-**Driven by:** `peer-web/src/api/comments.rs`, `peer-web/src/api/chat.rs`, `peer-web/src/pages/chat.rs`
+**Driven by:** `src/api/comments.rs`, `src/api/chat.rs`, `src/pages/chat.rs`
 **Detailed plan:** [phase-4-social-comments-chat.md](./phase-4-social-comments-chat.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
 
 ### New files
@@ -668,7 +668,7 @@ pub struct MockState {
 > **Status:** Complete — 219 total tests (49 new), 0 clippy warnings
 
 **Depends on:** Phase 3 (requires posts for ads)
-**Driven by:** `peer-web/src/pages/wallet.rs`, `peer-web/src/api/wallet.rs`
+**Driven by:** `src/pages/wallet.rs`, `src/api/wallet.rs`
 **Detailed plan:** [phase-5-economy-wallet-tokenomics-shop-ads.md](./phase-5-economy-wallet-tokenomics-shop-ads.md) — Plan quality: ⭐⭐⭐⭐⭐ (5/5)
 
 ### New files
@@ -813,7 +813,7 @@ Seeded test users: one admin (`roles_mask: 16`) and one moderator (`roles_mask: 
 
 ### Step 9.1 — Add to workspace (if using Cargo workspace)
 
-If a root `Cargo.toml` workspace exists, add `tests/mock_backend` as a member. Otherwise the crate is standalone.
+If a root `Cargo.toml` workspace exists, add `packages/mock_backend` as a member. Otherwise the crate is standalone.
 
 ### Step 9.2 — CI job
 
@@ -821,7 +821,7 @@ If a root `Cargo.toml` workspace exists, add `tests/mock_backend` as a member. O
 # In CI pipeline (GitHub Actions, etc.)
 - name: Test mock backend
   run: |
-    cd tests/mock_backend
+    cd packages/mock_backend
     cargo test --all-targets
     cargo clippy -- -D warnings
     cargo fmt --check
@@ -829,7 +829,7 @@ If a root `Cargo.toml` workspace exists, add `tests/mock_backend` as a member. O
 
 ### Step 9.3 — E2E integration
 
-The Leptos E2E tests (`peer-web/end2end/`) should:
+The Leptos E2E tests (`end2end/`) should:
 
 1. Import `mock_backend::app()` as a dev-dependency
 2. Start the mock in-process (no port binding needed for tower-based tests)

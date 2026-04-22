@@ -49,11 +49,10 @@ pub fn SuccessStep(
 fn store_email_in_session_storage(email: &str) {
     #[cfg(feature = "hydrate")]
     {
-        if let Some(window) = web_sys::window() {
-            if let Ok(Some(storage)) = window.session_storage() {
+        if let Some(window) = web_sys::window()
+            && let Ok(Some(storage)) = window.session_storage() {
                 let _ = storage.set_item("newUserEmail", email);
             }
-        }
     }
     // No-op on server side — sessionStorage is a browser-only API.
     #[cfg(not(feature = "hydrate"))]
@@ -62,7 +61,7 @@ fn store_email_in_session_storage(email: &str) {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "hydrate")))]
 mod tests {
     use super::*;
 

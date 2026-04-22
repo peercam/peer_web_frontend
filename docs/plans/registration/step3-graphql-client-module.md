@@ -639,7 +639,7 @@ impl VerifyAccountResponse {
 
 ## 3.6 — Integration test file
 
-Create `peer-web/tests/graphql_integration.rs`:
+Create `tests/graphql_integration.rs`:
 
 ```rust
 //! Integration tests for the GraphQL client module.
@@ -938,7 +938,7 @@ First, ensure the mock backend is running:
 
 ```bash
 # In a separate terminal
-cd tests/mock_backend
+cd packages/mock_backend
 npm start
 # Should show: "Mock Peer GraphQL server running at http://localhost:4000/graphql"
 ```
@@ -967,7 +967,7 @@ cargo test --features ssr --test graphql_integration
 |-------|-------|----------|
 | `unresolved import 'crate::models::user::ReferralVerifyResponse'` | Types not defined in Step 2 | Ensure `src/models/user.rs` contains all response types |
 | `reqwest::Client::builder() not found` | Missing `ssr` feature | Run with `--features ssr` |
-| `Connection refused` in tests | Mock backend not running | Start with `npm start` in `tests/mock_backend/` |
+| `Connection refused` in tests | Mock backend not running | Start with `npm start` in `packages/mock_backend/` |
 | Deserialization errors | Field name mismatch | Check `#[serde(rename_all = "...")]` matches API |
 | `PascalCase` vs `camelCase` confusion | Peer API uses PascalCase for some fields | Use `#[serde(rename_all = "PascalCase")]` for response types |
 

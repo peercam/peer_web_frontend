@@ -17,7 +17,7 @@ The new-post page shipped its full structural scope on the 🚧 In Progress tier
 2. **Closes the genuine remaining gaps** — real-time waveform, accurate video duration, video frame thumbnails, server-side trim plumbing, tag history, and E2E coverage.
 3. **Promotes New Post to ✅ Implemented** in the convergence tracker.
 
-The submit path (eligibility → multipart upload → `createPost`) already works end-to-end against the mock backend (Phase 3 ✅). No backend / mock-backend changes are required for this sprint — every task lives inside `peer-web/`.
+The submit path (eligibility → multipart upload → `createPost`) already works end-to-end against the mock backend (Phase 3 ✅). No backend / mock-backend changes are required for this sprint — every task lives inside `/`.
 
 ---
 
@@ -27,15 +27,15 @@ Items the parent plan and convergence tracker claim are stubbed but are in fact 
 
 | Parent-plan claim | Reality (verified in source) | Evidence |
 |---|---|---|
-| "Image cropping modal — UI shell exists, canvas draw/crop logic is stubbed" | ✅ Fully implemented — `HtmlImageElement` load, `drawImage` preview with overlay, drag/scroll-zoom, output canvas at 1080px wide, PNG data-URL emit | [peer-web/src/components/new_post/media/image_cropper.rs](../../../peer-web/src/components/new_post/media/image_cropper.rs) — `perform_crop`, `draw_preview`, `draw_to_output` |
+| "Image cropping modal — UI shell exists, canvas draw/crop logic is stubbed" | ✅ Fully implemented — `HtmlImageElement` load, `drawImage` preview with overlay, drag/scroll-zoom, output canvas at 1080px wide, PNG data-URL emit | [src/components/new_post/media/image_cropper.rs](../../..//src/components/new_post/media/image_cropper.rs) — `perform_crop`, `draw_preview`, `draw_to_output` |
 | "Aspect ratio toggle — UI exists, not wired to canvas" | ✅ Wired — `aspect_ratio` signal feeds both preview canvas height (reactive) and `OUTPUT_WIDTH * ratio.value()` for output | same file, lines 65–73 + `perform_crop` |
 | "Cropped image preview — output canvas is empty" | ✅ Output canvas populated; PNG data URL passed to `on_crop` callback | same file, `perform_crop` |
-| "Voice recording — UI shell exists, MediaRecorder calls stubbed" | ✅ Implemented — `getUserMedia(audio: true)` → `MediaRecorder` → chunk accumulation → `Blob` → `array_buffer()` → `Vec<u8>` + MIME emitted via `on_recording_complete` | [peer-web/src/components/new_post/media/voice_recorder.rs](../../../peer-web/src/components/new_post/media/voice_recorder.rs) — `start_recording`, `stop_recording` |
+| "Voice recording — UI shell exists, MediaRecorder calls stubbed" | ✅ Implemented — `getUserMedia(audio: true)` → `MediaRecorder` → chunk accumulation → `Blob` → `array_buffer()` → `Vec<u8>` + MIME emitted via `on_recording_complete` | [src/components/new_post/media/voice_recorder.rs](../../..//src/components/new_post/media/voice_recorder.rs) — `start_recording`, `stop_recording` |
 | "Recording timer — signal exists, not incremented" | ✅ Incremented — `set_interval_with_callback_and_timeout_and_arguments_0` ticks `elapsed_time` every 1000 ms; cleared on stop | same file, `start_recording` |
 | "Playback controls — button exists, handler is empty" | ✅ `toggle_playback` toggles `<audio id="voice-recorder-preview">` `play()` / `pause()` | same file, `toggle_playback` |
 | "Record again — resets state, but no actual recording" | ✅ `reset_recording` clears state + `recorded` + `recorder_store`; subsequent record cycle works | same file, `reset_recording` |
-| "Start/end handle dragging — handlers are empty stubs" | ✅ Wired — `handle_start_drag` / `handle_end_drag` flip `DragMode`; `handle_timeline_mousemove` updates the active handle with `MIN_DURATION` clamp; `seek_to` updates the `<video>` playhead | [peer-web/src/components/new_post/media/video_trimmer.rs](../../../peer-web/src/components/new_post/media/video_trimmer.rs) |
-| "Responsive layout — desktop layout done, no mobile breakpoints" | ✅ Two breakpoints exist (`@media (max-width: 1024px)` and `@media (max-width: 768px)` in [peer-web/style/new-post.scss](../../../peer-web/style/new-post.scss) lines 1338, 1357). Quality of those breakpoints still wants a manual review, but they are not absent. | grep over `style/new-post.scss` |
+| "Start/end handle dragging — handlers are empty stubs" | ✅ Wired — `handle_start_drag` / `handle_end_drag` flip `DragMode`; `handle_timeline_mousemove` updates the active handle with `MIN_DURATION` clamp; `seek_to` updates the `<video>` playhead | [src/components/new_post/media/video_trimmer.rs](../../..//src/components/new_post/media/video_trimmer.rs) |
+| "Responsive layout — desktop layout done, no mobile breakpoints" | ✅ Two breakpoints exist (`@media (max-width: 1024px)` and `@media (max-width: 768px)` in [style/new-post.scss](../../..//style/new-post.scss) lines 1338, 1357). Quality of those breakpoints still wants a manual review, but they are not absent. | grep over `style/new-post.scss` |
 
 **Remaining genuine gaps** (tracked as Tasks 2–8 below):
 
@@ -55,44 +55,44 @@ Items the parent plan and convergence tracker claim are stubbed but are in fact 
 
 | Layer | File | Lines | Status |
 |-------|------|-------|--------|
-| **Page** | [peer-web/src/pages/new_post.rs](../../../peer-web/src/pages/new_post.rs) | ~250 | ✅ Auth guard, `NewPostContext`, validation, `build_input` |
-| **Route** | [peer-web/src/app.rs](../../../peer-web/src/app.rs) | — | ✅ `/new` registered |
-| **Models** | [peer-web/src/models/post.rs](../../../peer-web/src/models/post.rs) | — | ✅ `CreateContentType`, `CreatePostInput`, `MediaFile`, `is_valid_tag` |
-| **API — eligibility** | [peer-web/src/api/posts.rs](../../../peer-web/src/api/posts.rs) | — | ✅ `check_post_eligibility` server fn |
-| **API — upload** | [peer-web/src/api/posts.rs](../../../peer-web/src/api/posts.rs) | — | ✅ `upload_post_files` (multipart) |
-| **API — create** | [peer-web/src/api/posts.rs](../../../peer-web/src/api/posts.rs) | — | ✅ `create_post` mutation |
-| **API — search tags** | [peer-web/src/api/posts.rs](../../../peer-web/src/api/posts.rs) | — | ✅ `search_tags` |
-| **Component — header** | [peer-web/src/components/new_post/header.rs](../../../peer-web/src/components/new_post/header.rs) | — | ✅ |
-| **Component — content type tabs** | [peer-web/src/components/new_post/content_type_tabs.rs](../../../peer-web/src/components/new_post/content_type_tabs.rs) | — | ✅ |
-| **Component — form** | [peer-web/src/components/new_post/form.rs](../../../peer-web/src/components/new_post/form.rs) | — | ✅ Title / description / type-specific media area / tags |
-| **Component — image upload** | [peer-web/src/components/new_post/media/image_upload.rs](../../../peer-web/src/components/new_post/media/image_upload.rs) | — | ✅ Drop zone, multi-file (≤5), slider, per-image remove |
-| **Component — image slider** | [peer-web/src/components/new_post/media/image_slider.rs](../../../peer-web/src/components/new_post/media/image_slider.rs) | — | ✅ |
-| **Component — image cropper** | [peer-web/src/components/new_post/media/image_cropper.rs](../../../peer-web/src/components/new_post/media/image_cropper.rs) | ~300 | ✅ Canvas draw, drag, scroll-zoom (0.3–8×), 1:1 / 4:5 toggle, PNG data-URL output |
-| **Component — audio upload** | [peer-web/src/components/new_post/media/audio_upload.rs](../../../peer-web/src/components/new_post/media/audio_upload.rs) | — | ✅ File picker (mp3/wav/flac/aac/m4a) + cover slot |
-| **Component — voice recorder** | [peer-web/src/components/new_post/media/voice_recorder.rs](../../../peer-web/src/components/new_post/media/voice_recorder.rs) | ~350 | ✅ MediaRecorder, chunked capture, MIME forwarding, preview `<audio>`, timer, play/pause, "record again", "use recording" — **waveform still static** |
-| **Component — video upload** | [peer-web/src/components/new_post/media/video_upload.rs](../../../peer-web/src/components/new_post/media/video_upload.rs) | — | ✅ Multi-video (≤2), preview, remove — **`duration` hardcoded to 30.0** |
-| **Component — video trimmer** | [peer-web/src/components/new_post/media/video_trimmer.rs](../../../peer-web/src/components/new_post/media/video_trimmer.rs) | ~270 | ✅ Timeline + draggable handles, `MIN_DURATION` clamp, playhead, format labels — **no frame thumbnails, emits times only** |
-| **Component — video cover** | [peer-web/src/components/new_post/media/video_cover.rs](../../../peer-web/src/components/new_post/media/video_cover.rs) | — | ✅ Cover slot |
-| **Component — drop zone** | [peer-web/src/components/new_post/media/drop_zone.rs](../../../peer-web/src/components/new_post/media/drop_zone.rs) | — | ✅ Generic drag/drop + `read_file_as_bytes` helper |
-| **Component — tag input** | [peer-web/src/components/new_post/tags/tag_input.rs](../../../peer-web/src/components/new_post/tags/tag_input.rs) | ~150 | ✅ Autocomplete, `searchTags`, validation, ≤10 cap — **no localStorage history** |
-| **Component — tag list** | [peer-web/src/components/new_post/tags/tag_list.rs](../../../peer-web/src/components/new_post/tags/tag_list.rs) | — | ✅ |
-| **Component — preview** | [peer-web/src/components/new_post/preview.rs](../../../peer-web/src/components/new_post/preview.rs) | — | ✅ Full + collapsed card preview, "back to edit" |
-| **Component — submit** | [peer-web/src/components/new_post/submit.rs](../../../peer-web/src/components/new_post/submit.rs) | ~220 | ✅ Validate → eligibility → multipart upload → `createPost` → toast → navigate. **No `trim_window` plumbed into `CreatePostInput`** |
-| **Component — right sidebar** | [peer-web/src/components/new_post/right_sidebar.rs](../../../peer-web/src/components/new_post/right_sidebar.rs) | — | ✅ |
-| **Mock Backend** | [tests/mock_backend](../../../tests/mock_backend) | — | ✅ Phase 3 done — `postEligibility`, `/upload-post`, `createPost`, `searchTags` |
+| **Page** | [src/pages/new_post.rs](../../..//src/pages/new_post.rs) | ~250 | ✅ Auth guard, `NewPostContext`, validation, `build_input` |
+| **Route** | [src/app.rs](../../..//src/app.rs) | — | ✅ `/new` registered |
+| **Models** | [src/models/post.rs](../../..//src/models/post.rs) | — | ✅ `CreateContentType`, `CreatePostInput`, `MediaFile`, `is_valid_tag` |
+| **API — eligibility** | [src/api/posts.rs](../../..//src/api/posts.rs) | — | ✅ `check_post_eligibility` server fn |
+| **API — upload** | [src/api/posts.rs](../../..//src/api/posts.rs) | — | ✅ `upload_post_files` (multipart) |
+| **API — create** | [src/api/posts.rs](../../..//src/api/posts.rs) | — | ✅ `create_post` mutation |
+| **API — search tags** | [src/api/posts.rs](../../..//src/api/posts.rs) | — | ✅ `search_tags` |
+| **Component — header** | [src/components/new_post/header.rs](../../..//src/components/new_post/header.rs) | — | ✅ |
+| **Component — content type tabs** | [src/components/new_post/content_type_tabs.rs](../../..//src/components/new_post/content_type_tabs.rs) | — | ✅ |
+| **Component — form** | [src/components/new_post/form.rs](../../..//src/components/new_post/form.rs) | — | ✅ Title / description / type-specific media area / tags |
+| **Component — image upload** | [src/components/new_post/media/image_upload.rs](../../..//src/components/new_post/media/image_upload.rs) | — | ✅ Drop zone, multi-file (≤5), slider, per-image remove |
+| **Component — image slider** | [src/components/new_post/media/image_slider.rs](../../..//src/components/new_post/media/image_slider.rs) | — | ✅ |
+| **Component — image cropper** | [src/components/new_post/media/image_cropper.rs](../../..//src/components/new_post/media/image_cropper.rs) | ~300 | ✅ Canvas draw, drag, scroll-zoom (0.3–8×), 1:1 / 4:5 toggle, PNG data-URL output |
+| **Component — audio upload** | [src/components/new_post/media/audio_upload.rs](../../..//src/components/new_post/media/audio_upload.rs) | — | ✅ File picker (mp3/wav/flac/aac/m4a) + cover slot |
+| **Component — voice recorder** | [src/components/new_post/media/voice_recorder.rs](../../..//src/components/new_post/media/voice_recorder.rs) | ~350 | ✅ MediaRecorder, chunked capture, MIME forwarding, preview `<audio>`, timer, play/pause, "record again", "use recording" — **waveform still static** |
+| **Component — video upload** | [src/components/new_post/media/video_upload.rs](../../..//src/components/new_post/media/video_upload.rs) | — | ✅ Multi-video (≤2), preview, remove — **`duration` hardcoded to 30.0** |
+| **Component — video trimmer** | [src/components/new_post/media/video_trimmer.rs](../../..//src/components/new_post/media/video_trimmer.rs) | ~270 | ✅ Timeline + draggable handles, `MIN_DURATION` clamp, playhead, format labels — **no frame thumbnails, emits times only** |
+| **Component — video cover** | [src/components/new_post/media/video_cover.rs](../../..//src/components/new_post/media/video_cover.rs) | — | ✅ Cover slot |
+| **Component — drop zone** | [src/components/new_post/media/drop_zone.rs](../../..//src/components/new_post/media/drop_zone.rs) | — | ✅ Generic drag/drop + `read_file_as_bytes` helper |
+| **Component — tag input** | [src/components/new_post/tags/tag_input.rs](../../..//src/components/new_post/tags/tag_input.rs) | ~150 | ✅ Autocomplete, `searchTags`, validation, ≤10 cap — **no localStorage history** |
+| **Component — tag list** | [src/components/new_post/tags/tag_list.rs](../../..//src/components/new_post/tags/tag_list.rs) | — | ✅ |
+| **Component — preview** | [src/components/new_post/preview.rs](../../..//src/components/new_post/preview.rs) | — | ✅ Full + collapsed card preview, "back to edit" |
+| **Component — submit** | [src/components/new_post/submit.rs](../../..//src/components/new_post/submit.rs) | ~220 | ✅ Validate → eligibility → multipart upload → `createPost` → toast → navigate. **No `trim_window` plumbed into `CreatePostInput`** |
+| **Component — right sidebar** | [src/components/new_post/right_sidebar.rs](../../..//src/components/new_post/right_sidebar.rs) | — | ✅ |
+| **Mock Backend** | [packages/mock_backend](../../../packages/mock_backend) | — | ✅ Phase 3 done — `postEligibility`, `/upload-post`, `createPost`, `searchTags` |
 
 ### What Remains 🔲
 
 | # | Task | File(s) | Effort | Blocks |
 |---|------|---------|--------|--------|
 | 1 | **Documentation accuracy pass** — flip the 7 stubbed-but-done checkboxes in [new-post-implementation.md](new-post-implementation.md), and update the New Post row + components rows in [feature-convergence.md](../../feature-convergence.md) (`Image Cropper` 🚧→✅, `Audio Player` 🚧→🟡 with waveform note, `Video Encoder` 🚧→🟡 with FFmpeg note) | `docs/plans/new-post/new-post-implementation.md`, `docs/feature-convergence.md` | S | Honest baseline for tasks 2–8 |
-| 2 | **Real-time waveform during recording** — wire `AudioContext` + `AnalyserNode` to the existing `<svg class="waveform">`, drive `<path d="…">` from `getByteFrequencyData` via `requestAnimationFrame`; tear down on stop | `peer-web/src/components/new_post/media/voice_recorder.rs` | M | — |
-| 3 | **Video duration extraction** — replace `set_trim_video_duration.set(30.0)` with a `loadedmetadata` listener on a hidden `<video>` (or read from the `VideoTrimmer`'s own video element on `loadedmetadata` and bubble up). Ensure `MIN_DURATION` clamp + handle positions still hold for short clips. | `peer-web/src/components/new_post/media/video_upload.rs`, `peer-web/src/components/new_post/media/video_trimmer.rs` | S | Tasks 4, 5 |
-| 4 | **Video frame thumbnails** in the trimmer timeline — extract N frames (e.g. 8) by seeking a hidden `<video>` and `drawImage` to `<canvas>` per tick, render as a strip beneath the trim window. Skip on SSR (`#[cfg(feature = "hydrate")]`). | `peer-web/src/components/new_post/media/video_trimmer.rs`, `peer-web/style/new-post.scss` | M | — |
-| 5 | **Server-side trim plumbing** — extend `MediaFile` (or add a sibling `MediaTrim { start_secs, end_secs }`) and `CreatePostInput` to carry per-video `(start, end)` tuples; have `VideoUpload::on_trim_complete` persist the times to the context, and have `submit.rs` include them in the upload form data (key e.g. `trim_<filename>`). Mock backend already accepts the field; if the **real** backend doesn't, file an upstream ticket — **do not** ship client-side FFmpeg WASM in v1 (cost, bundle size, mobile reliability). | `peer-web/src/models/post.rs`, `peer-web/src/components/new_post/media/video_upload.rs`, `peer-web/src/components/new_post/submit.rs`, `peer-web/src/api/posts.rs` | M | — |
-| 6 | **Tag history (localStorage)** — persist accepted tags into `localStorage["peer:new-post:tag-history"]` (cap 50, LRU); render up to N=8 chips above the autocomplete suggestions when input is empty/focused; expose a "Clear history" affordance | `peer-web/src/components/new_post/tags/tag_input.rs`, `peer-web/src/components/new_post/tags/tag_list.rs` (or new `tag_history.rs`) | S | — |
-| 7 | **Mobile responsive review** — manual audit of the existing `1024px` and `768px` breakpoints against the legacy `css/add-post.css` + `css/preview.css`; fix any sidebar collapse, modal width, and crop-canvas scaling issues | `peer-web/style/new-post.scss` | M | — |
-| 8 | **E2E tests** (Playwright) — `peer-web/end2end/tests/new_post.spec.ts` covering: text post happy path, image post (1 file, no crop), tag add/remove + history persistence, validation errors (empty title, oversize description), eligibility failure path | `peer-web/end2end/tests/new_post.spec.ts` | L | Promotion ✅ |
+| 2 | **Real-time waveform during recording** — wire `AudioContext` + `AnalyserNode` to the existing `<svg class="waveform">`, drive `<path d="…">` from `getByteFrequencyData` via `requestAnimationFrame`; tear down on stop | `src/components/new_post/media/voice_recorder.rs` | M | — |
+| 3 | **Video duration extraction** — replace `set_trim_video_duration.set(30.0)` with a `loadedmetadata` listener on a hidden `<video>` (or read from the `VideoTrimmer`'s own video element on `loadedmetadata` and bubble up). Ensure `MIN_DURATION` clamp + handle positions still hold for short clips. | `src/components/new_post/media/video_upload.rs`, `src/components/new_post/media/video_trimmer.rs` | S | Tasks 4, 5 |
+| 4 | **Video frame thumbnails** in the trimmer timeline — extract N frames (e.g. 8) by seeking a hidden `<video>` and `drawImage` to `<canvas>` per tick, render as a strip beneath the trim window. Skip on SSR (`#[cfg(feature = "hydrate")]`). | `src/components/new_post/media/video_trimmer.rs`, `style/new-post.scss` | M | — |
+| 5 | **Server-side trim plumbing** — extend `MediaFile` (or add a sibling `MediaTrim { start_secs, end_secs }`) and `CreatePostInput` to carry per-video `(start, end)` tuples; have `VideoUpload::on_trim_complete` persist the times to the context, and have `submit.rs` include them in the upload form data (key e.g. `trim_<filename>`). Mock backend already accepts the field; if the **real** backend doesn't, file an upstream ticket — **do not** ship client-side FFmpeg WASM in v1 (cost, bundle size, mobile reliability). | `src/models/post.rs`, `src/components/new_post/media/video_upload.rs`, `src/components/new_post/submit.rs`, `src/api/posts.rs` | M | — |
+| 6 | **Tag history (localStorage)** — persist accepted tags into `localStorage["peer:new-post:tag-history"]` (cap 50, LRU); render up to N=8 chips above the autocomplete suggestions when input is empty/focused; expose a "Clear history" affordance | `src/components/new_post/tags/tag_input.rs`, `src/components/new_post/tags/tag_list.rs` (or new `tag_history.rs`) | S | — |
+| 7 | **Mobile responsive review** — manual audit of the existing `1024px` and `768px` breakpoints against the legacy `css/add-post.css` + `css/preview.css`; fix any sidebar collapse, modal width, and crop-canvas scaling issues | `style/new-post.scss` | M | — |
+| 8 | **E2E tests** (Playwright) — `end2end/tests/new_post.spec.ts` covering: text post happy path, image post (1 file, no crop), tag add/remove + history persistence, validation errors (empty title, oversize description), eligibility failure path | `end2end/tests/new_post.spec.ts` | L | Promotion ✅ |
 
 **Legend:** S = Small (< 1 hour), M = Medium (1–3 hours), L = Large (3+ hours)
 
@@ -199,7 +199,7 @@ Items the parent plan and convergence tracker claim are stubbed but are in fact 
 
 **Approach:**
 
-1. Add `pub trim: Option<(f64, f64)>` to `MediaFile` in `peer-web/src/models/post.rs`.
+1. Add `pub trim: Option<(f64, f64)>` to `MediaFile` in `src/models/post.rs`.
 2. In `video_upload.rs::on_trim_complete`, instead of just clearing the modal, write `(start, end)` onto the matching `MediaFile` in the context (use `set_media_files.update(…)` with the active index).
 3. In `submit.rs`, when building the multipart upload:
    - For each `MediaFile` with `Some((start, end))`, append two extra fields to the form: `trim_start_<filename>` = start, `trim_end_<filename>` = end.
@@ -222,7 +222,7 @@ Items the parent plan and convergence tracker claim are stubbed but are in fact 
 
 **Approach:**
 
-- New helper module `peer-web/src/utils/tag_history.rs` with `read() -> Vec<String>`, `push(tag: &str)` (LRU dedupe, cap 50), `clear()`. SSR no-op fallback.
+- New helper module `src/utils/tag_history.rs` with `read() -> Vec<String>`, `push(tag: &str)` (LRU dedupe, cap 50), `clear()`. SSR no-op fallback.
 - In `tag_input.rs`:
   - On `select_suggestion` and on the `Enter` accept path, call `tag_history::push(&value)`.
   - When the input is focused **and** empty, render a "Recently used" row of up to 8 chips above the suggestions list.
@@ -256,7 +256,7 @@ Items the parent plan and convergence tracker claim are stubbed but are in fact 
 
 **Goal:** Lock in the happy paths and the most common failure modes.
 
-**File:** `peer-web/end2end/tests/new_post.spec.ts` — follow the structure of [chat.spec.ts](../../../peer-web/end2end/tests/chat.spec.ts) and [wallet.spec.ts](../../../peer-web/end2end/tests/wallet.spec.ts).
+**File:** `end2end/tests/new_post.spec.ts` — follow the structure of [chat.spec.ts](../../..//end2end/tests/chat.spec.ts) and [wallet.spec.ts](../../..//end2end/tests/wallet.spec.ts).
 
 **Cases:**
 

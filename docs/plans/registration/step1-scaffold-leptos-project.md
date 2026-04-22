@@ -2,7 +2,7 @@
 
 > Part of the [Registration Leptos Migration Plan](registration-leptos-migration.md).
 
-**Goal:** Initialize a `cargo-leptos` project in a new `peer-web/` directory alongside the existing PHP app, configure it for SSR + CSR, point it at the mock backend, and verify that it compiles, serves, and passes default tests.
+**Goal:** Initialize a `cargo-leptos` project in a new `/` directory alongside the existing PHP app, configure it for SSR + CSR, point it at the mock backend, and verify that it compiles, serves, and passes default tests.
 
 ---
 
@@ -53,7 +53,7 @@ When prompted, select:
 This creates:
 
 ```
-peer-web/
+/
 ├── Cargo.toml
 ├── src/
 │   ├── main.rs          ← Axum server entry point
@@ -87,7 +87,7 @@ If compilation fails due to nightly features, switch to the stable-compatible te
 
 ## 1.4 — Configure `Cargo.toml`
 
-Edit `peer-web/Cargo.toml` to pin Leptos versions, add required dependencies, and configure features.
+Edit `Cargo.toml` to pin Leptos versions, add required dependencies, and configure features.
 
 ### Dependencies
 
@@ -169,7 +169,7 @@ style-file = "style/main.scss"
 
 ## 1.5 — Environment configuration
 
-Create `peer-web/.env` for local development:
+Create `/.env` for local development:
 
 ```env
 GRAPHQL_ENDPOINT=http://localhost:4000/graphql
@@ -193,15 +193,15 @@ let graphql_endpoint = env::var("GRAPHQL_ENDPOINT")
 
 ## 1.6 — Update `.gitignore`
 
-Add the following to the root `.gitignore` (or create `peer-web/.gitignore`):
+Add the following to the root `.gitignore` (or create `/.gitignore`):
 
 ```gitignore
 # Rust / Leptos build artifacts
-/peer-web/target/
-/peer-web/.env
+//target/
+//.env
 
 # WASM build cache
-/peer-web/pkg/
+//pkg/
 ```
 
 ---
@@ -248,7 +248,7 @@ cargo test
 
 Add a temporary smoke test to confirm the env var is reachable from server context.
 
-Create or edit `peer-web/src/main.rs` to log the endpoint at startup:
+Create or edit `src/main.rs` to log the endpoint at startup:
 
 ```rust
 println!("GraphQL endpoint: {}", 
@@ -270,7 +270,7 @@ Once verified, this println can be left in (it's useful during development) or w
 If the mock backend from Step 0 is running, do a quick connectivity test from inside the Leptos project. Create a temporary integration test:
 
 ```rust
-// peer-web/tests/mock_connectivity.rs
+// tests/mock_connectivity.rs
 #[tokio::test]
 async fn mock_backend_is_reachable() {
     let endpoint = std::env::var("GRAPHQL_ENDPOINT")
@@ -294,7 +294,7 @@ Run with the mock backend active:
 
 ```bash
 # Terminal 1: (from repo root)
-cd tests/mock_backend && npm start
+cd packages/mock_backend && npm start
 
 # Terminal 2:
 cd peer-web && cargo test -- mock_connectivity
@@ -311,13 +311,13 @@ peer_web_frontend/               ← existing repo root
 ├── register.php                 ← existing PHP app (unchanged)
 ├── js/register/register.js      ← existing JS (unchanged)
 ├── css/login-register.css       ← existing CSS (unchanged)
-├── tests/mock_backend/          ← from Step 0
+├── packages/mock_backend/          ← from Step 0
 ├── docs/
 │   └── plans/
 │       ├── registration-leptos-migration.md
 │       ├── step0-mock-backend.md
 │       └── step1-scaffold-leptos-project.md   ← this document
-└── peer-web/                    ← NEW from this step
+└── /                    ← NEW from this step
     ├── Cargo.toml
     ├── .env
     ├── .gitignore
@@ -368,7 +368,7 @@ peer_web_frontend/               ← existing repo root
 
 ## 1.14 — Design decisions & notes
 
-- **`peer-web/` sits alongside the PHP app.** Both can run simultaneously during the migration. The PHP app on its existing Apache/Nginx port, and Leptos on port 3000. Once a route is migrated (e.g., `/register`), traffic for that route can be proxied to Leptos.
+- **`/` sits alongside the PHP app.** Both can run simultaneously during the migration. The PHP app on its existing Apache/Nginx port, and Leptos on port 3000. Once a route is migrated (e.g., `/register`), traffic for that route can be proxied to Leptos.
 - **Axum over Actix.** Axum is the recommended backend for Leptos 0.7 and has better ecosystem alignment with `tower` middleware. The Leptos team maintains `leptos_axum` as the primary integration.
 - **No Tailwind.** The existing project uses hand-written CSS. Introducing Tailwind would create an unnecessary divergence. We'll import the existing stylesheets as-is in Step 14.
 - **SCSS support.** The default template includes `main.scss`. We keep it for now (it compiles to CSS automatically via `cargo-leptos`) but will replace its contents in Step 14 when we import the existing styles.

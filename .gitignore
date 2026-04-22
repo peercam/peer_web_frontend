@@ -1,20 +1,40 @@
+# Editor / OS
 .vscode/*
-public/
-# peer-web ships PWA assets under its own public/ — keep them tracked.
-!peer-web/public/
-!peer-web/public/**
-test/
-video-editor/*
-.gitleaks_out/*
-*.html
-!peer-web/public/offline.html
+.idea
+.DS_Store
 *.tmp
 error.txt
-.DS_Store
+
+# Cargo / Rust build artifacts
+target/
+debug/
+**/*.rs.bk
+*.pdb
+
+# Cargo lockfiles for binary crates are tracked at the workspace root only;
+# nested per-crate Cargo.lock files (e.g. packages/*/Cargo.lock) are
+# redundant once the workspace is unified.
+packages/*/Cargo.lock
+
+# WASM build cache (cargo-leptos / wasm-pack output dirs)
+pkg/
+
+# Environment variables (never commit secrets)
+.env
+js/env.js
+
+# Playwright / Node
+node_modules/
+end2end/playwright-report/
+end2end/test-results/
+end2end/.test-pids.json
+test-results/
+
+# Misc tooling output
+.gitleaks_out/*
+
+# Service-worker build leftovers (legacy PHP toolchain)
 sw_instal.js
 sw_instal.min.js
 sw-db.js
-sw.js
-!peer-web/public/sw.js
 sw.min.js
-js/env.js

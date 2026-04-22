@@ -42,17 +42,17 @@ The legacy PHP frontend ships a minimal `json/webmanifest.json` (referenced from
 
 ### In Scope
 
-- [ ] New manifest at `peer-web/public/manifest.webmanifest` (correct MIME; `.webmanifest` extension)
+- [ ] New manifest at `public/manifest.webmanifest` (correct MIME; `.webmanifest` extension)
 - [ ] `<link rel="manifest">` injected into the SSR shell (`app.rs::shell`)
 - [ ] Theme color, viewport, and Apple-specific meta tags in shell `<head>`
-- [ ] Icon set in `peer-web/public/img/pwa/`:
+- [ ] Icon set in `public/img/pwa/`:
   - `icon-192.png`, `icon-512.png` (any-purpose)
   - `icon-192-maskable.png`, `icon-512-maskable.png` (maskable)
   - `apple-touch-icon-180.png`
   - `favicon.ico` (already present, verify)
   - SVG monochrome icon for `purpose: "monochrome"`
 - [ ] iOS splash screens (at least 3 sizes covering common iPhone resolutions)
-- [ ] Service Worker source at `peer-web/public/sw.js` (hand-written, no Workbox dependency for v1)
+- [ ] Service Worker source at `public/sw.js` (hand-written, no Workbox dependency for v1)
 - [ ] SW registration script gated behind `#[cfg(feature = "hydrate")]` in `src/utils/pwa.rs` (new module), with a no-op SSR stub so `App` can call it unconditionally
 - [ ] **Pin `hash-files = false`** in `[package.metadata.leptos]` for v1 so the precache list can reference stable filenames. (Cache busting still works via the `peer-shell-v{HASH}` cache name driven by `?v=`.) Switching to `hash-files = true` is tracked as a future enhancement that requires generating the precache list at build time.
 - [ ] App shell precache list: `/`, `/login`, `/dashboard`, `/pkg/peer-web.js`, `/pkg/peer-web_bg.wasm`, `/pkg/peer-web.css`, `/manifest.webmanifest`, `/offline.html`, all PWA icons under `/img/pwa/`, `/svg/logo_farbe.svg`, `/svg/logo_sw.svg`
@@ -62,7 +62,7 @@ The legacy PHP frontend ships a minimal `json/webmanifest.json` (referenced from
   - **GraphQL** (POST to `/graphql`): network-only
   - **Navigation requests** (HTML): network-first with offline-shell fallback
 - [ ] Offline fallback page (`/offline.html` static or rendered into precache) with brand + retry button
-- [ ] **`?nosw` escape hatch** for local dev: when the URL contains `?nosw`, `register_service_worker()` instead iterates `navigator.serviceWorker.getRegistrations()` and calls `.unregister()` on each. Documented in `peer-web/README.md`.
+- [ ] **`?nosw` escape hatch** for local dev: when the URL contains `?nosw`, `register_service_worker()` instead iterates `navigator.serviceWorker.getRegistrations()` and calls `.unregister()` on each. Documented in `/README.md`.
 - [ ] **Install Prompt component** (single-file module at `src/components/pwa.rs`, matching the `toast.rs` / `auth_guard.rs` convention):
   - Captures `beforeinstallprompt` event on first hydrate
   - Shows a dismissable banner (slides in from bottom on mobile, top-right on desktop) on `/dashboard` + `/profile` only
@@ -143,7 +143,7 @@ The legacy PHP frontend ships a minimal `json/webmanifest.json` (referenced from
 ### Where Things Live
 
 ```
-peer-web/
+/
 ├── public/
 │   ├── manifest.webmanifest          # New — served at /manifest.webmanifest
 │   ├── sw.js                         # New — service worker (hand-written)
@@ -239,7 +239,7 @@ For **iOS Safari** (no `beforeinstallprompt`):
 
 **No backend changes.** This feature is entirely client-side + static assets.
 
-The mock backend (`tests/mock_backend/`) is unaffected — service worker explicitly **bypasses** all `/api/`, `/graphql`, and `/_server/` requests (network-only).
+The mock backend (`packages/mock_backend/`) is unaffected — service worker explicitly **bypasses** all `/api/`, `/graphql`, and `/_server/` requests (network-only).
 
 ---
 
@@ -249,11 +249,11 @@ The mock backend (`tests/mock_backend/`) is unaffected — service worker explic
 - Source the Peer logo SVG (existing in `svg/`) at the right pixel ratios
 - Generate icon set with the maskable safe-zone respected: per the maskable spec, the safe area is the inner circle of diameter 80% of the icon edge (i.e. up to 10% per side may be masked off; varies by platform). Validate with [maskable.app](https://maskable.app) before committing.
 - Generate iOS splash screens for the top-3 device classes by current analytics (rather than hard-coding model names that age quickly)
-- Add to `peer-web/public/img/pwa/`
+- Add to `public/img/pwa/`
 - Verify dev server serves them at expected URLs
 
 ### Phase 1 — Manifest
-- Author `peer-web/public/manifest.webmanifest` per spec (full schema below)
+- Author `public/manifest.webmanifest` per spec (full schema below)
 - Inject `<link rel="manifest" href="/manifest.webmanifest">` into `app.rs::shell` (currently the shell hard-codes `<html lang="de">` — align with the manifest `lang` value; pick one source of truth, see Open Questions)
 - Add Apple/mobile meta in shell `<head>`:
   - `<meta name="mobile-web-app-capable" content="yes">` (modern, preferred)
@@ -267,7 +267,7 @@ The mock backend (`tests/mock_backend/`) is unaffected — service worker explic
 - Verify `/manifest.webmanifest` is served with `Content-Type: application/manifest+json` (the SSR server uses `leptos_axum::file_and_error_handler`, which delegates to `mime_guess` — `.webmanifest` resolves correctly there, so this is a verification step; add an explicit MIME override only if the integration test fails)
 
 ### Phase 2 — Service Worker (skeleton + precache)
-- Author `peer-web/public/sw.js` with: install/activate/fetch handlers, version constant derived from `?v=` query string, precache list
+- Author `public/sw.js` with: install/activate/fetch handlers, version constant derived from `?v=` query string, precache list
 - No template substitution / `build.rs` is needed. The Rust registration call passes the build hash as `register('/sw.js?v=<HASH>')`; the SW reads it once on startup:
   ```js
   const VERSION = new URL(self.location).searchParams.get('v') || 'dev';
@@ -305,7 +305,7 @@ The mock backend (`tests/mock_backend/`) is unaffected — service worker explic
 - Document the strategy table inline at the top of `sw.js`
 
 ### Phase 4 — Install Prompt UI
-- New single-file module: `src/components/pwa.rs` (matches the existing convention used by [`auth_guard.rs`](../../../peer-web/src/components/auth_guard.rs), [`referral.rs`](../../../peer-web/src/components/referral.rs), [`toast.rs`](../../../peer-web/src/components/toast.rs)). If multiple PWA components emerge later, promote to a `pwa/` directory; for v1, a single file is sufficient.
+- New single-file module: `src/components/pwa.rs` (matches the existing convention used by [`auth_guard.rs`](../../..//src/components/auth_guard.rs), [`referral.rs`](../../..//src/components/referral.rs), [`toast.rs`](../../..//src/components/toast.rs)). If multiple PWA components emerge later, promote to a `pwa/` directory; for v1, a single file is sufficient.
 - Captures `beforeinstallprompt` via a `wasm_bindgen` event listener in `pwa.rs`. `web-sys` does **not** expose `BeforeInstallPromptEvent`, so capture as `web_sys::Event` and call into it via `js-sys`:
   ```rust
   // Stash the raw event so we can call .prompt() later.
@@ -338,8 +338,8 @@ The mock backend (`tests/mock_backend/`) is unaffected — service worker explic
 - Offline page styling (centred logo, retry button that calls `location.reload()`)
 - Installability audit on `/dashboard` via Chrome DevTools → Application → Manifest (0 warnings) and Application → Service Workers (status: activated). The Lighthouse PWA category was removed in Lighthouse 12, so capture screenshots of these panels as the deliverable instead.
 - Manual install matrix: Chrome desktop, Edge desktop, Chrome Android, Safari iOS
-- Document gotchas in `peer-web/README.md` (cache busting, dev SW disable trick, iOS limitations)
-- Add 1× E2E test (Playwright in `peer-web/end2end/`): visit dashboard → assert `serviceWorker.controller !== null` after a second navigation
+- Document gotchas in `/README.md` (cache busting, dev SW disable trick, iOS limitations)
+- Add 1× E2E test (Playwright in `end2end/`): visit dashboard → assert `serviceWorker.controller !== null` after a second navigation
 
 ---
 
@@ -413,7 +413,7 @@ The mock backend (`tests/mock_backend/`) is unaffected — service worker explic
 - Manifest served with correct MIME via SSR build smoke check (small Rust integration test that spins up the axum server, requests `/manifest.webmanifest`, asserts `Content-Type: application/manifest+json`)
 - SW file served from `/sw.js` with `Content-Type: application/javascript` (no `Service-Worker-Allowed` header is needed: scope defaults to the SW's directory, and `/sw.js` at the root already covers `/`)
 
-### E2E (Playwright in `peer-web/end2end/`)
+### E2E (Playwright in `end2end/`)
 - `pwa.spec.ts`:
   - Visit `/dashboard`, wait for hydrate
   - Reload page
@@ -437,38 +437,38 @@ The mock backend (`tests/mock_backend/`) is unaffected — service worker explic
 
 | Path | Purpose |
 |------|---------|
-| `peer-web/public/manifest.webmanifest` | Web App Manifest |
-| `peer-web/public/sw.js` | Service Worker source (hand-written, version comes from `?v=` query) |
-| `peer-web/public/offline.html` | Offline fallback shell |
-| `peer-web/public/img/pwa/icon-192.png` | Standard icon 192 |
-| `peer-web/public/img/pwa/icon-512.png` | Standard icon 512 |
-| `peer-web/public/img/pwa/icon-192-maskable.png` | Maskable icon 192 |
-| `peer-web/public/img/pwa/icon-512-maskable.png` | Maskable icon 512 |
-| `peer-web/public/img/pwa/icon-monochrome.svg` | Monochrome icon |
-| `peer-web/public/img/pwa/apple-touch-icon-180.png` | iOS home-screen icon |
-| `peer-web/public/img/pwa/splash/apple-splash-2048-2732.png` | iPad Pro 12.9" splash |
-| `peer-web/public/img/pwa/splash/apple-splash-1290-2796.png` | Large iPhone splash (6.7" class) |
-| `peer-web/public/img/pwa/splash/apple-splash-1170-2532.png` | Standard iPhone splash (6.1" class) |
-| `peer-web/public/img/pwa/screenshot-dashboard-desktop.png` | Manifest `screenshots[]` — wide |
-| `peer-web/public/img/pwa/screenshot-dashboard-mobile.png` | Manifest `screenshots[]` — narrow |
-| `peer-web/src/utils/pwa.rs` | SW registration (+ SSR no-op stub), install-prompt capture, update polling, `?nosw` escape hatch |
-| `peer-web/src/components/pwa.rs` | Banner + iOS hint (single-file module, matches existing convention) |
-| `peer-web/style/pwa.scss` | Banner + offline page styles |
+| `public/manifest.webmanifest` | Web App Manifest |
+| `public/sw.js` | Service Worker source (hand-written, version comes from `?v=` query) |
+| `public/offline.html` | Offline fallback shell |
+| `public/img/pwa/icon-192.png` | Standard icon 192 |
+| `public/img/pwa/icon-512.png` | Standard icon 512 |
+| `public/img/pwa/icon-192-maskable.png` | Maskable icon 192 |
+| `public/img/pwa/icon-512-maskable.png` | Maskable icon 512 |
+| `public/img/pwa/icon-monochrome.svg` | Monochrome icon |
+| `public/img/pwa/apple-touch-icon-180.png` | iOS home-screen icon |
+| `public/img/pwa/splash/apple-splash-2048-2732.png` | iPad Pro 12.9" splash |
+| `public/img/pwa/splash/apple-splash-1290-2796.png` | Large iPhone splash (6.7" class) |
+| `public/img/pwa/splash/apple-splash-1170-2532.png` | Standard iPhone splash (6.1" class) |
+| `public/img/pwa/screenshot-dashboard-desktop.png` | Manifest `screenshots[]` — wide |
+| `public/img/pwa/screenshot-dashboard-mobile.png` | Manifest `screenshots[]` — narrow |
+| `src/utils/pwa.rs` | SW registration (+ SSR no-op stub), install-prompt capture, update polling, `?nosw` escape hatch |
+| `src/components/pwa.rs` | Banner + iOS hint (single-file module, matches existing convention) |
+| `style/pwa.scss` | Banner + offline page styles |
 
 ### Modified files (5)
 
 | Path | Change |
 |------|--------|
-| `peer-web/src/app.rs` | Add manifest link + Apple meta tags in `shell()`; mount `<InstallPrompt/>`; call `register_service_worker()` on hydrate |
-| `peer-web/src/utils/mod.rs` | `pub mod pwa;` |
-| `peer-web/src/components/mod.rs` | `pub mod pwa;` |
-| `peer-web/style/main.scss` | `@use "pwa";` |
-| `peer-web/Cargo.toml` | (a) Add `web-sys` features: `ServiceWorker`, `ServiceWorkerContainer`, `ServiceWorkerRegistration`, `MessageEvent`. `Event` / `EventTarget` / `Window` / `Navigator` are already enabled. **Do not** add `BeforeInstallPromptEvent` — it is not exposed by `web-sys`; capture as `web_sys::Event` and reflect into `.prompt()` via `js-sys`. (b) Pin `hash-files = false` under `[package.metadata.leptos]`. |
+| `src/app.rs` | Add manifest link + Apple meta tags in `shell()`; mount `<InstallPrompt/>`; call `register_service_worker()` on hydrate |
+| `src/utils/mod.rs` | `pub mod pwa;` |
+| `src/components/mod.rs` | `pub mod pwa;` |
+| `style/main.scss` | `@use "pwa";` |
+| `Cargo.toml` | (a) Add `web-sys` features: `ServiceWorker`, `ServiceWorkerContainer`, `ServiceWorkerRegistration`, `MessageEvent`. `Event` / `EventTarget` / `Window` / `Navigator` are already enabled. **Do not** add `BeforeInstallPromptEvent` — it is not exposed by `web-sys`; capture as `web_sys::Event` and reflect into `.prompt()` via `js-sys`. (b) Pin `hash-files = false` under `[package.metadata.leptos]`. |
 
 ### Build/infra changes
 - **No `build.rs` required.** The build hash is passed to the SW at registration time via `register('/sw.js?v=<HASH>')`, where `<HASH>` is composed in Rust from `env!("CARGO_PKG_VERSION")` + `option_env!("GIT_SHA")`. CI sets `GIT_SHA=$(git rev-parse --short HEAD)` before `cargo leptos build`. This avoids racing `cargo-leptos`'s `assets-dir = "public"` copy step.
 - **`hash-files = false`** is pinned in `[package.metadata.leptos]`. This keeps the precache list in `sw.js` stable (`/pkg/peer-web.js`, `/pkg/peer-web_bg.wasm`, `/pkg/peer-web.css`); cache invalidation is handled by the versioned cache name.
-- `peer-web/README.md`: add "Service Worker dev gotchas" section (DevTools → Application → Service Workers → "Update on reload"; how to fully unregister during local dev; the `?nosw` escape hatch)
+- `/README.md`: add "Service Worker dev gotchas" section (DevTools → Application → Service Workers → "Update on reload"; how to fully unregister during local dev; the `?nosw` escape hatch)
 
 ---
 
@@ -518,7 +518,7 @@ The mock backend (`tests/mock_backend/`) is unaffected — service worker explic
 - [ ] `cargo clippy -- -D warnings` clean
 - [ ] `cargo fmt --check` clean
 - [ ] Playwright `pwa.spec.ts` passes
-- [ ] `peer-web/README.md` updated with PWA + dev-mode notes
+- [ ] `/README.md` updated with PWA + dev-mode notes
 - [ ] Convergence tracker (`docs/feature-convergence.md`) updated:
   - Infrastructure table: PWA / Manifest ❌ → ✅ Implemented
   - Components table: add new "Install Prompt" row under UI category
