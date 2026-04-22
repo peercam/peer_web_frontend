@@ -25,9 +25,10 @@ pub fn SearchBar() -> impl IntoView {
 
         // Clear previous timeout
         if let Some(handle) = timeout_handle.get_value()
-            && let Some(window) = web_sys::window() {
-                window.clear_timeout_with_handle(handle);
-            }
+            && let Some(window) = web_sys::window()
+        {
+            window.clear_timeout_with_handle(handle);
+        }
 
         // Set new debounced timeout (300ms)
         let closure = Closure::once(Box::new(move || {
@@ -38,9 +39,10 @@ pub fn SearchBar() -> impl IntoView {
             && let Ok(handle) = window.set_timeout_with_callback_and_timeout_and_arguments_0(
                 closure.as_ref().unchecked_ref(),
                 300,
-            ) {
-                timeout_handle.set_value(Some(handle));
-            }
+            )
+        {
+            timeout_handle.set_value(Some(handle));
+        }
 
         closure.forget();
     });

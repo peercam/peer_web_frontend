@@ -113,13 +113,15 @@ fn focus_first_interactive_in_step(step: RegStep) {
         use wasm_bindgen::JsCast;
 
         if let Some(document) = web_sys::window().and_then(|w| w.document())
-            && let Some(container) = document.get_element_by_id(step.element_id()) {
-                let selector = "input, button, select, textarea, a[href]";
-                if let Ok(Some(el)) = container.query_selector(selector)
-                    && let Some(html_el) = el.dyn_ref::<web_sys::HtmlElement>() {
-                        let _ = html_el.focus();
-                    }
+            && let Some(container) = document.get_element_by_id(step.element_id())
+        {
+            let selector = "input, button, select, textarea, a[href]";
+            if let Ok(Some(el)) = container.query_selector(selector)
+                && let Some(html_el) = el.dyn_ref::<web_sys::HtmlElement>()
+            {
+                let _ = html_el.focus();
             }
+        }
     }
     #[cfg(not(feature = "hydrate"))]
     {
@@ -149,10 +151,11 @@ fn push_step_to_history(step: RegStep) {
     #[cfg(feature = "hydrate")]
     {
         if let Some(window) = web_sys::window()
-            && let Ok(history) = window.history() {
-                let hash = format!("#step-{}", step.number());
-                let _ = history.push_state_with_url(&wasm_bindgen::JsValue::NULL, "", Some(&hash));
-            }
+            && let Ok(history) = window.history()
+        {
+            let hash = format!("#step-{}", step.number());
+            let _ = history.push_state_with_url(&wasm_bindgen::JsValue::NULL, "", Some(&hash));
+        }
     }
     #[cfg(not(feature = "hydrate"))]
     {
@@ -171,14 +174,15 @@ fn listen_for_popstate(current_step: RwSignal<RegStep>) {
         if let Some(window) = web_sys::window() {
             let closure = Closure::wrap(Box::new(move |_: web_sys::Event| {
                 if let Some(w) = web_sys::window()
-                    && let Ok(hash) = w.location().hash() {
-                        let step = match hash.as_str() {
-                            "#step-2" => RegStep::Register,
-                            "#step-3" => RegStep::Success,
-                            _ => RegStep::Referral,
-                        };
-                        current_step.set(step);
-                    }
+                    && let Ok(hash) = w.location().hash()
+                {
+                    let step = match hash.as_str() {
+                        "#step-2" => RegStep::Register,
+                        "#step-3" => RegStep::Success,
+                        _ => RegStep::Referral,
+                    };
+                    current_step.set(step);
+                }
             }) as Box<dyn FnMut(_)>);
 
             let _ = window
@@ -423,16 +427,17 @@ pub fn RegisterPage() -> impl IntoView {
         #[cfg(feature = "hydrate")]
         {
             if let Some(window) = web_sys::window()
-                && let Ok(hash) = window.location().hash() {
-                    let step = match hash.as_str() {
-                        "#step-2" => RegStep::Register,
-                        "#step-3" => RegStep::Success,
-                        _ => RegStep::Referral,
-                    };
-                    if step != RegStep::Referral {
-                        current_step.set(step);
-                    }
+                && let Ok(hash) = window.location().hash()
+            {
+                let step = match hash.as_str() {
+                    "#step-2" => RegStep::Register,
+                    "#step-3" => RegStep::Success,
+                    _ => RegStep::Referral,
+                };
+                if step != RegStep::Referral {
+                    current_step.set(step);
                 }
+            }
         }
     });
 

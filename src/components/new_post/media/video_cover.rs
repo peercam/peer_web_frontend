@@ -28,27 +28,26 @@ pub fn VideoCover() -> impl IntoView {
             let target = ev.target().unwrap();
             let input: web_sys::HtmlInputElement = target.unchecked_into();
             if let Some(files) = input.files()
-                && let Some(file) = files.get(0) {
-                    let name = file.name();
-                    let mime_type = file.type_();
+                && let Some(file) = files.get(0)
+            {
+                let name = file.name();
+                let mime_type = file.type_();
 
-                    if !mime_type.starts_with("image/") {
-                        return;
-                    }
-
-                    if let Ok(url) = web_sys::Url::create_object_url_with_blob(&file) {
-                        let file_clone = file.clone();
-                        leptos::task::spawn_local(async move {
-                            if let Ok(data) =
-                                super::drop_zone::read_file_as_bytes(&file_clone).await
-                            {
-                                let media_file =
-                                    MediaFile::new(name, mime_type, data).with_preview(url);
-                                ctx.set_cover_file.set(Some(media_file));
-                            }
-                        });
-                    }
+                if !mime_type.starts_with("image/") {
+                    return;
                 }
+
+                if let Ok(url) = web_sys::Url::create_object_url_with_blob(&file) {
+                    let file_clone = file.clone();
+                    leptos::task::spawn_local(async move {
+                        if let Ok(data) = super::drop_zone::read_file_as_bytes(&file_clone).await {
+                            let media_file =
+                                MediaFile::new(name, mime_type, data).with_preview(url);
+                            ctx.set_cover_file.set(Some(media_file));
+                        }
+                    });
+                }
+            }
         }
         let _ = ev;
     };

@@ -21,7 +21,7 @@ async function globalSetup(config: FullConfig) {
   console.log("\n🔧 Starting mock backend...");
 
   const mockBackend = spawn("cargo", ["run", "--release", "--quiet"], {
-    cwd: path.resolve(__dirname, "../../tests/mock_backend"),
+    cwd: path.resolve(__dirname, "../packages/mock_backend"),
     stdio: "pipe",
     detached: true,
   });
@@ -33,7 +33,7 @@ async function globalSetup(config: FullConfig) {
     console.error(`[mock:err] ${data.toString().trim()}`);
   });
 
-  await waitForServer(4000, 15_000);
+  await waitForServer(4000, 300_000);
   console.log("✅ Mock backend ready on :4000");
 
   console.log("🔧 Starting Leptos app...");
@@ -56,7 +56,7 @@ async function globalSetup(config: FullConfig) {
     if (process.env.DEBUG) console.log(`[leptos] ${data.toString().trim()}`);
   });
 
-  await waitForServer(3000, 120_000); // Leptos compile can take a while
+  await waitForServer(3000, 600_000); // Leptos compile can take a while (cold release build)
   console.log("✅ Leptos app ready on :3000");
 
   // Save PIDs for teardown

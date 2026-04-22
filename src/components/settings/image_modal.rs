@@ -34,28 +34,29 @@ pub fn ImageUploadModal(
 
             if let Some(input) = input
                 && let Some(files) = input.files()
-                    && let Some(file) = files.get(0) {
-                        let reader = match web_sys::FileReader::new() {
-                            Ok(r) => r,
-                            Err(_) => return,
-                        };
+                && let Some(file) = files.get(0)
+            {
+                let reader = match web_sys::FileReader::new() {
+                    Ok(r) => r,
+                    Err(_) => return,
+                };
 
-                        let reader_clone = reader.clone();
-                        let onload = wasm_bindgen::closure::Closure::wrap(Box::new(
-                            move |_: web_sys::Event| {
-                                if let Ok(result) = reader_clone.result()
-                                    && let Some(data_url) = result.as_string() {
-                                        preview_src.set(data_url);
-                                    }
-                            },
-                        )
-                            as Box<dyn FnMut(_)>);
+                let reader_clone = reader.clone();
+                let onload =
+                    wasm_bindgen::closure::Closure::wrap(Box::new(move |_: web_sys::Event| {
+                        if let Ok(result) = reader_clone.result()
+                            && let Some(data_url) = result.as_string()
+                        {
+                            preview_src.set(data_url);
+                        }
+                    })
+                        as Box<dyn FnMut(_)>);
 
-                        reader.set_onload(Some(onload.as_ref().unchecked_ref()));
-                        onload.forget();
+                reader.set_onload(Some(onload.as_ref().unchecked_ref()));
+                onload.forget();
 
-                        let _ = reader.read_as_data_url(&file);
-                    }
+                let _ = reader.read_as_data_url(&file);
+            }
         }
 
         // SSR fallback - does nothing

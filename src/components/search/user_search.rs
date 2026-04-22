@@ -30,9 +30,10 @@ pub fn UserSearch() -> impl IntoView {
 
         // Clear previous timeout
         if let Some(handle) = timeout_handle.get_value()
-            && let Some(window) = web_sys::window() {
-                window.clear_timeout_with_handle(handle);
-            }
+            && let Some(window) = web_sys::window()
+        {
+            window.clear_timeout_with_handle(handle);
+        }
 
         // Require at least 3 characters
         if q.len() < 3 {
@@ -63,9 +64,10 @@ pub fn UserSearch() -> impl IntoView {
             && let Ok(handle) = window.set_timeout_with_callback_and_timeout_and_arguments_0(
                 closure.as_ref().unchecked_ref(),
                 300,
-            ) {
-                timeout_handle.set_value(Some(handle));
-            }
+            )
+        {
+            timeout_handle.set_value(Some(handle));
+        }
 
         closure.forget();
     });

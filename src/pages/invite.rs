@@ -88,10 +88,11 @@ pub fn InvitePage() -> impl IntoView {
             if let Some(document) = window.document() {
                 let closure = Closure::<dyn Fn()>::new(move || {
                     if let Some(doc) = web_sys::window().and_then(|w| w.document())
-                        && doc.hidden() {
-                            // Take and drop the timeout to cancel it
-                            let _ = timeout_handle_clone.take();
-                        }
+                        && doc.hidden()
+                    {
+                        // Take and drop the timeout to cancel it
+                        let _ = timeout_handle_clone.take();
+                    }
                 });
                 let _ = document.add_event_listener_with_callback(
                     "visibilitychange",

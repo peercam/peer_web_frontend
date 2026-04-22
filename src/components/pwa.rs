@@ -276,9 +276,10 @@ fn is_ios_standalone_candidate() -> bool {
         // Already running in standalone mode? Don't hint.
         if let Ok(mm) = win.match_media("(display-mode: standalone)")
             && let Some(mm) = mm
-                && mm.matches() {
-                    return false;
-                }
+            && mm.matches()
+        {
+            return false;
+        }
         // iOS also exposes the legacy `navigator.standalone` — treat truthy as standalone.
         let standalone = js_sys::Reflect::get(
             &win.navigator(),

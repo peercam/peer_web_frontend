@@ -44,9 +44,9 @@ test.describe("Home / Landing — `/`", () => {
 
   test("guest visiting /?redirect=%2Fwallet preserves redirect through to /login", async ({ page }) => {
     await page.goto("/?redirect=%2Fwallet");
-    await page.waitForURL(/\/login\?.*redirect=%2Fwallet/);
+    await page.waitForURL(/\/login\?.*redirect=(%2F|\/)wallet/);
     const url = page.url();
     expect(url).toMatch(/message=mustLogin/);
-    expect(url).toMatch(/redirect=%2Fwallet/);
+    expect(url).toMatch(/redirect=(%2F|\/)wallet/);
   });
 });

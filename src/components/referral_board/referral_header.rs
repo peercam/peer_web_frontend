@@ -22,16 +22,16 @@ pub fn ReferralHeader(info: ReferralInfoResponse) -> impl IntoView {
                 let text = text.clone();
                 leptos::task::spawn_local(async move {
                     use wasm_bindgen_futures::JsFuture;
-                    if let Some(clipboard) =
-                        web_sys::window().map(|w| w.navigator().clipboard())
-                        && JsFuture::from(clipboard.write_text(&text)).await.is_ok() {
-                            copied.set(true);
-                            // Auto-reset after 3 seconds
-                            leptos::task::spawn_local(async move {
-                                gloo_timers::future::TimeoutFuture::new(3000).await;
-                                copied.set(false);
-                            });
-                        }
+                    if let Some(clipboard) = web_sys::window().map(|w| w.navigator().clipboard())
+                        && JsFuture::from(clipboard.write_text(&text)).await.is_ok()
+                    {
+                        copied.set(true);
+                        // Auto-reset after 3 seconds
+                        leptos::task::spawn_local(async move {
+                            gloo_timers::future::TimeoutFuture::new(3000).await;
+                            copied.set(false);
+                        });
+                    }
                 });
             }
         }

@@ -51,9 +51,10 @@ pub fn use_proactive_refresh() {
             // Clear any existing timeout
             if let Ok(mut guard) = timeout_handle.lock()
                 && let Some(handle) = guard.take()
-                    && let Some(window) = web_sys::window() {
-                        window.clear_timeout_with_handle(handle);
-                    }
+                && let Some(window) = web_sys::window()
+            {
+                window.clear_timeout_with_handle(handle);
+            }
 
             if is_auth {
                 schedule_refresh(auth, timeout_handle.clone());
@@ -64,9 +65,10 @@ pub fn use_proactive_refresh() {
         on_cleanup(move || {
             if let Ok(mut guard) = timeout_handle_clone.lock()
                 && let Some(handle) = guard.take()
-                    && let Some(window) = web_sys::window() {
-                        window.clear_timeout_with_handle(handle);
-                    }
+                && let Some(window) = web_sys::window()
+            {
+                window.clear_timeout_with_handle(handle);
+            }
         });
     }
 }

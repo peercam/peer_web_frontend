@@ -48,16 +48,16 @@ where
                 let url = url_for_copy.clone();
                 leptos::task::spawn_local(async move {
                     use wasm_bindgen_futures::JsFuture;
-                    if let Some(clipboard) =
-                        web_sys::window().map(|w| w.navigator().clipboard())
-                        && JsFuture::from(clipboard.write_text(&url)).await.is_ok() {
-                            copied.set(true);
-                            // Reset after 2 seconds
-                            leptos::task::spawn_local(async move {
-                                gloo_timers::future::TimeoutFuture::new(2000).await;
-                                copied.set(false);
-                            });
-                        }
+                    if let Some(clipboard) = web_sys::window().map(|w| w.navigator().clipboard())
+                        && JsFuture::from(clipboard.write_text(&url)).await.is_ok()
+                    {
+                        copied.set(true);
+                        // Reset after 2 seconds
+                        leptos::task::spawn_local(async move {
+                            gloo_timers::future::TimeoutFuture::new(2000).await;
+                            copied.set(false);
+                        });
+                    }
                 });
             }
         }

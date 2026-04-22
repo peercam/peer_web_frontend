@@ -66,13 +66,13 @@ pub fn ImageUpload() -> impl IntoView {
             use crate::models::post::MediaFile;
 
             if let Some(base64_data) = cropped_data_url.strip_prefix("data:image/png;base64,")
-                && let Ok(data) = STANDARD.decode(base64_data) {
-                    let file =
-                        MediaFile::new(pending_file_name.get(), "image/png".to_string(), data)
-                            .with_preview(cropped_data_url.clone());
+                && let Ok(data) = STANDARD.decode(base64_data)
+            {
+                let file = MediaFile::new(pending_file_name.get(), "image/png".to_string(), data)
+                    .with_preview(cropped_data_url.clone());
 
-                    ctx.add_media(file);
-                }
+                ctx.add_media(file);
+            }
         }
         let _ = &cropped_data_url;
         set_crop_image_src.set(None);
