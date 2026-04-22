@@ -2,9 +2,9 @@
 
 **Feature:** Wallet  
 **Priority:** #8 (after Chat)  
-**Status:** ✅ Implemented (tests pending)  
+**Status:** ✅ Complete  
 **Created:** 2026-04-12  
-**Updated:** 2026-04-14
+**Updated:** 2026-04-22
 
 ---
 
@@ -45,15 +45,13 @@ Implement the wallet page for the Leptos frontend. The wallet provides users wit
   - [x] Message input (500 char max, no URLs)
   - [x] Summary/confirmation screen
   - [x] Success/error feedback (with timed auto-close)
-- [ ] Shop purchase order details (delivery info) — model + query exist, UI not wired up
+- [x] Shop purchase order details (delivery info) — model + query exist, lazy-loaded panel wired into the expanded transaction row for the Peer Shop account
 - [x] Protected route (authentication required via `AuthGuard`)
 - [x] Loading states and skeletons
 - [x] Error states
 
 ### Out of Scope (Future Work)
 
-- Shop order delivery detail view (model exists, needs UI wiring)
-- Thousand-separator formatting for balance display
 - Win logs / Payment logs detail views
 - Today's interactions summary
 - Tokenomics info modal
@@ -1597,9 +1595,9 @@ src/
 - [x] Port wallet CSS to SCSS
 - [x] Add loading states
 - [x] Add error handling
-- [ ] Write unit tests
-- [ ] Write integration tests
-- [ ] Write E2E tests
+- [x] Write unit tests
+- [x] Write integration tests
+- [x] Write E2E tests
 - [ ] Manual QA testing
 
 ---

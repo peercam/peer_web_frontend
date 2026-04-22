@@ -71,6 +71,16 @@ pub const SEED_AD_1: Uuid = uuid!("60000000-0000-4000-a000-000000000001");
 pub const SEED_SHOP_ORDER_1: Uuid = uuid!("70000000-0000-4000-a000-000000000001");
 pub const SEED_SHOP_TX_1: Uuid = uuid!("70000000-0000-4000-a000-000000000002");
 
+/// Peer Shop operator account.
+///
+/// This UUID is the single source of truth shared with the client constant
+/// `PEER_SHOP_ID` (see `peer-web/src/utils/constants.rs`). The shop operator
+/// is allowed to view delivery details for any shop order, mirroring the
+/// legacy `PEER_SHOP_ID` UI gate in `js/global.js`.
+///
+/// Login credentials: `shop@peer.com` / `ShopPass123`.
+pub const SEED_USER_SHOP: Uuid = uuid!("292bebb1-0951-47e8-ac8a-759138a2e4a9");
+
 // --- Phase 6 seed admin/moderator user UUIDs ---
 pub const SEED_USER_ADMIN: Uuid = uuid!("ad000000-0000-4000-a000-000000000001");
 pub const SEED_USER_MODERATOR: Uuid = uuid!("ad000000-0000-4000-a000-000000000002");
@@ -125,6 +135,13 @@ pub mod credentials_phase6 {
     pub const MOD_EMAIL: &str = "mod@peerapp.de";
     pub const MOD_PASSWORD: &str = "Mod1234";
     pub const MOD_USERNAME: &str = "moderator";
+}
+
+/// Peer Shop operator credentials (UUID matches client `PEER_SHOP_ID`).
+pub mod credentials_shop {
+    pub const SHOP_EMAIL: &str = "shop@peer.com";
+    pub const SHOP_PASSWORD: &str = "ShopPass123";
+    pub const SHOP_USERNAME: &str = "peer_shop";
 }
 
 impl Default for MockState {
@@ -335,6 +352,32 @@ impl Default for MockState {
         registered_emails.insert(MOD_EMAIL.to_string());
         verified_users.insert(SEED_USER_MODERATOR);
 
+        // Peer Shop operator (UUID matches client `PEER_SHOP_ID`).
+        {
+            use credentials_shop::*;
+            users.insert(
+                SEED_USER_SHOP,
+                User {
+                    uid: SEED_USER_SHOP,
+                    email: SHOP_EMAIL.to_string(),
+                    username: SHOP_USERNAME.to_string(),
+                    slug: "peer_shop".to_string(),
+                    slug_num: 10009,
+                    role: 0,
+                    status: 0,
+                    img: None,
+                    biography: None,
+                    visibility_status: ContentVisibilityState::Normal,
+                    ip: Some("192.168.1.10".to_string()),
+                    created_at: "2025-01-01T00:00:00Z".to_string(),
+                    updated_at: "2025-01-01T00:00:00Z".to_string(),
+                },
+            );
+            user_passwords.insert(SEED_USER_SHOP, SHOP_PASSWORD.to_string());
+            registered_emails.insert(SHOP_EMAIL.to_string());
+            verified_users.insert(SEED_USER_SHOP);
+        }
+
         // ====================================================================
         // Phase 2 seed relationships
         // ====================================================================
@@ -360,6 +403,7 @@ impl Default for MockState {
             SEED_USER_DAVE,
             SEED_USER_ADMIN,
             SEED_USER_MODERATOR,
+            SEED_USER_SHOP,
         ] {
             preferences.insert(uid, UserPreferencesState::default());
         }
@@ -407,6 +451,7 @@ impl Default for MockState {
                 SEED_USER_DAVE,
                 SEED_USER_ADMIN,
                 SEED_USER_MODERATOR,
+                SEED_USER_SHOP,
             ]),
             transactions: seed_transactions(SEED_USER_VERIFIED, SEED_USER_ALICE),
             daily_actions_used: HashMap::new(),
@@ -795,6 +840,24 @@ fn seed_transactions(user1: Uuid, user2: Uuid) -> Vec<TransactionRecord> {
             message: None,
             fees: None,
             created_at: "2025-04-12T09:00:00Z".into(),
+        },
+        // Shop purchase: user2 (Alice) bought a shop item; recipient is the
+        // Peer Shop operator account so the shop user sees this row in their
+        // wallet history and can expand it to view delivery details. The id
+        // matches the seeded ShopOrderRecord (`SEED_SHOP_TX_1`) so the lazy
+        // `shopOrderDetails` lookup resolves to the seeded order.
+        TransactionRecord {
+            id: SEED_SHOP_TX_1,
+            operation_id: uuid!("70000000-0000-4000-a000-000000000102"),
+            category: Some(TransactionCategory::ShopPurchase),
+            transaction_type: "DEBIT".into(),
+            sender_id: user2,
+            recipient_id: SEED_USER_SHOP,
+            token_amount: Decimal::from_parts(500, 0, 0, false, 1), // 50.0
+            net_token_amount: Decimal::from_parts(500, 0, 0, false, 1),
+            message: Some("Shop purchase: peer-tshirt-001".into()),
+            fees: None,
+            created_at: "2025-04-13T15:00:00Z".into(),
         },
     ]
 }

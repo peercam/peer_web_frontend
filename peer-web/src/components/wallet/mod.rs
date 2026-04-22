@@ -10,5 +10,5 @@ pub mod transfer_modal;
 
 pub use balance_header::{BalanceHeader, BalanceSkeleton};
 pub use transaction_history::TransactionHistory;
-pub use transaction_item::TransactionItem;
+pub use transaction_item::{TransactionItem, WalletViewerId};
 pub use transfer_modal::TransferModal;

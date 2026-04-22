@@ -2,7 +2,7 @@
 
 This document tracks the progress of migrating features from the legacy PHP/JS frontend to the new Leptos (Rust/WASM) rewrite.
 
-**Last Updated:** 2026-04-21
+**Last Updated:** 2026-04-22
 
 ---
 
@@ -10,13 +10,13 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 | Status | Count |
 |--------|-------|
-| ✅ Implemented | 12 |
-| 🟡 Near-Complete | 6 |
+| ✅ Implemented | 13 |
+| 🟡 Near-Complete | 5 |
 | 🚧 In Progress | 2 |
 | ❌ Not Started | 0 |
 | **Total** | **20** |
 
-**Convergence:** ~87%
+**Convergence:** 13/20 pages implemented (65%); 18/20 ≥ near-complete (90%).
 
 ---
 
@@ -42,7 +42,7 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 | Invite | `invite.php` | ✅ Implemented | Deep-link relay page: platform detection, `peer://invite/{uuid}` deep link, app store / registration fallback, localStorage persistence, clipboard copy ([docs](plans/invite/invite-implementation.md)) |
 | Referral Board | `referralBoard.php` | ✅ Implemented | Referral link + copy, invited/inviter tabs, user cards, auth guard ([docs](plans/referral-board/referral-board-implementation.md)) |
 | **Economy** ||||
-| Wallet | `wallet.php` | 🟡 Implemented (tests pending) | 146-line page + transfer_modal (760L), balance_header, transaction_history, transaction_item, API layer (246L), SCSS (1092L) ([docs](plans/wallet/wallet-implementation.md)). **Gaps:** shop purchase order details UI not wired (model + query exist), thousand-separator formatting missing |
+| Wallet | `wallet.php` | ✅ Implemented | 146-line page + transfer_modal (760L), balance_header, transaction_history, transaction_item with lazy-loaded shop delivery panel (Peer Shop account only), `format_balance()` thousand separators (4dp rounding parity with legacy `toLocaleString`), API layer (246L), SCSS (1092L), Playwright `wallet.spec.ts` (6 cases incl. lazy-load network assertion) ([docs](plans/wallet/wallet-implementation.md), [sprint](plans/wallet/wallet-completion-sprint.md)) |
 | Peer Shop | `viewPeerShop.php` | 🟡 Core Implemented | `/shop` route, profile header, product feed with price badges, checkout popup (multi-step), FAQ popup, `performShopOrder` API, SCSS ([docs](plans/peer-shop/peer-shop-implementation.md)) — **Gaps:** Firebase product data (sizes/stock), infinite scroll, View Post overlay integration, functional filters |
 | My Ads | `myAds.php` | 🟡 In Progress | 144-line page + stats header, ad listing with infinite scroll, boost post modal (multi-step), `advertisementHistory` query, `advertisePostPinned` mutation, skeleton loading, staggered animations ([docs](plans/my-ads/my-ads-implementation.md)). **Gaps:** Boost modal not wired to Profile page button, success/error toast not wired on error path, Basic (time-based) ad flow not started |
 | **Admin** ||||
@@ -150,7 +150,7 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 6. ✅ ~~Profile~~ — Implemented, infinite scroll + filters + `use_infinite_scroll` hook ([docs](plans/profile/profile-implementation.md), [sprint](plans/profile/profile-completion-sprint.md))
 7. 🚧 New Post — In progress, ~70% structural ([docs](plans/new-post/new-post-implementation.md))
 8. 🟡 Chat — Core implemented, Firebase real-time missing ([docs](plans/chat/chat-implementation.md))
-9. 🟡 Wallet — Implemented (tests pending), shop order UI not wired ([docs](plans/wallet/wallet-implementation.md))
+9. ✅ ~~Wallet~~ — Implemented, shop delivery panel + thousand-separator formatting + E2E coverage ([docs](plans/wallet/wallet-implementation.md), [sprint](plans/wallet/wallet-completion-sprint.md))
 10. ✅ ~~Settings~~ — Implemented, deactivate account UI wired, save race condition fixed ([docs](plans/settings/settings-implementation.md))
 11. ✅ ~~Referral Board~~ — Complete, full UI + API, mock backend endpoints available (Phase 2) ([docs](plans/referral-board/referral-board-implementation.md))
 12. 🟡 My Ads — In progress (Phases 1–4 done), boost modal wiring + basic ad flow remaining ([docs](plans/my-ads/my-ads-implementation.md))
@@ -164,6 +164,12 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 ---
 
 ## Changelog
+
+### 2026-04-22 (Wallet Promoted to ✅)
+- **Wallet completion sprint closed** — shop delivery panel wired into expanded transaction row (lazy `shopOrderDetails` fetch, gated to Peer Shop viewer); `format_balance()` produces grouped thousands with 4dp rounding matching legacy `toLocaleString`; new `tests/mock_backend` shop-purchase seed transaction so the row appears in wallet history; new Playwright `wallet.spec.ts` (6 cases including lazy-load network assertion + non-shop viewer gate) ([sprint](plans/wallet/wallet-completion-sprint.md))
+- **Pages table:** Wallet 🟡 Implemented (tests pending) → ✅ Implemented
+- **Summary counts:** ✅ 12 → 13, 🟡 6 → 5; ratio 12/20 → 13/20 (the previous "~87%" headline was inconsistent with its own ratio — replaced with two explicit fractions: 13/20 implemented (65%), 18/20 ≥ near-complete (90%))
+- **Migration Priority:** #9 promoted to ✅
 
 ### 2026-04-21 (Download Proxy Implemented)
 - **Download force-download media proxy implemented** — Axum `/download` route ported from legacy `download.php` with hardened URL validation, streaming, and filename sanitisation ([docs](plans/download/download-implementation.md))

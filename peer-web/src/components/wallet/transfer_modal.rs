@@ -15,7 +15,7 @@ use crate::api::wallet::{
 };
 use crate::models::post::UserSearchResult;
 use crate::models::profile::BasicUserInfo;
-use crate::models::transaction::{calculate_fees, calculate_total_with_fees, format_decimal};
+use crate::models::transaction::{calculate_fees, calculate_total_with_fees, format_balance};
 
 /// Transfer modal steps.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -194,9 +194,9 @@ where
                                 if step.get() == TransferStep::Confirm {
                                     let amt: Decimal = amount.get().parse().unwrap_or_default();
                                     let total = calculate_total_with_fees(amt);
-                                    format_decimal(balance.get() - total)
+                                    format_balance(balance.get() - total)
                                 } else {
-                                    format_decimal(balance.get())
+                                    format_balance(balance.get())
                                 }
                             }}
                         </span>
@@ -557,7 +557,7 @@ fn AmountForm(
             <label class="amtlabel md_font_size txt-color-gray">
                 "Enter amount"
                 <span class="available-balance txt-color-gray">
-                    " (Available: " {format_decimal(balance)} ")"
+                    " (Available: " {format_balance(balance)} ")"
                 </span>
             </label>
             <input
@@ -576,34 +576,34 @@ fn AmountForm(
                     on:click=move |_| fee_expanded.update(|e| *e = !*e)
                 >
                     <span class="fee-label txt-color-gray">"Transfer fee"</span>
-                    <span class="fee-total">{move || format_decimal(fee_total())}</span>
+                    <span class="fee-total">{move || format_balance(fee_total())}</span>
                 </div>
                 <div class="fee-breakdowns">
                     <div class="fee-item md_font_size">
                         <span class="label txt-color-gray">"2% Platform fee"</span>
                         <span class="value">{move || {
                             let amt: Decimal = amount.get().parse().unwrap_or_default();
-                            format_decimal(amt * Decimal::new(2, 2))
+                            format_balance(amt * Decimal::new(2, 2))
                         }}</span>
                     </div>
                     <div class="fee-item md_font_size">
                         <span class="label txt-color-gray">"1% Burned"</span>
                         <span class="value">{move || {
                             let amt: Decimal = amount.get().parse().unwrap_or_default();
-                            format_decimal(amt * Decimal::new(1, 2))
+                            format_balance(amt * Decimal::new(1, 2))
                         }}</span>
                     </div>
                     <div class="fee-item md_font_size">
                         <span class="label txt-color-gray">"1% to Inviter"</span>
                         <span class="value">{move || {
                             let amt: Decimal = amount.get().parse().unwrap_or_default();
-                            format_decimal(amt * Decimal::new(1, 2))
+                            format_balance(amt * Decimal::new(1, 2))
                         }}</span>
                     </div>
                 </div>
                 <div class="total_amount md_font_size">
                     <span class="label">"Total amount"</span>
-                    <span class="final-total bold">{move || format_decimal(total_amount())}</span>
+                    <span class="final-total bold">{move || format_balance(total_amount())}</span>
                 </div>
             </div>
         </div>
@@ -689,15 +689,15 @@ fn ConfirmTransfer(
             <div class="fee-section">
                 <div class="total_amount md_font_size">
                     <span class="label">"Total amount"</span>
-                    <span class="final-total bold">{format_decimal(total)}</span>
+                    <span class="final-total bold">{format_balance(total)}</span>
                 </div>
                 <div class="fee-item md_font_size">
                     <span class="label txt-color-gray">"Amount to recipient"</span>
-                    <span class="value">{format_decimal(amt)}</span>
+                    <span class="value">{format_balance(amt)}</span>
                 </div>
                 <div class="fee-item md_font_size">
                     <span class="label txt-color-gray">"Fee"</span>
-                    <span class="value">{format_decimal(fees.total)}</span>
+                    <span class="value">{format_balance(fees.total)}</span>
                 </div>
             </div>
         </div>

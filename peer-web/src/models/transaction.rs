@@ -322,10 +322,53 @@ pub fn format_decimal(d: Decimal) -> String {
     s.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
-/// Format a balance with thousand separators.
+/// Format a balance with thousand separators (en-US style).
+///
+/// Mirrors the legacy `formatAmount()` helper from `js/wallet.js`, which calls
+/// `Number(x).toLocaleString('en-US', { maximumFractionDigits: 4 })`. The
+/// fractional part is rounded to at most 4 digits (banker's rounding via
+/// `Decimal::round_dp`) and trailing zeros are stripped, then commas are
+/// inserted every three digits in the integer portion.
 pub fn format_balance(balance: Decimal) -> String {
-    // Simple implementation - trim trailing zeros
-    format_decimal(balance)
+    let rounded = balance.round_dp(4);
+    let raw = rounded.to_string();
+    // Split on the decimal point and strip trailing zeros only from the
+    // fractional side (so "1000" stays "1000" but "1234.5000" becomes
+    // "1234.5"). Use the raw `Decimal::to_string` rather than the trim-happy
+    // `format_decimal` helper, which would also clip the integer's zeros.
+    let (int_part, frac_part) = match raw.split_once('.') {
+        Some((i, f)) => {
+            let trimmed_frac = f.trim_end_matches('0');
+            let frac = if trimmed_frac.is_empty() {
+                None
+            } else {
+                Some(trimmed_frac)
+            };
+            (i, frac)
+        }
+        None => (raw.as_str(), None),
+    };
+
+    let (sign, digits) = if let Some(rest) = int_part.strip_prefix('-') {
+        ("-", rest)
+    } else {
+        ("", int_part)
+    };
+    let digits = if digits.is_empty() { "0" } else { digits };
+
+    let mut grouped_rev = String::with_capacity(digits.len() + digits.len() / 3);
+    for (i, ch) in digits.chars().rev().enumerate() {
+        if i > 0 && i % 3 == 0 {
+            grouped_rev.push(',');
+        }
+        grouped_rev.push(ch);
+    }
+    let grouped: String = grouped_rev.chars().rev().collect();
+
+    match frac_part {
+        Some(f) => format!("{sign}{grouped}.{f}"),
+        None => format!("{sign}{grouped}"),
+    }
 }
 
 /// Calculate total amount with fees (4% fee rate).
@@ -346,5 +389,31 @@ pub fn calculate_fees(amount: Decimal) -> TransactionFees {
         burn,
         peer,
         inviter: Some(inviter),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_balance_groups_thousands() {
+        let cases = [
+            ("0", "0"),
+            ("999", "999"),
+            ("1000", "1,000"),
+            ("12345", "12,345"),
+            ("1234567", "1,234,567"),
+            ("1234.5", "1,234.5"),
+            ("1234.5000", "1,234.5"),
+            ("0.0001", "0.0001"),
+            ("-1000", "-1,000"),
+            ("0.000049", "0"),
+            ("-1234.56789", "-1,234.5679"),
+        ];
+        for (input, expected) in cases {
+            let d: Decimal = input.parse().unwrap();
+            assert_eq!(format_balance(d), expected, "input={input}");
+        }
     }
 }

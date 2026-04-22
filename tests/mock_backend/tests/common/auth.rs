@@ -43,3 +43,7 @@ pub async fn login_admin(state: &Arc<RwLock<MockState>>) -> String {
 pub async fn login_moderator(state: &Arc<RwLock<MockState>>) -> String {
     login_as(state, "mod@peerapp.de", "Mod1234").await
 }
+
+pub async fn login_shop(state: &Arc<RwLock<MockState>>) -> String {
+    login_as(state, "shop@peer.com", "ShopPass123").await
+}

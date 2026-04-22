@@ -1,6 +1,7 @@
 use async_graphql::{Context, Object};
 
 use crate::require_auth;
+use crate::seed::SEED_USER_SHOP;
 use crate::state::SharedState;
 use crate::types::registration::DefaultResponse;
 use crate::types::shop::*;
@@ -35,10 +36,14 @@ impl ShopQuery {
 
         let state = ctx.data_unchecked::<SharedState>().read().await;
 
-        let order = state
-            .shop_orders
-            .iter()
-            .find(|o| o.transaction_id.to_string() == transaction_id && o.buyer_id == user_id);
+        // The Peer Shop operator may view any order's delivery details
+        // (mirrors the legacy `PEER_SHOP_ID` UI gate); other users may only
+        // view orders where they are the buyer.
+        let viewer_is_shop = user_id == SEED_USER_SHOP;
+        let order = state.shop_orders.iter().find(|o| {
+            o.transaction_id.to_string() == transaction_id
+                && (viewer_is_shop || o.buyer_id == user_id)
+        });
 
         match order {
             Some(o) => ShopOrderDetailsResponse {

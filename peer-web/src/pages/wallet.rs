@@ -4,12 +4,14 @@
 //! and transaction history with infinite scroll.
 
 use leptos::prelude::*;
+use leptos::task::spawn_local;
 use leptos_meta::Title;
 
+use crate::api::profile::get_profile;
 use crate::api::wallet::get_balance;
 use crate::components::auth_guard::AuthGuard;
 use crate::components::wallet::{
-    BalanceHeader, BalanceSkeleton, TransactionHistory, TransferModal,
+    BalanceHeader, BalanceSkeleton, TransactionHistory, TransferModal, WalletViewerId,
 };
 use crate::components::widgets::{MainMenu, ProfileWidget, VersionWidget};
 
@@ -19,6 +21,17 @@ use crate::components::widgets::{MainMenu, ProfileWidget, VersionWidget};
 #[component]
 pub fn WalletPage() -> impl IntoView {
     let show_transfer_modal = RwSignal::new(false);
+
+    // Provide the viewer's user id so transaction rows can gate shop-only
+    // affordances (e.g. the delivery panel). Resolved lazily from the
+    // authenticated profile.
+    let viewer_user_id = RwSignal::new(Option::<String>::None);
+    provide_context(WalletViewerId(viewer_user_id));
+    spawn_local(async move {
+        if let Ok(profile) = get_profile(None, None).await {
+            viewer_user_id.set(Some(profile.id));
+        }
+    });
 
     // Balance resource with manual refresh trigger
     let refresh_trigger = RwSignal::new(0u32);
