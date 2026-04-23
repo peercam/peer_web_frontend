@@ -84,9 +84,14 @@ impl CreateCommentResponse {
 }
 
 /// Like comment response.
+///
+/// Backend returns a flat-response envelope where `status` is lowercase
+/// but `ResponseCode` / `ResponseMessage` are PascalCase. `rename_all =
+/// "PascalCase"` would also uppercase `status` — override it explicitly.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct LikeCommentResponse {
+    #[serde(rename = "status")]
     pub status: String,
     pub response_code: String,
     pub response_message: String,
