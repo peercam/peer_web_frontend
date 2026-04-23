@@ -66,6 +66,25 @@ pub fn set_cookie(name: &str, value: &str, days: Option<i32>) {
     }
 }
 
+/// Set a cookie with a max-age expressed in seconds.
+///
+/// Useful for short-lived counters (e.g. the password-reset resend counter
+/// which legacy persists for 2 hours via `Max-Age=7200`).
+pub fn set_cookie_seconds(name: &str, value: &str, max_age_secs: u32) {
+    #[cfg(feature = "hydrate")]
+    {
+        let cookie = format!(
+            "{}={}; Max-Age={}; Path=/; SameSite=Strict",
+            name, value, max_age_secs
+        );
+        set_document_cookie(&cookie);
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = (name, value, max_age_secs);
+    }
+}
+
 /// Delete a cookie by setting its Max-Age to 0.
 pub fn delete_cookie(name: &str) {
     #[cfg(feature = "hydrate")]

@@ -4,7 +4,7 @@
 **Priority:** Highest-priority in-progress feature after Dashboard (#3)  
 **Status:** 🚧 In Progress → target ✅ Implemented  
 **Created:** 2026-04-14  
-**Updated:** 2026-04-14
+**Updated:** 2026-04-23 (Tasks 1–4 landed; backend + E2E pending)
 
 ---
 
@@ -40,14 +40,14 @@ This sprint addresses **4 known gaps** identified in the convergence tracker. Al
 
 ### What Remains 🔲
 
-| # | Task | Effort | Gap Source |
-|---|------|--------|------------|
-| 1 | **Auto-redirect for authenticated users** | S | Convergence tracker |
-| 2 | **Persist resend counter in cookie** | M | Convergence tracker |
-| 3 | **Fix countdown interval stacking** | S | Convergence tracker |
-| 4 | **Reuse `BackButton` component** | S | Convergence tracker |
-| 5 | **E2E test coverage** | L | Testing (new) |
-| 6 | **Mock backend: password reset endpoints** | M | Testing prerequisite |
+| # | Task | Effort | Status | Gap Source |
+|---|------|--------|--------|------------|
+| 1 | **Auto-redirect for authenticated users** | S | ✅ Done (2026-04-23) | Convergence tracker |
+| 2 | **Persist resend counter in cookie** | M | ✅ Done (2026-04-23) | Convergence tracker |
+| 3 | **Fix countdown interval stacking** | S | ✅ Done (2026-04-23) | Convergence tracker |
+| 4 | **Reuse `BackButton` component** | S | ✅ Done (2026-04-23) | Convergence tracker |
+| 5 | **E2E test coverage** | L | 🔲 Not started | Testing (new) |
+| 6 | **Mock backend: password reset endpoints** | M | 🔲 Not started | Testing prerequisite |
 
 **Legend:** S = Small (< 1 hour), M = Medium (1–3 hours), L = Large (3+ hours)
 
@@ -80,9 +80,11 @@ Effect::new(move |_| {
 **Placement:** After the `let toast = use_toast();` line, before the `handle_back` closure.
 
 **Acceptance criteria:**
-- [ ] Authenticated user visiting `/forgotpassword` is redirected to `/dashboard`
-- [ ] Unauthenticated user sees the form normally
-- [ ] SSR does not panic (the `navigate_to` already gates on `#[cfg(feature = "hydrate")]`)
+- [x] Authenticated user visiting `/forgotpassword` is redirected to `/dashboard`
+- [x] Unauthenticated user sees the form normally
+- [x] SSR does not panic — the redirect is rendered via `<Show when=is_session_checked && is_authenticated>` wrapping `<Redirect path="/dashboard"/>`, so the form view is hidden entirely once auth resolves and never panics during SSR.
+
+**Implementation note (2026-04-23):** Replaced the planned `Effect` + `navigate_to` with a `<Show>`-wrapped `<Redirect>` (mirroring `HomePage` in [src/app.rs](../../../src/app.rs)). This avoids a brief form flash and uses client-side router navigation. The form body was extracted into a new private `ForgotPasswordView` component so the redirect branch can short-circuit it cleanly.
 
 ---
 
@@ -157,10 +159,12 @@ set_cookie("reset_code_sent_counter", &(count + 1).to_string(), 7200); // 2 hour
 ```
 
 **Acceptance criteria:**
-- [ ] Resend counter survives page reload (persisted in cookie)
-- [ ] Cookie expires after 2 hours (fresh start)
-- [ ] After 3 resends, user sees "contact support" message even after reload
-- [ ] SSR build compiles (cookie access gated behind `#[cfg(feature = "hydrate")]`)
+- [x] Resend counter survives page reload (persisted in cookie)
+- [x] Cookie expires after 2 hours (fresh start)
+- [x] After 3 resends, user sees "contact support" message even after reload
+- [x] SSR build compiles (cookie access gated behind `#[cfg(feature = "hydrate")]`)
+
+**Implementation note (2026-04-23):** Reused the existing [src/utils/cookies.rs](../../../src/utils/cookies.rs) helpers rather than introducing local ones. Added a small `set_cookie_seconds(name, value, max_age_secs)` companion to `set_cookie(name, value, days)` so a 2-hour TTL can be expressed without losing precision. Constants `RESEND_COUNTER_COOKIE` and `RESEND_COUNTER_TTL_SECS` are defined at the top of `forgot_password.rs`.
 
 ---
 
@@ -216,10 +220,10 @@ let start_countdown = move |duration: i32| {
 ```
 
 **Acceptance criteria:**
-- [ ] Pressing resend twice rapidly does not cause double-speed countdown
-- [ ] Timer always counts at 1 second per tick
-- [ ] Previous interval is cleaned up when a new one starts
-- [ ] Interval is cleaned up on component unmount
+- [x] Pressing resend twice rapidly does not cause double-speed countdown
+- [x] Timer always counts at 1 second per tick
+- [x] Previous interval is cleaned up when a new one starts
+- [x] Interval is cleaned up on component unmount
 
 ---
 
@@ -272,12 +276,12 @@ use crate::components::back_button::BackButton;
 The existing `handle_back` closure also navigates to `/login` for Step 1, but the `BackButton` component handles that automatically via the `href` prop — when `href` is `Some("/login")`, it renders as a link; when `None`, it fires `on_back`. The `back_href` memo already provides this logic.
 
 **Acceptance criteria:**
-- [ ] `BackButton` component used instead of inline `<a>`
-- [ ] Step 1 → clicking back navigates to `/login` (link behavior)
-- [ ] Step 2 → clicking back returns to Step 1 (callback behavior)
-- [ ] Step 3 → clicking back returns to Step 2 (callback behavior)
-- [ ] Step 4 → back button hidden
-- [ ] Visual appearance unchanged
+- [x] `BackButton` component used instead of inline `<a>`
+- [x] Step 1 → clicking back navigates to `/login` (link behavior)
+- [x] Step 2 → clicking back returns to Step 1 (callback behavior)
+- [x] Step 3 → clicking back returns to Step 2 (callback behavior)
+- [x] Step 4 → back button hidden
+- [x] Visual appearance unchanged (same wrapper `<div class="top_head_area">`, same DOM the `BackButton` already emits — `id="backBtn"`, `class="btn btn-secondary back-btn"`, same icon span)
 
 ---
 

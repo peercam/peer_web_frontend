@@ -14,11 +14,71 @@ be introduced once the rewrite reaches feature parity.
 ## [Unreleased]
 
 ### In progress
-- Forgot Password — auto-redirect for authed users, cookie-persisted resend
-  counter, countdown interval stacking fix, shared `BackButton` wiring.
+- Forgot Password — mock-backend password-reset endpoints + Playwright
+  coverage (Tasks 5–6 in
+  [forgot-password-completion-sprint.md](docs/plans/forgot-password/forgot-password-completion-sprint.md));
+  Tasks 1–4 landed 2026-04-23.
 - New Post — real-time waveform, video duration extraction, frame thumbnails,
   server-side trim plumbing, tag history, mobile review, E2E tests.
 - Mock Backend — CI integration phase and acceptance-criteria sign-off gates.
+
+---
+
+## [2026-04-23] — Forgot Password gaps 1–4 closed
+
+### Added
+- `set_cookie_seconds(name, value, max_age_secs)` in
+  [src/utils/cookies.rs](src/utils/cookies.rs) — companion to the existing
+  days-based `set_cookie`, used by the forgot-password page to persist its
+  resend counter for exactly 2 hours (legacy parity with
+  `reset_code_sent_counter`).
+- `ForgotPasswordView` private component in
+  [src/pages/forgot_password.rs](src/pages/forgot_password.rs) — extracted
+  form body so the new auto-redirect `<Show>` can short-circuit it cleanly
+  for authenticated viewers.
+
+### Changed
+- **Forgot Password** ([src/pages/forgot_password.rs](src/pages/forgot_password.rs))
+  — four convergence-tracker gaps closed:
+  - **Auto-redirect for authenticated users** — `ForgotPasswordPage` now
+    wraps its view in `<Show when=is_session_checked && is_authenticated>`
+    with `<Redirect path="/dashboard"/>`, mirroring `HomePage` in
+    [src/app.rs](src/app.rs). Matches legacy `forgotpassword.php`'s
+    `autoLogin()` 302.
+  - **Resend counter cookie-persisted** — `resend_count` is rehydrated from
+    the `reset_code_sent_counter` cookie on mount and rewritten via
+    `set_cookie_seconds(..., 7200)` after each successful resend, so a page
+    reload can no longer reset the escalating cooldown (60 s → 10 min →
+    locked) back to zero.
+  - **Countdown interval stacking fixed** — `start_countdown` now lifts the
+    `gloo_timers::callback::Interval` handle into a `StoredValue` declared
+    once at the top of `VerifyCodeStep` and explicitly drops the previous
+    interval (`take()`) before creating a new one. Prevents
+    double/triple-speed countdowns when the user clicks resend rapidly. The
+    same handle is dropped from a single `on_cleanup` registered at component
+    mount time (no longer registered inside the closure on every call).
+  - **`BackButton` component reused** — the inline `<a class="btn back-btn">`
+    is replaced with `<BackButton visible href on_back/>`. Step 1 renders as
+    a real `/login` link (browser navigation); Steps 2/3 render as a
+    callback-driven button that returns to the previous step in-place; Step
+    4 hides the button. DOM unchanged (same `id="backBtn"`, classes, and
+    icon span).
+
+### Removed
+- Local `navigate_to(url)` helper in `forgot_password.rs` — its only caller
+  was the inline back-button handler, which is now satisfied by
+  `BackButton`'s `href` link behaviour.
+
+### Notes
+- SSR (`cargo build --features ssr`) and wasm (`cargo check --features
+  hydrate --target wasm32-unknown-unknown`) both build clean. SSR clippy
+  (`--all-targets -- -D warnings`) clean. The 5 existing `mask_email` unit
+  tests still pass.
+- Tasks 5 (Playwright `forgot-password.spec.ts`) and 6 (mock-backend
+  `requestPasswordReset` / `resetPasswordTokenVerify` / `resetPassword`
+  guest mutations + 6 integration tests) remain — see
+  [forgot-password-completion-sprint.md](docs/plans/forgot-password/forgot-password-completion-sprint.md).
+  Status stays 🚧 until those land and promote the page to ✅.
 
 ---
 

@@ -17,14 +17,25 @@
 use leptos::prelude::*;
 use leptos::web_sys;
 use leptos_meta::*;
+use leptos_router::components::Redirect;
 
 use crate::api::forgot_password::{request_password_reset, reset_password, verify_reset_token};
+use crate::components::back_button::BackButton;
 use crate::components::left_panel::LeftPanel;
 use crate::components::password_strength::PasswordStrengthMeter;
 use crate::components::step_announcer::StepAnnouncer;
 use crate::components::toast::{ToastType, use_toast};
 use crate::components::validation::{is_valid_email, passwords_match, validate_password};
+use crate::state::auth::use_auth;
+use crate::utils::cookies::{get_cookie, set_cookie_seconds};
 use crate::utils::response_codes::user_friendly_msg;
+
+/// Cookie name used to persist the password-reset resend counter across
+/// reloads (matches legacy `reset_code_sent_counter`).
+const RESEND_COUNTER_COOKIE: &str = "reset_code_sent_counter";
+
+/// Lifetime of the resend counter cookie — 2 hours, matching legacy.
+const RESEND_COUNTER_TTL_SECS: u32 = 7200;
 
 // ============================================================================
 // Step Enum
@@ -85,20 +96,6 @@ fn mask_email(email: &str) -> String {
     }
 }
 
-/// Navigate to a URL.
-fn navigate_to(url: &str) {
-    #[cfg(feature = "hydrate")]
-    {
-        if let Some(window) = web_sys::window() {
-            let _ = window.location().set_href(url);
-        }
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = url;
-    }
-}
-
 // ============================================================================
 // Main Page Component
 // ============================================================================
@@ -106,6 +103,8 @@ fn navigate_to(url: &str) {
 /// The forgot password page component.
 #[component]
 pub fn ForgotPasswordPage() -> impl IntoView {
+    let auth = use_auth();
+
     // Step state
     let current_step = RwSignal::new(ForgotStep::Email);
 
@@ -127,30 +126,20 @@ pub fn ForgotPasswordPage() -> impl IntoView {
     // Toast
     let toast = use_toast();
 
-    // Resend cooldown state
+    // Resend cooldown state — counter is rehydrated from a 2-hour cookie so a
+    // page reload cannot bypass the escalating cooldowns (matches legacy
+    // `reset_code_sent_counter`).
     let countdown_seconds = RwSignal::new(0i32);
-    let resend_count = RwSignal::new(0u32);
-
-    // Back button handler
-    let handle_back = move |_: web_sys::MouseEvent| match current_step.get() {
-        ForgotStep::Email => {
-            navigate_to("/login");
-        }
-        ForgotStep::VerifyCode => {
-            current_step.set(ForgotStep::Email);
-            announcement.set(ForgotStep::Email.announcement().into());
-        }
-        ForgotStep::NewPassword => {
-            current_step.set(ForgotStep::VerifyCode);
-            announcement.set(ForgotStep::VerifyCode.announcement().into());
-        }
-        ForgotStep::Success => {}
-    };
+    let initial_resend_count: u32 = get_cookie(RESEND_COUNTER_COOKIE)
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+    let resend_count = RwSignal::new(initial_resend_count);
 
     // Back button visibility
     let show_back = Memo::new(move |_| current_step.get() != ForgotStep::Success);
 
-    // Back button href (Some for login, None for internal navigation)
+    // Back button href: Some("/login") on Step 1 (link behaviour), None on
+    // Steps 2/3 (callback returns to the previous step in-place).
     let back_href = Memo::new(move |_| {
         if current_step.get() == ForgotStep::Email {
             Some("/login".to_string())
@@ -159,10 +148,74 @@ pub fn ForgotPasswordPage() -> impl IntoView {
         }
     });
 
+    // Back button callback (only invoked for in-page step transitions; the
+    // Step 1 case is handled by the link `href`).
+    let on_back = Callback::new(move |_| match current_step.get() {
+        ForgotStep::VerifyCode => {
+            current_step.set(ForgotStep::Email);
+            announcement.set(ForgotStep::Email.announcement().into());
+        }
+        ForgotStep::NewPassword => {
+            current_step.set(ForgotStep::VerifyCode);
+            announcement.set(ForgotStep::VerifyCode.announcement().into());
+        }
+        ForgotStep::Email | ForgotStep::Success => {}
+    });
+
+    // Auto-redirect already-authenticated users straight to the dashboard,
+    // mirroring legacy `forgotpassword.php`'s `autoLogin()` 302. Wait for the
+    // initial session check so guests don't see a redirect flash.
     view! {
         <Title text="Peer Network - Forgot Password"/>
         <Meta name="description" content="Reset your Peer Network account password."/>
 
+        <Show
+            when=move || auth.is_session_checked.get() && auth.is_authenticated.get()
+            fallback=move || view! {
+                <ForgotPasswordView
+                    current_step=current_step
+                    email=email
+                    verify_code=verify_code
+                    password=password
+                    confirm_password=confirm_password
+                    reset_token=reset_token
+                    pending=pending
+                    announcement=announcement
+                    toast=toast
+                    countdown_seconds=countdown_seconds
+                    resend_count=resend_count
+                    show_back=show_back
+                    back_href=back_href
+                    on_back=on_back
+                />
+            }
+        >
+            <Redirect path="/dashboard"/>
+        </Show>
+    }
+}
+
+/// Inner view for the forgot password page — extracted so the auto-redirect
+/// `<Show>` in `ForgotPasswordPage` can hide the form entirely for
+/// authenticated users.
+#[component]
+fn ForgotPasswordView(
+    current_step: RwSignal<ForgotStep>,
+    email: RwSignal<String>,
+    verify_code: RwSignal<String>,
+    password: RwSignal<String>,
+    confirm_password: RwSignal<String>,
+    reset_token: RwSignal<String>,
+    pending: RwSignal<bool>,
+    announcement: RwSignal<String>,
+    toast: crate::components::toast::ToastContext,
+    countdown_seconds: RwSignal<i32>,
+    resend_count: RwSignal<u32>,
+    show_back: Memo<bool>,
+    back_href: Memo<Option<String>>,
+    on_back: Callback<()>,
+) -> impl IntoView {
+    view! {
         // Skip navigation link
         <a href="#forgot-form" class="skip-link sr-only">
             "Skip to reset form"
@@ -178,20 +231,13 @@ pub fn ForgotPasswordPage() -> impl IntoView {
             // Right panel: multi-step form
             <div class="container_right">
                 <div class="container_inner">
-                    // Top area: back button
+                    // Top area: back button (shared component)
                     <div class="top_head_area">
-                        <a
-                            href=move || back_href.get().unwrap_or_default()
-                            class="btn btn-secondary back-btn"
-                            id="backBtn"
-                            style:display=move || if show_back.get() { "flex" } else { "none" }
-                            on:click=handle_back
-                        >
-                            <span aria-hidden="true">
-                                <i class="peer-icon medium_font peer-icon-arrow-left"></i>
-                            </span>
-                            "Back"
-                        </a>
+                        <BackButton
+                            visible=show_back.into()
+                            href=back_href.into()
+                            on_back=on_back
+                        />
                     </div>
 
                     // Center area: form steps
@@ -479,13 +525,25 @@ fn VerifyCodeStep(
     let has_countdown = Memo::new(move |_| countdown_seconds.get() > 0);
     let can_resend = Memo::new(move |_| !has_countdown.get() && !is_locked.get());
 
-    // Start countdown timer
+    // Start countdown timer.
+    //
+    // The previous interval (if any) is dropped before a new one is created
+    // so rapid back-to-back resends cannot stack multiple `setInterval`
+    // callbacks (which would tick the counter down faster than real time).
+    #[cfg(feature = "hydrate")]
+    let interval_handle = StoredValue::new_local(Option::<gloo_timers::callback::Interval>::None);
+
     let start_countdown = move |duration: i32| {
         countdown_seconds.set(duration);
 
         #[cfg(feature = "hydrate")]
         {
             use gloo_timers::callback::Interval;
+
+            // Drop any previous interval first to prevent stacking.
+            interval_handle.update_value(|h| {
+                h.take();
+            });
 
             let interval = Interval::new(1_000, move || {
                 countdown_seconds.update(|s| {
@@ -495,16 +553,22 @@ fn VerifyCodeStep(
                 });
             });
 
-            // Store interval handle in local storage to keep it alive.
-            // It will be dropped (cancelling the timer) when the component unmounts.
-            let stored = StoredValue::new_local(Some(interval));
-            on_cleanup(move || {
-                stored.update_value(|v| {
-                    v.take();
-                });
-            });
+            interval_handle.set_value(Some(interval));
+        }
+
+        #[cfg(not(feature = "hydrate"))]
+        {
+            let _ = duration;
         }
     };
+
+    // Cancel any pending interval when the component unmounts.
+    #[cfg(feature = "hydrate")]
+    on_cleanup(move || {
+        interval_handle.update_value(|h| {
+            h.take();
+        });
+    });
 
     // Submit handler
     let on_success = on_success.clone();
@@ -555,7 +619,16 @@ fn VerifyCodeStep(
             match request_password_reset(email_value).await {
                 Ok(payload) if payload.is_success() => {
                     toast.show("Code resent. Check your email.", ToastType::Success);
-                    resend_count.set(count + 1);
+                    let new_count = count + 1;
+                    resend_count.set(new_count);
+                    // Persist the counter so a page reload cannot reset the
+                    // escalating cooldown back to zero (matches legacy 2-hour
+                    // `reset_code_sent_counter` cookie).
+                    set_cookie_seconds(
+                        RESEND_COUNTER_COOKIE,
+                        &new_count.to_string(),
+                        RESEND_COUNTER_TTL_SECS,
+                    );
 
                     // Escalating cooldowns
                     let cooldown = match count {
