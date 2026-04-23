@@ -499,3 +499,69 @@ async fn test_phase6_regression_existing_tests_pass() {
             .is_empty()
     );
 }
+
+// --- Debug endpoint: /debug/reset-token (E2E support for forgot-password) ---
+
+#[tokio::test]
+async fn test_debug_reset_token_returns_issued_token() {
+    let state = default_shared_state();
+
+    // Issue a reset token via GraphQL.
+    let res = graphql_stateful(
+        &state,
+        r#"mutation { requestPasswordReset(email: "test@peer.com") { ResponseCode } }"#,
+    )
+    .await;
+    assert_eq!(res["data"]["requestPasswordReset"]["ResponseCode"], "11901");
+
+    // Hit the debug endpoint.
+    let app = app_with_state(state.clone());
+    let request = Request::builder()
+        .method("GET")
+        .uri("/debug/reset-token?email=test%40peer.com")
+        .body(Body::empty())
+        .unwrap();
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body_bytes = http_body_util::BodyExt::collect(response.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+    let token = body["token"].as_str().expect("token in response");
+
+    // The returned token must match the one stored in state.
+    let st = state.read().await;
+    assert!(st.password_reset_tokens.contains_key(token));
+    assert_eq!(body["email"], "test@peer.com");
+}
+
+#[tokio::test]
+async fn test_debug_reset_token_unknown_email_returns_404() {
+    let state = default_shared_state();
+    let app = app_with_state(state.clone());
+
+    let request = Request::builder()
+        .method("GET")
+        .uri("/debug/reset-token?email=nobody%40nowhere.com")
+        .body(Body::empty())
+        .unwrap();
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_debug_reset_token_no_token_issued_returns_404() {
+    let state = default_shared_state();
+    let app = app_with_state(state.clone());
+
+    // Email is known but no requestPasswordReset has been called.
+    let request = Request::builder()
+        .method("GET")
+        .uri("/debug/reset-token?email=test%40peer.com")
+        .body(Body::empty())
+        .unwrap();
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+}

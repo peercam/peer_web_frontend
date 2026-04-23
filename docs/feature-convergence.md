@@ -2,7 +2,7 @@
 
 This document tracks the progress of migrating features from the legacy PHP/JS frontend to the new Leptos (Rust/WASM) rewrite.
 
-**Last Updated:** 2026-04-23 (Forgot Password — Tasks 1–4 landed)
+**Last Updated:** 2026-04-23 (Forgot Password — Tasks 5–6 landed; promoted to ✅)
 
 ---
 
@@ -10,13 +10,13 @@ This document tracks the progress of migrating features from the legacy PHP/JS f
 
 | Status | Count |
 |--------|-------|
-| ✅ Implemented | 14 |
+| ✅ Implemented | 15 |
 | 🟡 Near-Complete | 5 |
-| 🚧 In Progress | 2 |
+| 🚧 In Progress | 1 |
 | ❌ Not Started | 0 |
 | **Total** | **21** |
 
-**Convergence:** 14/21 pages implemented (~67%); 19/21 ≥ near-complete (~90%).
+**Convergence:** 15/21 pages implemented (~71%); 20/21 ≥ near-complete (~95%).
 
 See [CHANGELOG.md](../CHANGELOG.md) for the dated history of how these counts evolved.
 
@@ -31,7 +31,7 @@ See [CHANGELOG.md](../CHANGELOG.md) for the dated history of how these counts ev
 | **Authentication** ||||
 | Login | `login.php` | ✅ Implemented | Email/password, remember-me, auto-login, redirect handling ([docs](plans/login/login-auth-implementation.md), [changelog](../CHANGELOG.md#2026-04-10--foundations)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation ([changelog](../CHANGELOG.md#2026-04-10--foundations)) |
-| Forgot Password | `forgotpassword.php` | 🚧 In Progress | 990-line page, full 4-step flow (email → verify → reset → success), rate-limited resend, API fns implemented ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md)). **Gaps closed (2026-04-23):** auto-redirect for authed users (`<Show>` + `<Redirect>` mirror of `HomePage`), resend counter cookie-persisted via new `set_cookie_seconds` helper (2 h TTL = legacy parity), countdown interval no longer stacks on rapid resends (`StoredValue` handle dropped before each new `Interval`), shared `BackButton` component now wired in. **Remaining:** mock-backend password-reset endpoints + Playwright coverage (Tasks 5–6 in [sprint](plans/forgot-password/forgot-password-completion-sprint.md)) ([changelog](../CHANGELOG.md#2026-04-23--forgot-password-gaps-1–4-closed)). |
+| Forgot Password | `forgotpassword.php` | ✅ Implemented | 990-line page, full 4-step flow (email → verify → reset → success), rate-limited resend (60s → 10min → locked), cookie-persisted resend counter (2h TTL), countdown interval no longer stacks on rapid resends, shared `BackButton` reused, auto-redirect for authed users (`<Show>` + `<Redirect>`), mock-backend `/debug/reset-token` endpoint + 3 cross-cutting tests, Playwright coverage (8 cases) ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md), [changelog](../CHANGELOG.md#2026-04-23--forgot-password-tasks-56-e2e--debug-endpoint)). | |
 | **Core Features** ||||
 | Dashboard | `dashboard.php` | 🟡 Mostly Implemented | Post feed, filters, sort, infinite scroll ([docs](plans/dashboard/dashboard-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5). **Gaps:** post click → view post overlay is a TODO stub |
 | View Post | `post.php` | 🟡 ~95% Implemented | Single post view, comments, guest mode ([docs](plans/view-post/view-post-implementation.md), [sprint](plans/view-post/view-post-completion-sprint.md)) |
@@ -149,7 +149,7 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 1. ✅ ~~Registration~~ — Complete
 2. ✅ ~~Login / Auth~~ — Complete ([docs](plans/login/login-auth-implementation.md))
 3. 🟡 Dashboard — Mostly implemented, view-post overlay stub remains ([docs](plans/dashboard/dashboard-implementation.md))
-4. 🚧 Forgot Password — In progress, four convergence-tracker gaps closed 2026-04-23 (auto-redirect, cookie-persisted resend counter, interval stacking fix, `BackButton` reuse); mock-backend password-reset endpoints + E2E coverage remain ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md))
+4. ✅ ~~Forgot Password~~ — Complete, all 6 sprint tasks done: auto-redirect, cookie-persisted resend counter, interval stacking fix, `BackButton` reuse, mock-backend `/debug/reset-token` + integration tests, Playwright spec (8 cases) ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md))
 5. 🟡 View Post — ~95% implemented, polish & testing remain ([docs](plans/view-post/view-post-implementation.md))
 6. ✅ ~~Profile~~ — Implemented, infinite scroll + filters + `use_infinite_scroll` hook ([docs](plans/profile/profile-implementation.md), [sprint](plans/profile/profile-completion-sprint.md))
 7. 🚧 New Post — In progress, ~70% structural ([docs](plans/new-post/new-post-implementation.md))

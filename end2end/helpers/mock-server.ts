@@ -42,3 +42,23 @@ export async function preRegisterEmail(email: string): Promise<void> {
     throw new Error(`Failed to pre-register email: ${res.status}`);
   }
 }
+
+/**
+ * Fetch the most recent password-reset token issued for `email` from the
+ * mock backend's debug endpoint. Used to drive the multi-step forgot-password
+ * flow without an SMTP transport.
+ */
+export async function getResetTokenForEmail(email: string): Promise<string> {
+  const url = `${MOCK_BACKEND_URL}/debug/reset-token?email=${encodeURIComponent(email)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch reset token for ${email}: ${res.status} ${res.statusText}`,
+    );
+  }
+  const body = (await res.json()) as { token?: string };
+  if (!body.token) {
+    throw new Error(`No reset token returned for ${email}`);
+  }
+  return body.token;
+}

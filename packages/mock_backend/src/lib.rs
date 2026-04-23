@@ -3,8 +3,15 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use async_graphql_axum::GraphQLRequest;
-use axum::http::HeaderMap;
-use axum::{Json, Router, extract::State, routing::post};
+use axum::extract::Query;
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::IntoResponse;
+use axum::{
+    Json, Router,
+    extract::State,
+    routing::{get, post},
+};
+use serde::Deserialize;
 use tower_http::cors::{Any, CorsLayer};
 
 pub mod filters;
@@ -79,6 +86,48 @@ async fn reset_handler(State(state): State<AppState>) -> Json<serde_json::Value>
     Json(serde_json::json!({ "status": "ok" }))
 }
 
+/// Query parameters for the `/debug/reset-token` endpoint.
+#[derive(Debug, Deserialize)]
+struct DebugResetTokenQuery {
+    email: String,
+}
+
+/// Debug endpoint: return the most recent password-reset token issued for
+/// the given email. Used by E2E tests to drive the multi-step forgot-password
+/// flow without an SMTP transport. Mock-backend only — not part of the
+/// production GraphQL surface.
+async fn debug_reset_token_handler(
+    State(state): State<AppState>,
+    Query(params): Query<DebugResetTokenQuery>,
+) -> impl IntoResponse {
+    let mock_state = state.mock_state.read().await;
+    let uid = match mock_state.find_user_by_email(&params.email) {
+        Some(u) => u.uid,
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({ "error": "unknown email" })),
+            );
+        }
+    };
+    let token = mock_state
+        .password_reset_tokens
+        .iter()
+        .filter(|(_, owner)| **owner == uid)
+        .map(|(t, _)| t.clone())
+        .max();
+    match token {
+        Some(t) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "token": t, "email": params.email })),
+        ),
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({ "error": "no reset token issued" })),
+        ),
+    }
+}
+
 fn build_router(app_state: AppState) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -88,6 +137,7 @@ fn build_router(app_state: AppState) -> Router {
     Router::new()
         .route("/graphql", post(graphql_handler))
         .route("/reset", post(reset_handler))
+        .route("/debug/reset-token", get(debug_reset_token_handler))
         .route("/upload-post", post(upload_post_handler))
         .layer(cors)
         .with_state(app_state)

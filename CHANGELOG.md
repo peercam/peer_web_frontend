@@ -7,20 +7,47 @@ and this project tracks the migration from the legacy PHP/JS frontend to the
 Leptos (Rust/WASM) rewrite. Entries are dated; semantic version numbers will
 be introduced once the rewrite reaches feature parity.
 
-> Convergence as of `2026-04-23`: 14/21 pages implemented (~67%), 19/21
+> Convergence as of `2026-04-23`: 15/21 pages implemented (~71%), 19/21
 > ≥ near-complete (~90%). For the live status matrix see
 > [docs/feature-convergence.md](docs/feature-convergence.md).
 
 ## [Unreleased]
 
 ### In progress
-- Forgot Password — mock-backend password-reset endpoints + Playwright
-  coverage (Tasks 5–6 in
-  [forgot-password-completion-sprint.md](docs/plans/forgot-password/forgot-password-completion-sprint.md));
-  Tasks 1–4 landed 2026-04-23.
 - New Post — real-time waveform, video duration extraction, frame thumbnails,
   server-side trim plumbing, tag history, mobile review, E2E tests.
 - Mock Backend — CI integration phase and acceptance-criteria sign-off gates.
+
+---
+
+## [2026-04-23] — Forgot Password Tasks 5–6 (E2E + debug endpoint)
+
+### Added
+- **Mock backend `/debug/reset-token` endpoint**
+  ([packages/mock_backend/src/lib.rs](packages/mock_backend/src/lib.rs))
+  — GET handler that returns the most recent password-reset token issued
+  for a given email (`?email=...`). Replaces the legacy SMTP transport for
+  E2E coverage of the multi-step forgot-password flow. Mock-only — not part
+  of the production GraphQL surface.
+- **3 cross-cutting integration tests** for the debug endpoint
+  ([packages/mock_backend/tests/cross_cutting.rs](packages/mock_backend/tests/cross_cutting.rs))
+  — issued-token round-trip, unknown-email → 404, no-token-issued → 404.
+  Brings mock-backend total to **269 tests** (was 266).
+- **`getResetTokenForEmail` Playwright helper**
+  ([end2end/helpers/mock-server.ts](end2end/helpers/mock-server.ts)) — thin
+  wrapper around the new debug endpoint.
+- **Playwright spec [end2end/tests/forgot-password.spec.ts](end2end/tests/forgot-password.spec.ts)**
+  — 8 cases covering Step 1 render, client-side email validation, Step 2
+  advance with masked-email assertion, code verification (using
+  debug-issued token) advancing to Step 3, password-mismatch rejection,
+  full happy-path with new-password-login follow-up, back-button callback
+  path (Step 2 → Step 1), and authenticated-user auto-redirect.
+
+### Status
+- **Forgot Password** promoted from 🚧 In Progress → ✅ Implemented in
+  [docs/feature-convergence.md](docs/feature-convergence.md) — all 6 sprint
+  tasks complete (Tasks 1–4 landed earlier today, Tasks 5–6 land here).
+  Convergence: **15/21 pages implemented (~71%)**.
 
 ---
 
