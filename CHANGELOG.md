@@ -17,6 +17,31 @@ be introduced once the rewrite reaches feature parity.
 - New Post — real-time waveform, video duration extraction, frame thumbnails,
   server-side trim plumbing, tag history, mobile review, E2E tests.
 - Mock Backend — CI integration phase and acceptance-criteria sign-off gates.
+- Dashboard — completion sprint published; only post-card click wiring + a
+  `dashboard.spec.ts` E2E pass remain before ✅ promotion. See
+  [docs/plans/dashboard/dashboard-completion-sprint.md](docs/plans/dashboard/dashboard-completion-sprint.md).
+
+---
+
+## [2026-04-23] — Dashboard completion sprint plan + Known Issues reconciliation
+
+### Documentation
+- New [docs/plans/dashboard/dashboard-completion-sprint.md](docs/plans/dashboard/dashboard-completion-sprint.md)
+  — 6-task plan to promote Dashboard from 🟡 to ✅. P0 work is the post-card
+  click handler ([src/components/posts/post_card.rs](src/components/posts/post_card.rs))
+  plus a new `dashboard.spec.ts` Playwright spec; P1/P2 add IntersectionObserver-gated
+  view tracking, a mock-backend round-trip Rust test, and doc reconciliation.
+- Audit verified that **3 of the 4** Known Issues recorded in the parent
+  [dashboard-implementation.md](docs/plans/dashboard/dashboard-implementation.md)
+  are already fixed silently in the tree:
+  `user_search.rs` hydrate-feature imports, `ProfileWidget` real-data wiring
+  via `get_profile`, and `LIST_POSTS_QUERY` field completeness
+  (`isreported`, `amounttrending`, `hasActiveReports`, `visibilityStatus`,
+  `isHiddenForUsers`). Reflected in a new "Resolved" subsection of the
+  parent plan's Known Issues list.
+- Updated [docs/feature-convergence.md](docs/feature-convergence.md):
+  Dashboard row notes + migration-priority entry now link to the sprint and
+  reflect the narrowed gap; `Last Updated` bumped.
 
 ---
 

@@ -2,9 +2,9 @@
 
 **Feature:** Dashboard  
 **Priority:** #3 (after Login/Auth)  
-**Status:** � Mostly Implemented (minor gaps)  
+**Status:** 🟡 Mostly Implemented — see [completion sprint](dashboard-completion-sprint.md) for the path to ✅  
 **Created:** 2026-04-10  
-**Updated:** 2026-04-14
+**Updated:** 2026-04-23
 
 ---
 
@@ -1486,27 +1486,37 @@ From legacy:
 
 ## Known Issues
 
-1. **Missing imports in `user_search.rs` under `hydrate` feature**
-   - `search_users` (from `crate::api::posts`) and `spawn_local` (from `leptos::task`) are used
-     inside a `#[cfg(feature = "hydrate")]` block but not imported. Default `cargo check` passes
-     because it compiles without `hydrate`, but the client build will fail.
+### Open
 
-2. **ProfileWidget returns placeholder data**
-   - `profile_widget.rs` has a `Resource` that always returns `None::<UserInfo>` with a TODO
-     comment. It needs to read the user ID from the auth context and call `get_user_info`.
+1. **Post click handler is a stub** — tracked as Task 1 of the
+   [completion sprint](dashboard-completion-sprint.md). `post_card.rs` `on_click`
+   currently just logs the post ID; needs wiring to `/post/:id` navigation.
 
-3. **Post click handler is a stub**
-   - `post_card.rs` `on_click` just logs the post ID. The view-post overlay or navigation
-     has not been wired up yet.
+### Resolved (verified 2026-04-23)
 
-4. **GraphQL query omits some `Post` model fields**
-   - `LIST_POSTS_QUERY` does not request `isreported`, `amounttrending`, `hasActiveReports`,
-     `visibilityStatus`, or `isHiddenForUsers`. The `Post` struct has `#[serde(default)]` on
-     these fields so deserialization won't break, but the values will always be defaults.
+- ~~Missing imports in `user_search.rs` under `hydrate` feature~~ — fixed;
+  `src/components/search/user_search.rs:5-9` now gates both imports behind
+  `#[cfg(feature = "hydrate")]` and the client build passes.
+- ~~ProfileWidget returns placeholder data~~ — fixed;
+  `src/components/widgets/profile_widget.rs:14-39` reads `auth.is_authenticated`,
+  calls `get_profile`, and maps to `UserInfo`. Placeholder branch only renders
+  for unauthenticated visitors.
+- ~~`LIST_POSTS_QUERY` omits some `Post` model fields~~ — fixed;
+  `src/api/graphql.rs:381,657-666` now requests `isreported`, `amounttrending`,
+  `hasActiveReports`, `visibilityStatus`, and `isHiddenForUsers`.
 
 ---
 
 ## Changelog
+
+### 2026-04-23
+- Audit reconciliation against the live tree (see [completion sprint](dashboard-completion-sprint.md)):
+  3 of the 4 originally-recorded Known Issues are already fixed silently in code
+  (`user_search` hydrate imports, `ProfileWidget` real-data wiring, `LIST_POSTS_QUERY`
+  field completeness). Reflected under "Resolved" subsection.
+- Only remaining Known Issue is the post-card click stub, now tracked as Task 1
+  of the completion sprint.
+- Added link to the completion sprint from the status header.
 
 ### 2026-04-14
 - Updated status to 🟡 Mostly Implemented

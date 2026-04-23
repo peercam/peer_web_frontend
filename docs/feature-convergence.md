@@ -2,7 +2,7 @@
 
 This document tracks the progress of migrating features from the legacy PHP/JS frontend to the new Leptos (Rust/WASM) rewrite.
 
-**Last Updated:** 2026-04-23 (Forgot Password — Tasks 5–6 landed; promoted to ✅)
+**Last Updated:** 2026-04-23 (Dashboard — completion sprint plan published; reconciles 3 already-resolved Known Issues)
 
 ---
 
@@ -33,7 +33,7 @@ See [CHANGELOG.md](../CHANGELOG.md) for the dated history of how these counts ev
 | Register | `register.php` | ✅ Implemented | Multi-step: referral → email → password → confirmation ([changelog](../CHANGELOG.md#2026-04-10--foundations)) |
 | Forgot Password | `forgotpassword.php` | ✅ Implemented | 990-line page, full 4-step flow (email → verify → reset → success), rate-limited resend (60s → 10min → locked), cookie-persisted resend counter (2h TTL), countdown interval no longer stacks on rapid resends, shared `BackButton` reused, auto-redirect for authed users (`<Show>` + `<Redirect>`), mock-backend `/debug/reset-token` endpoint + 3 cross-cutting tests, Playwright coverage (8 cases) ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md), [changelog](../CHANGELOG.md#2026-04-23--forgot-password-tasks-56-e2e--debug-endpoint)). | |
 | **Core Features** ||||
-| Dashboard | `dashboard.php` | 🟡 Mostly Implemented | Post feed, filters, sort, infinite scroll ([docs](plans/dashboard/dashboard-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5). **Gaps:** post click → view post overlay is a TODO stub |
+| Dashboard | `dashboard.php` | 🟡 Mostly Implemented | Post feed, filters, sort, infinite scroll ([docs](plans/dashboard/dashboard-implementation.md), [sprint](plans/dashboard/dashboard-completion-sprint.md)) — Plan quality: ⭐⭐⭐⭐ (4/5). **Gap:** post-card click → View Post navigation is a TODO stub (sprint Task 1). 3 of the 4 originally-recorded Known Issues (user-search hydrate imports, ProfileWidget wiring, `LIST_POSTS_QUERY` field completeness) verified resolved on 2026-04-23. |
 | View Post | `post.php` | 🟡 ~95% Implemented | Single post view, comments, guest mode ([docs](plans/view-post/view-post-implementation.md), [sprint](plans/view-post/view-post-completion-sprint.md)) |
 | New Post | `newpost.php` | 🚧 In Progress | Text/media creation, image cropping, video encoding ([docs](plans/new-post/new-post-implementation.md)) — Plan quality: ⭐⭐⭐⭐ (4/5) |
 | **Profile** ||||
@@ -148,7 +148,7 @@ Tracks the incremental Rust mock backend that replaces the Node.js mock for offl
 
 1. ✅ ~~Registration~~ — Complete
 2. ✅ ~~Login / Auth~~ — Complete ([docs](plans/login/login-auth-implementation.md))
-3. 🟡 Dashboard — Mostly implemented, view-post overlay stub remains ([docs](plans/dashboard/dashboard-implementation.md))
+3. 🟡 Dashboard — Mostly implemented; only the post-card click handler remains, plus a `dashboard.spec.ts` E2E pass ([docs](plans/dashboard/dashboard-implementation.md), [sprint](plans/dashboard/dashboard-completion-sprint.md))
 4. ✅ ~~Forgot Password~~ — Complete, all 6 sprint tasks done: auto-redirect, cookie-persisted resend counter, interval stacking fix, `BackButton` reuse, mock-backend `/debug/reset-token` + integration tests, Playwright spec (8 cases) ([docs](plans/forgot-password/forgot-password-implementation.md), [sprint](plans/forgot-password/forgot-password-completion-sprint.md))
 5. 🟡 View Post — ~95% implemented, polish & testing remain ([docs](plans/view-post/view-post-implementation.md))
 6. ✅ ~~Profile~~ — Implemented, infinite scroll + filters + `use_infinite_scroll` hook ([docs](plans/profile/profile-implementation.md), [sprint](plans/profile/profile-completion-sprint.md))
