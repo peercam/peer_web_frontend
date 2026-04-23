@@ -149,7 +149,7 @@ Mock-backend Phase 3 already implements `listPosts`, `listAdvertisementPosts`,
 [feature-convergence § Mock Backend](../../feature-convergence.md#mock-backend-rust-rewrite)).
 Add a single Rust integration test that exercises the **client server function
 → mock-backend round-trip** for `list_posts` with a non-default
-`PostFilterType` and `PostSortType`, asserting the response deserialises into
+`PostFilterType` and `PostSortBy` (Rust ident: `PostSortType`), asserting the response deserialises into
 the full `Post` model including the previously-missing fields
 (`isreported`, `amounttrending`, `hasActiveReports`, `visibilityStatus`,
 `isHiddenForUsers`). This guards against a future mock-backend regression

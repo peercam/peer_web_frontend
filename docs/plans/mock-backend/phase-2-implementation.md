@@ -4,6 +4,11 @@
 > **Parent:** [mock-backend-rust-rewrite.md](./mock-backend-rust-rewrite.md)
 > **Depends on:** Phase 1 — Login & Session Flows (✅ Complete)
 > **Goal:** Implement all user discovery, profile viewing, social relationships, preferences, and profile-editing operations in the mock backend.
+>
+> **Schema note (April 2026):** The `getUser(id:)` resolver / `GetUserResponseGql`
+> wrapper described below was retired in favour of `getProfile(userid:)` to
+> match production peergamma. See
+> [peergamma-schema-alignment-followup.md](../peergamma-schema-alignment-followup.md).
 
 ---
 

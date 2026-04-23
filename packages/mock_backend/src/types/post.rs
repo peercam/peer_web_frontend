@@ -30,8 +30,11 @@ pub enum PostFilterType {
     Friends,
 }
 
+/// GraphQL exposes this as `PostSortBy` to match the production peergamma SDL
+/// (`src/services/post_service.rs:35`). The Rust ident stays `PostSortType`
+/// to keep the frontend models, fixtures, and mock state references stable.
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
-#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+#[graphql(name = "PostSortBy", rename_items = "SCREAMING_SNAKE_CASE")]
 pub enum PostSortType {
     Newest,
     Trending,

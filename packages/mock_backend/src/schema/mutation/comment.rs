@@ -167,6 +167,12 @@ impl CommentMutation {
     }
 
     /// Like a comment.
+    /// Toggle a comment's like for the current user.
+    ///
+    /// Production peergamma's `likeComment` is a toggle
+    /// (`src/graphql/schema/comment_mutation.rs:98`) — there is no separate
+    /// `unlikeComment` resolver. We mirror that here: if the user already
+    /// likes the comment, this removes the like; otherwise it adds one.
     async fn like_comment(&self, ctx: &Context<'_>, commentid: ID) -> DefaultResponse {
         let user_id = match require_auth(ctx) {
             Ok(uid) => uid,
@@ -189,36 +195,12 @@ impl CommentMutation {
             return DefaultResponse::error("31606", "Cannot like own comment");
         }
 
-        if state.comment_likes.contains(&(user_id, comment_uuid)) {
-            return DefaultResponse::error("31604", "Already liked");
+        if state.comment_likes.remove(&(user_id, comment_uuid)) {
+            DefaultResponse::success("11603", "Comment unliked")
+        } else {
+            state.comment_likes.insert((user_id, comment_uuid));
+            DefaultResponse::success("11603", "Comment liked")
         }
-
-        state.comment_likes.insert((user_id, comment_uuid));
-
-        DefaultResponse::success("11603", "Comment liked")
-    }
-
-    /// Unlike a comment.
-    async fn unlike_comment(&self, ctx: &Context<'_>, commentid: ID) -> DefaultResponse {
-        let user_id = match require_auth(ctx) {
-            Ok(uid) => uid,
-            Err(_) => return DefaultResponse::error("60501", "Not authenticated"),
-        };
-
-        let mut state = ctx.data_unchecked::<SharedState>().write().await;
-
-        let comment_uuid = match commentid.to_string().parse::<Uuid>() {
-            Ok(u) => u,
-            Err(_) => return DefaultResponse::error("30201", "Invalid comment UUID"),
-        };
-
-        if !state.comments.iter().any(|c| c.id == comment_uuid) {
-            return DefaultResponse::error("31601", "Comment not found");
-        }
-
-        state.comment_likes.remove(&(user_id, comment_uuid));
-
-        DefaultResponse::success("11603", "Comment unliked")
     }
 
     /// Report a comment for moderation.

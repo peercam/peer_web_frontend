@@ -390,7 +390,9 @@ async fn test_like_own_comment() {
 }
 
 #[tokio::test]
-async fn test_like_comment_duplicate() {
+async fn test_like_comment_toggles_off() {
+    // Production peergamma's `likeComment` is a toggle — calling it twice
+    // removes the like rather than returning an "already liked" error.
     let state = default_shared_state();
     let token = login_default(&state).await;
 
@@ -402,20 +404,24 @@ async fn test_like_comment_duplicate() {
     )
     .await;
 
-    // Like again
+    // Like again — toggles off
     let res = graphql_with_auth(
         &state,
-        &format!(r#"mutation {{ likeComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode }} }}"#),
+        &format!(r#"mutation {{ likeComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode ResponseMessage }} }}"#),
         &token,
     )
     .await;
 
     let data = &res["data"]["likeComment"];
-    assert_eq!(data["ResponseCode"].as_str().unwrap(), "31604");
+    assert_eq!(data["ResponseCode"].as_str().unwrap(), "11603");
+    assert_eq!(data["ResponseMessage"].as_str().unwrap(), "Comment unliked");
 }
 
 #[tokio::test]
 async fn test_unlike_comment() {
+    // The frontend's `UNLIKE_COMMENT_MUTATION` aliases `likeComment` — there
+    // is no `unlikeComment` resolver on production peergamma. Verify that
+    // toggling via `likeComment` is sufficient to revoke a like.
     let state = default_shared_state();
     let token = login_default(&state).await;
 
@@ -427,18 +433,19 @@ async fn test_unlike_comment() {
     )
     .await;
 
-    // Unlike
+    // Unlike via the same toggle mutation
     let res = graphql_with_auth(
         &state,
         &format!(
-            r#"mutation {{ unlikeComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode }} }}"#
+            r#"mutation {{ likeComment(commentid: "{SEED_COMMENT_1}") {{ ResponseCode ResponseMessage }} }}"#
         ),
         &token,
     )
     .await;
 
-    let data = &res["data"]["unlikeComment"];
+    let data = &res["data"]["likeComment"];
     assert_eq!(data["ResponseCode"].as_str().unwrap(), "11603");
+    assert_eq!(data["ResponseMessage"].as_str().unwrap(), "Comment unliked");
 }
 
 #[tokio::test]

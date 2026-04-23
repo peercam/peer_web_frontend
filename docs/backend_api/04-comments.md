@@ -184,7 +184,7 @@ enum CommentType {
 
 ### `likeComment`
 
-Like a comment. Free action (no token cost).
+Toggle a like on a comment. Free action (no token cost).
 
 ```graphql
 mutation {
@@ -198,24 +198,34 @@ mutation {
 |-------|------|----------|
 | `commentid` | `ID!` | Yes |
 
+#### Toggle semantics
+
+`likeComment` is a **toggle** (peergamma `src/graphql/schema/comment_mutation.rs:98`).
+
+- First call by a given user adds the like.
+- Second call by the same user removes it.
+
+There is **no** separate `unlikeComment` mutation. Frontends that model
+"like" and "unlike" as distinct UI actions both call `likeComment`; the
+backend flips the state based on the user's current like.
+
 #### Validation
 - Cannot like your own comment
-- Prevents duplicate likes
 - Content filtering specs applied (hidden/illegal content cannot be liked)
 
 #### Side Effects
-- Increments comment's like count
-- Creates user activity record
+- Adds or removes the user's like
+- Increments / decrements comment's like count
+- Creates user activity record on add
 - Interaction permission check against content filtering
 
 #### Response Codes
 
 | Code | Description |
 |------|-------------|
-| `11603` | Comment liked |
+| `11603` | Comment liked / unliked (toggle) |
 | `30201` | Invalid comment UUID |
 | `31601` | Comment not found |
-| `31604` | Already liked |
 | `31606` | Cannot like own comment |
 | `31608` | Interaction not allowed (content filtering) |
 | `60501` | Not authenticated |

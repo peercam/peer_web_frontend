@@ -282,6 +282,9 @@ async fn test_list_users_v2_empty_results() {
 
 #[tokio::test]
 async fn test_get_user_by_id() {
+    // Production peergamma exposes `getProfile(userid:)`, not `getUser(id:)`.
+    // The frontend's `GET_USER_QUERY` maps to it (with client-side aliases for
+    // `amountFollowers` etc.), so this test exercises the canonical resolver.
     let state = default_shared_state();
     let token = login_default(&state).await;
 
@@ -290,12 +293,11 @@ async fn test_get_user_by_id() {
         &format!(
             r#"
         query {{
-            getUser(id: "{}") {{
+            getProfile(userid: "{}") {{
                 meta {{ ResponseCode }}
                 affectedRows {{
                     id username slug img biography
-                    amountFollowers amountFollowing amountPeers
-                    userPreferences {{ contentFilteringSeverityLevel }}
+                    amountfollower amountfollowed amountfriends
                 }}
             }}
         }}
@@ -306,10 +308,10 @@ async fn test_get_user_by_id() {
     )
     .await;
 
-    let data = &res["data"]["getUser"];
-    assert_eq!(data["meta"]["ResponseCode"], "11001");
+    let data = &res["data"]["getProfile"];
+    assert_eq!(data["meta"]["ResponseCode"], "11008");
     assert_eq!(data["affectedRows"]["username"], "alice_peer");
-    assert!(data["affectedRows"]["userPreferences"]["contentFilteringSeverityLevel"].is_string());
+    assert!(data["affectedRows"]["amountfollower"].is_number());
 }
 
 #[tokio::test]
@@ -321,7 +323,7 @@ async fn test_get_user_not_found() {
         &state,
         r#"
         query {
-            getUser(id: "00000000-0000-0000-0000-000000000099") {
+            getProfile(userid: "00000000-0000-0000-0000-000000000099") {
                 meta { ResponseCode }
                 affectedRows { id }
             }
@@ -331,7 +333,7 @@ async fn test_get_user_not_found() {
     )
     .await;
 
-    assert_eq!(res["data"]["getUser"]["meta"]["ResponseCode"], "21001");
+    assert_eq!(res["data"]["getProfile"]["meta"]["ResponseCode"], "21001");
 }
 
 #[tokio::test]

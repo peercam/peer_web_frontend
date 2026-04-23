@@ -20,7 +20,7 @@ query {
     filterBy: [PostFilterType!]
     contentFilterBy: ContentFilterType
     IgnorList: IgnoreOption
-    sortBy: PostSortType
+    sortBy: PostSortBy
     userid: ID
     postid: ID
     title: String
@@ -42,7 +42,7 @@ query {
 | `filterBy` | `[PostFilterType!]` | No | Filter by content type or social relation |
 | `contentFilterBy` | `ContentFilterType` | No | Content filtering severity |
 | `IgnorList` | `IgnoreOption` | No | Whether to apply block list (`YES` / `NO`) |
-| `sortBy` | `PostSortType` | No | Sort order |
+| `sortBy` | `PostSortBy` | No | Sort order |
 | `userid` | `ID` | No | Filter by post author UUID |
 | `postid` | `ID` | No | Fetch a specific post by UUID |
 | `title` | `String` | No | Search by title (1–63 chars) |
@@ -68,7 +68,7 @@ enum PostFilterType {
   FRIENDS     # Posts from mutual friends
 }
 
-enum PostSortType {
+enum PostSortBy {
   NEWEST      # Most recent first
   TRENDING    # By trending score
   LIKES       # Most liked

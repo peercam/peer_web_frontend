@@ -96,7 +96,7 @@ The current mock backend (`packages/mock_backend/`) only supports registration. 
 | `listComments` | Query | Optional | P1 — comment display |
 | `listChildComments` | Query | Optional | P1 — nested replies |
 | `createComment` | Mutation | Yes | P2 — comment creation |
-| `likeComment` / `unlikeComment` | Mutation | Yes | P2 — comment interaction |
+| `likeComment` (toggle; `unlikeComment` is a client-side alias) | Mutation | Yes | P2 — comment interaction |
 
 ### Fixture Data Needed
 

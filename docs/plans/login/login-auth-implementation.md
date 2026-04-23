@@ -140,9 +140,13 @@ mutation RefreshToken($refreshToken: String!) {
 
 ### `logout` Mutation
 
+Production peergamma's `logout` takes **no arguments** and reads the user from
+the JWT in the `Authorization` header. The mutation is idempotent — calling it
+without (or with an expired) JWT still returns success.
+
 ```graphql
-mutation Logout($refreshToken: String!) {
-  logout(refreshToken: $refreshToken) {
+mutation Logout {
+  logout {
     status
     ResponseCode
   }

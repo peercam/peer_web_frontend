@@ -283,23 +283,29 @@ async fn test_refresh_after_logout() {
     "#,
     )
     .await;
+    let access = res["data"]["login"]["accessToken"]
+        .as_str()
+        .unwrap()
+        .to_string();
     let refresh = res["data"]["login"]["refreshToken"]
         .as_str()
         .unwrap()
         .to_string();
 
-    // Logout
-    let query = format!(
+    // Logout — backend reads identity from JWT in Authorization header,
+    // no `refreshToken` argument is accepted.
+    let res = graphql_with_auth(
+        &state,
         r#"
-        mutation {{
-            logout(refreshToken: "{}") {{
+        mutation {
+            logout {
                 status ResponseCode
-            }}
-        }}
+            }
+        }
     "#,
-        refresh
-    );
-    let res = graphql_stateful(&state, &query).await;
+        &access,
+    )
+    .await;
     assert_eq!(res["data"]["logout"]["ResponseCode"], "11001");
 
     // Attempt refresh with old token
@@ -327,29 +333,30 @@ async fn test_logout_success() {
         r#"
         mutation {
             login(email: "test@peer.com", password: "TestPass123") {
-                refreshToken
+                accessToken
             }
         }
     "#,
     )
     .await;
-    let refresh = res["data"]["login"]["refreshToken"]
+    let access = res["data"]["login"]["accessToken"]
         .as_str()
         .unwrap()
         .to_string();
 
-    // Logout
-    let query = format!(
+    // Logout — JWT-only; no arguments.
+    let res = graphql_with_auth(
+        &state,
         r#"
-        mutation {{
-            logout(refreshToken: "{}") {{
+        mutation {
+            logout {
                 status ResponseCode
-            }}
-        }}
+            }
+        }
     "#,
-        refresh
-    );
-    let res = graphql_stateful(&state, &query).await;
+        &access,
+    )
+    .await;
 
     assert_eq!(res["data"]["logout"]["status"], "success");
     assert_eq!(res["data"]["logout"]["ResponseCode"], "11001");

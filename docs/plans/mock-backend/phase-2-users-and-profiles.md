@@ -3,6 +3,11 @@
 > **Parent Plan:** [mock-backend-rust-rewrite.md](./mock-backend-rust-rewrite.md)
 > **Depends on:** [Phase 1 — Login & Session Flows](./phase-1-login-session-flows.md)
 > **Goal:** Add user discovery, profile viewing, social relationships (follow/block/report), user preferences, and profile-editing mutations so the Leptos profile pages, settings pages, and user search work end-to-end against the mock.
+>
+> **Schema note (April 2026):** The `getUser(id:)` resolver and
+> `GET_USER_QUERY` shim referenced below have been replaced by
+> `getProfile(userid:)` in both the mock backend and the frontend. See
+> [peergamma-schema-alignment-followup.md](../peergamma-schema-alignment-followup.md).
 
 ---
 

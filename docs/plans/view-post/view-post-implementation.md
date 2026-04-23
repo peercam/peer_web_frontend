@@ -528,10 +528,14 @@ pub async fn create_comment(
 ) -> Result<Comment, ServerFnError>;
 
 /// Like a comment.
+///
+/// Production peergamma's `likeComment` is a **toggle**: a second call by the
+/// same user removes the like. There is no `unlikeComment` resolver.
 #[server(LikeComment, "/api")]
 pub async fn like_comment(comment_id: String) -> Result<(), ServerFnError>;
 
-/// Unlike a comment.
+/// Unlike a comment (client-side wrapper that re-issues `likeComment` to
+/// toggle the like off — kept for call-site clarity in UI handlers).
 #[server(UnlikeComment, "/api")]
 pub async fn unlike_comment(comment_id: String) -> Result<(), ServerFnError>;
 ```

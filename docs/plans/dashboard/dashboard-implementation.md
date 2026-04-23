@@ -144,7 +144,7 @@ query ListPosts(
   $filterBy: [PostFilterType!]
   $contentFilterBy: ContentFilterType
   $IgnorList: IgnoreOption
-  $sortBy: PostSortType
+  $sortBy: PostSortBy
   $userid: ID
   $title: String
   $tag: String
@@ -223,7 +223,7 @@ enum PostFilterType {
   FRIENDS
 }
 
-enum PostSortType {
+enum PostSortBy {
   NEWEST
   TRENDING
   LIKES
@@ -350,11 +350,15 @@ enum PostActionType {
 }
 ```
 
-### `getUserInfo` Query
+### `getProfile` Query
+
+> Production peergamma exposes `getProfile(userid:)`, not `getUser(id:)`.
+> The client-side models alias backend snake-case fields
+> (`amountfollower` → `amount_followers`) — see `src/models/user.rs`.
 
 ```graphql
 query GetUser($id: ID!) {
-  getUser(id: $id) {
+  getProfile(userid: $id) {
     meta {
       status
       RequestId
@@ -652,7 +656,7 @@ pub const LIST_POSTS_QUERY: &str = r#"
     query ListPosts(
         $filterBy: [PostFilterType!],
         $contentFilterBy: ContentFilterType,
-        $sortBy: PostSortType,
+        $sortBy: PostSortBy,
         $title: String,
         $tag: String,
         $offset: Int,

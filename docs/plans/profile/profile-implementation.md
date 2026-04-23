@@ -461,7 +461,7 @@ query ListPosts(
   $userid: ID!
   $filterBy: [PostFilterType!]
   $contentFilterBy: ContentFilterType
-  $sortBy: PostSortType
+  $sortBy: PostSortBy
   $offset: Int
   $limit: Int
 ) {

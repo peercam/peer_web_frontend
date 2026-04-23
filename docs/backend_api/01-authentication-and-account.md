@@ -196,6 +196,55 @@ Returns new `accessToken` and `refreshToken` on success.
 
 ---
 
+### `logout`
+
+Invalidate the current session.
+
+```graphql
+mutation {
+  logout: LogoutPayload!
+}
+```
+
+#### Parameters
+
+None. The user is identified entirely from the JWT in the `Authorization`
+header (peergamma `src/graphql/schema/mutation.rs:68`). The mutation does
+**not** accept a `refreshToken` argument — sending one is a schema
+validation error.
+
+#### Authentication
+
+Send the **access token** as `Authorization: Bearer <accessToken>`. The
+backend resolves the user from the JWT claims, then revokes that user's
+outstanding refresh and access tokens server-side (subject to the
+"server-side revocation disabled" caveat in the security note below).
+
+#### Response: `LogoutPayload`
+
+```graphql
+type LogoutPayload {
+  status: String!           # "success"
+  ResponseCode: String      # "11001" on success
+}
+```
+
+#### Semantics
+
+- **Idempotent.** Calling `logout` without (or with an expired) JWT still
+  returns success — there is nothing to revoke. Clients should also clear
+  their local cookies / token storage on logout.
+- **No `refreshToken` argument.** Earlier drafts of this contract took
+  `logout(refreshToken: String!)`; that parameter has been removed.
+
+#### Response Codes
+
+| Code | Description |
+|------|-------------|
+| `11001` | Logout successful (or no-op if already logged out) |
+
+---
+
 ### `requestPasswordReset`
 
 Initiates a password reset flow by sending an email with a reset token.

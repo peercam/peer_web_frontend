@@ -23,6 +23,82 @@ be introduced once the rewrite reaches feature parity.
 
 ---
 
+## [2026-04-23] — Peergamma schema alignment follow-up: mock backend & docs
+
+### Mock backend (`packages/mock_backend`)
+- `PostSortType` Rust enum now exposes its GraphQL type as `PostSortBy`
+  (`#[graphql(name = "PostSortBy", rename_items = "SCREAMING_SNAKE_CASE")]`)
+  to match production peergamma's SDL while keeping the Rust ident stable for
+  the frontend models, fixtures, and mock state references.
+- `logout` mutation no longer accepts a `refreshToken` argument — the user is
+  resolved from the JWT in the `Authorization` header (matches production
+  `src/graphql/schema/mutation.rs:68`). Logout is idempotent: calling it
+  unauthenticated is a no-op that still returns a `LogoutPayload`.
+- Removed the `getUser(id:)` resolver and `GetUserResponseGql` /
+  `GetUserResult` shim. Production peergamma exposes `getProfile(userid:)`
+  only; the frontend's `GET_USER_QUERY` already maps to it.
+- `likeComment` is now a true toggle: a second call by the same user removes
+  the like (returning `11603` "Comment unliked"). The standalone
+  `unlikeComment` resolver was removed — production peergamma has no such
+  field. Self-like guard preserved.
+- Test suites updated accordingly: `auth_session::test_logout*` send a Bearer
+  token instead of a `refreshToken` arg; `profiles::test_get_user_*` now hit
+  `getProfile`; `comments::test_like_comment_toggles_off` exercises the
+  toggle, and the legacy `test_unlike_comment` re-issues `likeComment` twice.
+- All 18 mock_backend test binaries green
+  (`cargo test -p mock_backend --all-targets --all-features`).
+
+### Frontend (`src/api/auth.rs`)
+- `LogoutUser` server function drops the `Vars { refresh_token }` struct and
+  sends `serde_json::json!({})` as variables, since `LOGOUT_MUTATION` no
+  longer declares `$refreshToken`. The access token is still sent in the
+  `Authorization` header so the mock can identify the session.
+
+### Documentation
+- New plan tracking the work:
+  [docs/plans/peergamma-schema-alignment-followup.md](docs/plans/peergamma-schema-alignment-followup.md)
+  with a status banner, a per-fix ✅ table, and ticked-off implementation
+  steps.
+- [docs/backend_api/01-authentication-and-account.md](docs/backend_api/01-authentication-and-account.md)
+  adds a `### logout` section between `refreshToken` and
+  `requestPasswordReset`, documenting zero-arg JWT-based identity, idempotent
+  semantics, and the migration note that the prior
+  `logout(refreshToken: String!)` parameter has been removed.
+- [docs/backend_api/api.md](docs/backend_api/api.md) — added
+  `logout: LogoutPayload!` to the authenticated-mutations SDL block under a
+  new `# Session` group.
+- [docs/backend_api/03-posts-and-content.md](docs/backend_api/03-posts-and-content.md)
+  and [docs/backend_api/04-comments.md](docs/backend_api/04-comments.md)
+  already aligned (verified): `PostSortBy` enum and the
+  "no `unlikeComment` mutation" note are in place.
+- Active implementation plans swept for stale GraphQL examples:
+  - [docs/plans/dashboard/dashboard-implementation.md](docs/plans/dashboard/dashboard-implementation.md)
+    — three SDL blocks now use `PostSortBy`; `getUser(id:)` example rewritten
+    to `getProfile(userid:)` with a client-side aliasing note.
+  - [docs/plans/dashboard/dashboard-completion-sprint.md](docs/plans/dashboard/dashboard-completion-sprint.md)
+    — clarifies `PostSortBy` (Rust ident `PostSortType`).
+  - [docs/plans/login/login-auth-implementation.md](docs/plans/login/login-auth-implementation.md)
+    — `Logout` mutation example is now zero-arg with the JWT-identity note.
+  - [docs/plans/profile/profile-implementation.md](docs/plans/profile/profile-implementation.md)
+    — `$sortBy: PostSortBy`.
+  - [docs/plans/view-post/view-post-implementation.md](docs/plans/view-post/view-post-implementation.md)
+    — server-fn doc-comments call out toggle semantics; `UnlikeComment` is now
+    documented as a client-side wrapper around `likeComment`.
+  - [docs/plans/view-post/view-post-completion-sprint.md](docs/plans/view-post/view-post-completion-sprint.md)
+    and [docs/plans/mock-backend/phase-4-social-comments-chat.md](docs/plans/mock-backend/phase-4-social-comments-chat.md)
+    — operation tables note the toggle and the alias relationship.
+- Historical mock-backend sprint plans
+  ([mock-backend-rust-rewrite.md](docs/plans/mock-backend/mock-backend-rust-rewrite.md),
+  [phase-1-login-session-flows.md](docs/plans/mock-backend/phase-1-login-session-flows.md),
+  [phase-2-users-and-profiles.md](docs/plans/mock-backend/phase-2-users-and-profiles.md),
+  [phase-2-implementation.md](docs/plans/mock-backend/phase-2-implementation.md),
+  [phase-3-posts-content.md](docs/plans/mock-backend/phase-3-posts-content.md))
+  carry a top-of-file "Schema note (April 2026)" banner pointing at the
+  follow-up plan, so readers see the current contract without losing the
+  historical sprint record.
+
+---
+
 ## [2026-04-23] — Dashboard completion sprint plan + Known Issues reconciliation
 
 ### Documentation

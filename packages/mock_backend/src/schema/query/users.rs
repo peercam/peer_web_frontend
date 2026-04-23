@@ -256,52 +256,6 @@ impl UserQuery {
     }
 
     // ========================================================================
-    // getUser
-    // ========================================================================
-
-    async fn get_user(&self, ctx: &Context<'_>, id: ID) -> GetUserResponseGql {
-        let state = ctx.data_unchecked::<SharedState>();
-        let state_read = state.read().await;
-
-        let uid = match Uuid::parse_str(id.as_str()) {
-            Ok(uid) => uid,
-            Err(_) => {
-                return GetUserResponseGql {
-                    meta: DefaultResponse::error("21001", "User not found"),
-                    affected_rows: None,
-                };
-            }
-        };
-
-        let user = match state_read.users.get(&uid) {
-            Some(u) => u,
-            None => {
-                return GetUserResponseGql {
-                    meta: DefaultResponse::error("21001", "User not found"),
-                    affected_rows: None,
-                };
-            }
-        };
-
-        let user_prefs = state_read.preferences.get(&uid).map(build_user_prefs);
-
-        GetUserResponseGql {
-            meta: DefaultResponse::success("11001", "User found"),
-            affected_rows: Some(GetUserResult {
-                id: ID::from(user.uid.to_string()),
-                username: user.username.clone(),
-                slug: user.slug_num,
-                img: user.img.clone(),
-                biography: user.biography.clone(),
-                amount_followers: state_read.count_followers(&uid),
-                amount_following: state_read.count_following(&uid),
-                amount_peers: state_read.count_friends(&uid),
-                user_preferences: user_prefs,
-            }),
-        }
-    }
-
-    // ========================================================================
     // listFollowRelations
     // ========================================================================
 

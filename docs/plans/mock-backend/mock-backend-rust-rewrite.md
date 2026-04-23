@@ -1,6 +1,12 @@
 # Plan: Rewrite Mock Backend in Rust
 
 > Implements ADR: [adr-mock-backend-rust-rewrite.md](../../adr-mock-backend-rust-rewrite.md)
+>
+> **Schema note (April 2026):** Several SDL examples in this rewrite plan
+> predate the peergamma schema alignment performed in `0dbdb4d` — notably
+> `logout(refreshToken)`, `getUser(id:)`, `unlikeComment`, and the
+> `PostSortType` GraphQL name. The current contracts are tracked in
+> [peergamma-schema-alignment-followup.md](../peergamma-schema-alignment-followup.md).
 
 **Goal:** Replace the Node.js mock backend (`packages/mock_backend/`) with an idiomatic Rust crate built on async-graphql + Axum, achieving parity with the existing 3 mutations and then incrementally expanding to cover all 10 backend API domains documented in `docs/backend_api/`.
 

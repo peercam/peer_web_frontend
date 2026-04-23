@@ -116,12 +116,18 @@ impl AuthMutation {
         AuthPayload::success("10901", &new_access, &new_refresh)
     }
 
-    /// Invalidate a refresh token (and associated access tokens).
-    async fn logout(&self, ctx: &Context<'_>, refresh_token: String) -> LogoutPayload {
+    /// Invalidate the current session.
+    ///
+    /// Production peergamma reads the user from the JWT in the `Authorization`
+    /// header (`src/graphql/schema/mutation.rs:68`) — no `refreshToken`
+    /// argument is accepted. We mirror that here: when authenticated, all of
+    /// the user's outstanding access and refresh tokens are revoked. When
+    /// unauthenticated, the call is a no-op (idempotent).
+    async fn logout(&self, ctx: &Context<'_>) -> LogoutPayload {
         let state = ctx.data_unchecked::<SharedState>();
         let mut state_write = state.write().await;
 
-        if let Some(uid) = state_write.refresh_tokens.remove(&refresh_token) {
+        if let Some(uid) = get_current_user(ctx) {
             state_write.invalidate_user_tokens(&uid);
         }
 

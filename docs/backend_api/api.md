@@ -161,7 +161,7 @@ type Query {
     filterBy: [PostFilterType!], 
     contentFilterBy: ContentFilterType, 
     IgnorList: IgnoreOption, 
-    sortBy: PostSortType, 
+    sortBy: PostSortBy, 
     userid: ID, 
     postid: ID, 
     title: String, 
@@ -274,7 +274,10 @@ type Mutation {
   updateBio(biography: String!): DefaultResponse!
   updateProfileImage(img: String!): DefaultResponse!
   deleteAccount(password: String!): DefaultResponse!
-  
+
+  # Session
+  logout: LogoutPayload!
+
   # Social interactions
   toggleUserFollowStatus(userid: ID!): FollowStatusResponse!
   toggleBlockUserStatus(userid: ID!): DefaultResponse!
@@ -477,7 +480,7 @@ enum PostFilterType {
   VIEWED
 }
 
-enum PostSortType {
+enum PostSortBy {
   NEWEST
   TRENDING
   LIKES

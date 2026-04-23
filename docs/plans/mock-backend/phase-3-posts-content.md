@@ -5,6 +5,12 @@
 > **Goal:** Add all post-related queries and mutations so the Leptos dashboard feed, view post page, new post page, and user profile posts work end-to-end against the mock.
 > **Plan Quality:** ⭐⭐⭐⭐⭐ (5/5)
 > **Status:** Complete — 121 total tests pass (48+ new for Phase 3), 0 clippy warnings, `cargo fmt` clean.
+>
+> **Schema note (April 2026):** The GraphQL enum for post sorting is
+> `PostSortBy` (the Rust ident remains `PostSortType`), and the `getUser(id:)`
+> entry in the resolver tables below has been superseded by
+> `getProfile(userid:)`. See
+> [peergamma-schema-alignment-followup.md](../peergamma-schema-alignment-followup.md).
 
 ---
 

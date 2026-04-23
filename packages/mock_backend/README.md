@@ -42,7 +42,7 @@ Runs 170 integration tests covering all mutations, queries, auth flows, and edge
 ### Mutations — Auth & Session (Phase 1)
 - `login(email: String!, password: String!): AuthPayload!`
 - `refreshToken(refreshToken: String!): AuthPayload!`
-- `logout(refreshToken: String!): LogoutPayload!`
+- `logout: LogoutPayload!` *(requires auth — identity comes from the JWT in the Authorization header; idempotent)*
 - `deleteAccount(password: String!): DefaultResponse!` *(requires auth)*
 - `updatePassword(password: String!, expassword: String!): DefaultResponse!` *(requires auth)*
 - `requestPasswordReset(email: String!): ResetPasswordRequestResponse!`
@@ -52,8 +52,7 @@ Runs 170 integration tests covering all mutations, queries, auth flows, and edge
 
 ### Mutations — Comments (Phase 4)
 - `createComment(action: CommentType!, postid: ID!, content: String!, parentid: ID): CreateCommentResponse!` *(requires auth)*
-- `likeComment(commentid: ID!): DefaultResponse!` *(requires auth)*
-- `unlikeComment(commentid: ID!): DefaultResponse!` *(requires auth)*
+- `likeComment(commentid: ID!): DefaultResponse!` *(requires auth — toggle: a second call removes the like; there is no `unlikeComment` resolver)*
 - `reportComment(commentid: ID!): DefaultResponse!` *(requires auth)*
 
 ### Mutations — Chat (Phase 4)

@@ -30,7 +30,7 @@
 | `listChildComments(parent, offset, limit)` | `query ListChildComments(...)` | `comments.rs` → `ListChildComments` server fn | Yes (optional) |
 | `createComment(action, postid, content, parentid?)` | `mutation CreateComment(...)` | `comments.rs` → `CreateComment` server fn | Yes |
 | `likeComment(commentid)` | `mutation LikeComment(...)` | `comments.rs` → `LikeComment` server fn | Yes |
-| `unlikeComment(commentid)` | `mutation UnlikeComment(...)` | `comments.rs` → `UnlikeComment` server fn | Yes |
+| `likeComment(commentid)` (toggle — second call removes the like; production peergamma has no `unlikeComment` resolver, frontend `UnlikeComment` server fn aliases this mutation) | `mutation UnlikeComment(...)` | `comments.rs` → `UnlikeComment` server fn | Yes |
 
 **From `src/api/chat.rs` and `src/api/graphql.rs`:**
 

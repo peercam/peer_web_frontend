@@ -89,23 +89,24 @@ pub async fn refresh_access_token() -> Result<AuthPayload, ServerFnError> {
 // Server function: Logout
 // ============================================================================
 
-/// Logout and invalidate the refresh token.
+/// Logout and invalidate the current session.
+///
+/// Production peergamma's `logout` mutation takes no arguments and reads the
+/// user from the JWT in the `Authorization` header. We send the access token
+/// (not the refresh token) and an empty variables object. If no access token
+/// cookie is present we still clear local cookies — logout is idempotent.
 #[server(LogoutUser, "/api")]
 pub async fn logout_user() -> Result<LogoutPayload, ServerFnError> {
     use crate::api::graphql::{LOGOUT_MUTATION, LogoutData, mutate};
 
-    let refresh_token = get_cookie_ssr("refresh_token")
-        .ok_or_else(|| ServerFnError::new("No refresh token found."))?;
+    let access_token = get_cookie_ssr("access_token");
 
-    #[derive(serde::Serialize)]
-    #[serde(rename_all = "camelCase")]
-    struct Vars {
-        refresh_token: String,
-    }
-
-    let variables = Vars { refresh_token };
-
-    let data: LogoutData = mutate(LOGOUT_MUTATION, variables, None).await?;
+    let data: LogoutData = mutate(
+        LOGOUT_MUTATION,
+        serde_json::json!({}),
+        access_token.as_deref(),
+    )
+    .await?;
 
     // Clear auth cookies
     clear_auth_cookies_ssr();

@@ -5,6 +5,13 @@
 > **Goal:** Add all authentication and account management mutations so the Leptos login page, token refresh, logout, password reset, and contact-us flows work end-to-end against the mock.
 > **Status:** ✅ Complete (14 April 2026)
 > **Plan Quality:** ⭐⭐⭐⭐⭐ (5/5)
+>
+> **Schema note (April 2026):** The `logout` mutation no longer accepts a
+> `refreshToken` argument — production peergamma reads the user from the JWT
+> in the `Authorization` header. References below to `logout(refreshToken)`
+> document the original sprint as it shipped; current behaviour is captured in
+> [peergamma-schema-alignment-followup.md](../peergamma-schema-alignment-followup.md)
+> and [docs/backend_api/01-authentication-and-account.md](../../backend_api/01-authentication-and-account.md#logout).
 
 ---
 

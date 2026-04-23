@@ -357,36 +357,6 @@ pub struct ReferralListResponseGql {
 }
 
 // ============================================================================
-// getUser response (matches GET_USER_QUERY)
-// ============================================================================
-
-#[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
-#[graphql(rename_fields = "camelCase")]
-pub struct GetUserResult {
-    pub id: ID,
-    pub username: String,
-    pub slug: i32,
-    pub img: Option<String>,
-    pub biography: Option<String>,
-    #[graphql(name = "amountFollowers")]
-    pub amount_followers: i32,
-    #[graphql(name = "amountFollowing")]
-    pub amount_following: i32,
-    #[graphql(name = "amountPeers")]
-    pub amount_peers: i32,
-    #[graphql(name = "userPreferences")]
-    pub user_preferences: Option<UserPreferencesGql>,
-}
-
-#[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
-#[graphql(rename_fields = "camelCase")]
-pub struct GetUserResponseGql {
-    pub meta: DefaultResponse,
-    #[graphql(name = "affectedRows")]
-    pub affected_rows: Option<GetUserResult>,
-}
-
-// ============================================================================
 // Conversion helpers
 // ============================================================================
 
