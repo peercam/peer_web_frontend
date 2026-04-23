@@ -344,10 +344,12 @@ mutation RefreshToken($refreshToken: String!) {
 }
 "#;
 
-/// Mutation: Logout and invalidate refresh token.
+/// Mutation: Logout and invalidate the current session.
+/// Backend reads the user from the JWT in the Authorization header — no
+/// `refreshToken` argument is accepted (peergamma `src/graphql/schema/mutation.rs`).
 pub const LOGOUT_MUTATION: &str = r#"
-mutation Logout($refreshToken: String!) {
-    logout(refreshToken: $refreshToken) {
+mutation Logout {
+    logout {
         status
         ResponseCode
     }
@@ -382,7 +384,7 @@ pub const LIST_POSTS_QUERY: &str = r#"
 query ListPosts(
     $filterBy: [PostFilterType!],
     $contentFilterBy: ContentFilterType,
-    $sortBy: PostSortType,
+    $sortBy: PostSortBy,
     $title: String,
     $tag: String,
     $offset: Int,
@@ -532,10 +534,19 @@ query SearchUser($username: String!, $offset: Int, $limit: Int) {
 }
 "#;
 
-/// Query: Get user info.
+/// Query: Get user info by id.
+///
+/// Routed to the backend's `getProfile(userid:)` resolver. Peergamma has no
+/// `getUser(id:)` — the closest match is `getProfile`, which returns the
+/// superset of user-public fields. Backend field names are lowercase (no
+/// camelCase): `amountfollower`, `amountfollowed`, `amountfriends`. Client-
+/// side aliases preserve the camelCase shape the frontend models expect.
+///
+/// `userPreferences` is intentionally dropped: peergamma only exposes it on
+/// `getUserInfo` (the self-only query), since preferences are private.
 pub const GET_USER_QUERY: &str = r#"
 query GetUser($id: ID!) {
-    getUser(id: $id) {
+    getProfile(userid: $id) {
         meta {
             status
             RequestId
@@ -548,12 +559,9 @@ query GetUser($id: ID!) {
             slug
             img
             biography
-            amountFollowers
-            amountFollowing
-            amountPeers
-            userPreferences {
-                contentFilteringSeverityLevel
-            }
+            amountFollowers: amountfollower
+            amountFollowing: amountfollowed
+            amountPeers: amountfriends
         }
     }
 }
@@ -587,10 +595,13 @@ pub struct SearchUserData {
     pub search_user: crate::models::post::UserSearchResponse,
 }
 
-/// Wrapper for the `getUser` query response.
+/// Wrapper for the `getUser` (→ `getProfile`) query response.
+/// The outer alias `getUser` → `get_user` via rename_all="camelCase" stays
+/// because the query declares the alias `getProfile` inside as-is; serde
+/// still sees `getProfile` as the top-level key. Use explicit rename.
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct GetUserData {
+    #[serde(rename = "getProfile")]
     pub get_user: crate::models::user::UserInfoResponse,
 }
 
@@ -801,9 +812,15 @@ mutation LikeComment($commentid: ID!) {
 "#;
 
 /// Mutation: Unlike a comment.
+/// Mutation: Toggle-off a comment's like.
+///
+/// Peergamma has no `unlikeComment` resolver — `likeComment` is a toggle
+/// (`src/graphql/schema/comment_mutation.rs`). Both like and unlike code
+/// paths call this single mutation; backend flips the state based on
+/// current value.
 pub const UNLIKE_COMMENT_MUTATION: &str = r#"
 mutation UnlikeComment($commentid: ID!) {
-    unlikeComment(commentid: $commentid) {
+    likeComment(commentid: $commentid) {
         status
         ResponseCode
         ResponseMessage
@@ -854,9 +871,11 @@ pub struct LikeCommentData {
 }
 
 /// Wrapper for the `unlikeComment` mutation response.
+/// Wrapper for the `unlikeComment` (→ `likeComment` toggle) response.
+/// Backend returns the same `likeComment` key regardless of toggle direction.
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct UnlikeCommentData {
+    #[serde(rename = "likeComment")]
     pub unlike_comment: crate::models::comment::LikeCommentResponse,
 }
 
@@ -989,7 +1008,7 @@ query ListUserPosts(
     $userid: ID!
     $filterBy: [PostFilterType!]
     $contentFilterBy: ContentFilterType
-    $sortBy: PostSortType
+    $sortBy: PostSortBy
     $offset: Int
     $limit: Int
 ) {
@@ -1509,7 +1528,7 @@ pub struct ShopOrderDetailsData {
 /// Mutation: Place a shop order (purchase with tokens).
 pub const PERFORM_SHOP_ORDER_MUTATION: &str = r#"
 mutation PerformShopOrder(
-    $tokenAmount: String!
+    $tokenAmount: Decimal!
     $shopItemId: String!
     $name: String!
     $email: String!
@@ -1517,7 +1536,7 @@ mutation PerformShopOrder(
     $addressline2: String
     $city: String!
     $zipcode: String!
-    $country: Country!
+    $country: ShopSupportedDeliveryCountry!
     $size: String
 ) {
     performShopOrder(
