@@ -1,6 +1,6 @@
 # Plan: Rewrite Mock Backend in Rust
 
-> Implements ADR: [adr-mock-backend-rust-rewrite.md](../adr-mock-backend-rust-rewrite.md)
+> Implements ADR: [adr-mock-backend-rust-rewrite.md](../../adr-mock-backend-rust-rewrite.md)
 
 **Goal:** Replace the Node.js mock backend (`packages/mock_backend/`) with an idiomatic Rust crate built on async-graphql + Axum, achieving parity with the existing 3 mutations and then incrementally expanding to cover all 10 backend API domains documented in `docs/backend_api/`.
 

@@ -8,7 +8,7 @@
 **Implementation Verified:** 2026-04-14
 **Architecture note (2026-04-21):** Real-time transport is Postgres + polling for v1; GraphQL subscriptions are the preferred upgrade path. See [chat-completion-sprint.md § Blocker Resolution](chat-completion-sprint.md#blocker-resolution-2026-04-21) and [docs/adr-chat-realtime-transport.md](../../adr-chat-realtime-transport.md).
 
-> **Reading note:** the code snippets below were drafted in 2026-04 against an earlier Leptos API (`create_signal`, `create_resource`, `create_effect`, `set_interval(..., Duration)`) and the pre-polling transport design. They are preserved as **historical design reference** — the authoritative source for current shape is the code under [src/](../../..//src/) and the [sprint plan](chat-completion-sprint.md). Do not copy snippets from this file verbatim.
+> **Reading note:** the code snippets below were drafted in 2026-04 against an earlier Leptos API (`create_signal`, `create_resource`, `create_effect`, `set_interval(..., Duration)`) and the pre-polling transport design. They are preserved as **historical design reference** — the authoritative source for current shape is the code under [src/](../../../src/) and the [sprint plan](chat-completion-sprint.md). Do not copy snippets from this file verbatim.
 
 ---
 
@@ -21,7 +21,7 @@ A repo-wide search of `peer_backend` confirmed the following are **absent**, not
 - No GraphQL chat schema file.
 - No Firestore service-account credentials or config.
 
-What **does** exist: the Postgres schema (`chats`, `chatmessages`, `chatparticipants`), input filters (`ValidateChatMessages`, `ValidateChatStructure`), and response-code copy in [json/response-codes-editable.json](../../../json/response-codes-editable.json). The feature is **stubbed**, not implemented, on the backend. The mock backend (`packages/mock_backend`) implements the full contract for client development.
+What **does** exist: the Postgres schema (`chats`, `chatmessages`, `chatparticipants`), input filters (`ValidateChatMessages`, `ValidateChatStructure`), and response-code copy in [json/response-codes.json](../../../legacy/assets/json/response-codes.json). The feature is **stubbed**, not implemented, on the backend. The mock backend (`packages/mock_backend`) implements the full contract for client development.
 
 ---
 
@@ -248,7 +248,7 @@ Three unchecked items are owned by the [completion sprint](chat-completion-sprin
 
 ## Backend API Reference
 
-> **⚠️ Status (2026-04-21):** The mutations and queries documented below exist in the **mock backend** ([packages/mock_backend](../../../packages/mock_backend), Phase 4) and in [json/response-codes-editable.json](../../../json/response-codes-editable.json) as planned surface. They are **not yet implemented** in `peer_backend`. The shapes below are the contract the real backend must honour — see [chat-completion-sprint.md § Blocker Resolution](chat-completion-sprint.md#blocker-resolution-2026-04-21) (Track A).
+> **⚠️ Status (2026-04-21):** The mutations and queries documented below exist in the **mock backend** ([packages/mock_backend](../../../packages/mock_backend), Phase 4) and in [json/response-codes.json](../../../legacy/assets/json/response-codes.json) as planned surface. They are **not yet implemented** in `peer_backend`. The shapes below are the contract the real backend must honour — see [chat-completion-sprint.md § Blocker Resolution](chat-completion-sprint.md#blocker-resolution-2026-04-21) (Track A).
 
 ### `listChats` Query
 

@@ -11,7 +11,7 @@
 
 ## ⚠️ Scope Reconciliation (read first)
 
-[`docs/feature-convergence.md`](../../feature-convergence.md) describes the Download row as *"App download page"* (i.e. a marketing landing page for the mobile app). That is **not** what [`download.php`](../../../download.php) actually does — the legacy file is an 18-line remote-URL force-download proxy invoked by `forceDownload()` in [`js/global.js`](../../../js/global.js). This plan models the PHP file's real behaviour (media proxy) because the PHP file is what exists in the repo and what the convergence tracker links to.
+[`docs/feature-convergence.md`](../../feature-convergence.md) describes the Download row as *"App download page"* (i.e. a marketing landing page for the mobile app). That is **not** what [`download.php`](../../../legacy/php/download.php) actually does — the legacy file is an 18-line remote-URL force-download proxy invoked by `forceDownload()` in [`js/global.js`](../../../legacy/assets/js/global.js). This plan models the PHP file's real behaviour (media proxy) because the PHP file is what exists in the repo and what the convergence tracker links to.
 
 Before Phase 1 starts, **Open Question #0 must be resolved** (see Open Questions section): either
 
@@ -90,8 +90,8 @@ The legacy implementation is **dangerously naïve** (open URL proxy → SSRF, op
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| [`download.php`](../../../download.php) | Reads `$_GET['file']`, sets attachment headers, calls `readfile($url)` | 18 |
-| [`js/global.js`](../../../js/global.js#L1490) | `forceDownload(url)` helper that navigates to `/download.php?file=…` | 5 |
+| [`download.php`](../../../legacy/php/download.php) | Reads `$_GET['file']`, sets attachment headers, calls `readfile($url)` | 18 |
+| [`js/global.js`](../../../legacy/assets/js/global.js#L1490) | `forceDownload(url)` helper that navigates to `/download.php?file=…` | 5 |
 
 ### Legacy behaviour
 
@@ -120,7 +120,7 @@ readfile($fileUrl);
 
 ### Caller in legacy frontend
 
-[`js/global.js:1490`](../../../js/global.js#L1490):
+[`js/global.js:1490`](../../../legacy/assets/js/global.js#L1490):
 
 ```js
 function forceDownload(url) {
@@ -130,7 +130,7 @@ function forceDownload(url) {
 }
 ```
 
-The only call site ([`js/global.js:620`](../../../js/global.js#L620)) is **commented out**, so the helper is currently dormant in the legacy app. The endpoint nonetheless exists and is reachable.
+The only call site ([`js/global.js:620`](../../../legacy/assets/js/global.js#L620)) is **commented out**, so the helper is currently dormant in the legacy app. The endpoint nonetheless exists and is reachable.
 
 **ROI framing.** ~430 LOC for an endpoint with zero live callers is defensible *only* if at least one consumer is identified up front. Phase 6 is therefore gated on Open Question #5 being answered with a concrete caller (post media menu is the most likely candidate). If no consumer is identified, ship Phases 1–5 (endpoint + tests + docs) and defer the WASM helper until the first consuming feature plan needs it.
 

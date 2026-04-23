@@ -1,9 +1,9 @@
 # ADR: Rewrite Mock Backend in Rust
 
-**Status:** Proposed  
+**Status:** Accepted (Implemented)  
 **Date:** 2026-04-14  
 **Authors:** —  
-**Supersedes:** `tests/mock_backend/` (Node.js + Express + graphql-http)
+**Supersedes:** the Node.js + Express + `graphql-http` mock that previously lived at `tests/mock_backend/`. The Rust rewrite ships in [`packages/mock_backend/`](../packages/mock_backend/) and currently covers Phases 0–6 of the plan below.
 
 > **Amendment (2026-04-21) — known divergence.** The mock's chat resolvers (`listChats`, `sendChatMessage`, `createChat`) delivered in Phase 4 are **ahead of the real `peer_backend`**, which has no chat implementation at all (see [adr-chat-realtime-transport.md](adr-chat-realtime-transport.md)). For chat only, the usual "mock mirrors backend" relationship is inverted: the mock is the **authoritative contract** and the backend must catch up. This is a temporary divergence tracked as Track A of [plans/chat/chat-completion-sprint.md](plans/chat/chat-completion-sprint.md).
 
@@ -11,7 +11,7 @@
 
 ## Context
 
-The current mock backend (`tests/mock_backend/`) is a ~200-line Node.js service built with Express and `graphql-http`. It exists to give the Leptos frontend a local GraphQL endpoint for offline development and end-to-end tests. Today it only covers three registration-related mutations (`verifyReferralString`, `register`, `verifyAccount`) with in-memory state and a `/reset` endpoint for test isolation.
+Before this rewrite, the mock backend at `tests/mock_backend/` was a ~200-line Node.js service built with Express and `graphql-http`. It existed to give the Leptos frontend a local GraphQL endpoint for offline development and end-to-end tests. At that point it only covered three registration-related mutations (`verifyReferralString`, `register`, `verifyAccount`) with in-memory state and a `/reset` endpoint for test isolation.
 
 Limitations of the current implementation:
 
@@ -22,7 +22,7 @@ Limitations of the current implementation:
 
 ## Decision
 
-Rewrite the mock backend as a Rust crate using **async-graphql** on **Axum**, adopting modern, idiomatic Rust (edition 2024). The new crate will live at `tests/mock_backend/` (replacing the Node.js code) and be runnable both as a standalone binary and as an in-process test fixture.
+Rewrite the mock backend as a Rust crate using **async-graphql** on **Axum**, adopting modern, idiomatic Rust (edition 2024). The crate lives at [`packages/mock_backend/`](../packages/mock_backend/) (replacing the Node.js code) and is runnable both as a standalone binary and as an in-process test fixture.
 
 ### Technology choices
 
@@ -39,7 +39,7 @@ Rewrite the mock backend as a Rust crate using **async-graphql** on **Axum**, ad
 ### Crate layout
 
 ```
-tests/mock_backend/
+packages/mock_backend/
 ├── Cargo.toml
 ├── src/
 │   ├── main.rs            # binary entry: parse CLI flags, bind port, serve
@@ -134,12 +134,12 @@ Each backend domain (auth, posts, wallet, etc.) gets its own module under `schem
 
 #### 6. Feature-flag for the E2E test harness
 
-The Leptos E2E tests (`peer-web/end2end/`) can depend on `mock_backend` as a dev-dependency and spin it up in a `#[fixture]`, removing the need for a separate `npm start` step in CI.
+The Leptos E2E tests (`end2end/`) can depend on `mock_backend` as a dev-dependency and spin it up in a `#[fixture]`, removing the need for a separate `npm start` step in CI.
 
 ```toml
-# peer-web/Cargo.toml
+# Cargo.toml (root, peer-web crate)
 [dev-dependencies]
-mock_backend = { path = "../../tests/mock_backend" }
+mock_backend = { path = "packages/mock_backend" }
 ```
 
 ### Incremental coverage plan
@@ -187,7 +187,7 @@ Phase 0 is the MVP and directly replaces the current Node.js mock. Subsequent ph
 
 ## References
 
-- Current mock: [`tests/mock_backend/`](../tests/mock_backend/)
+- Mock backend crate: [`packages/mock_backend/`](../packages/mock_backend/)
 - Backend API docs: [`docs/backend_api/`](backend_api/)
 - Leptos rewrite study: [docs/leptos-rewrite-study.md](leptos-rewrite-study.md)
 - async-graphql book: <https://async-graphql.github.io/async-graphql/en/>

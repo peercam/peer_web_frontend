@@ -27,15 +27,15 @@ Items the parent plan and convergence tracker claim are stubbed but are in fact 
 
 | Parent-plan claim | Reality (verified in source) | Evidence |
 |---|---|---|
-| "Image cropping modal — UI shell exists, canvas draw/crop logic is stubbed" | ✅ Fully implemented — `HtmlImageElement` load, `drawImage` preview with overlay, drag/scroll-zoom, output canvas at 1080px wide, PNG data-URL emit | [src/components/new_post/media/image_cropper.rs](../../..//src/components/new_post/media/image_cropper.rs) — `perform_crop`, `draw_preview`, `draw_to_output` |
+| "Image cropping modal — UI shell exists, canvas draw/crop logic is stubbed" | ✅ Fully implemented — `HtmlImageElement` load, `drawImage` preview with overlay, drag/scroll-zoom, output canvas at 1080px wide, PNG data-URL emit | [src/components/new_post/media/image_cropper.rs](../../../src/components/new_post/media/image_cropper.rs) — `perform_crop`, `draw_preview`, `draw_to_output` |
 | "Aspect ratio toggle — UI exists, not wired to canvas" | ✅ Wired — `aspect_ratio` signal feeds both preview canvas height (reactive) and `OUTPUT_WIDTH * ratio.value()` for output | same file, lines 65–73 + `perform_crop` |
 | "Cropped image preview — output canvas is empty" | ✅ Output canvas populated; PNG data URL passed to `on_crop` callback | same file, `perform_crop` |
-| "Voice recording — UI shell exists, MediaRecorder calls stubbed" | ✅ Implemented — `getUserMedia(audio: true)` → `MediaRecorder` → chunk accumulation → `Blob` → `array_buffer()` → `Vec<u8>` + MIME emitted via `on_recording_complete` | [src/components/new_post/media/voice_recorder.rs](../../..//src/components/new_post/media/voice_recorder.rs) — `start_recording`, `stop_recording` |
+| "Voice recording — UI shell exists, MediaRecorder calls stubbed" | ✅ Implemented — `getUserMedia(audio: true)` → `MediaRecorder` → chunk accumulation → `Blob` → `array_buffer()` → `Vec<u8>` + MIME emitted via `on_recording_complete` | [src/components/new_post/media/voice_recorder.rs](../../../src/components/new_post/media/voice_recorder.rs) — `start_recording`, `stop_recording` |
 | "Recording timer — signal exists, not incremented" | ✅ Incremented — `set_interval_with_callback_and_timeout_and_arguments_0` ticks `elapsed_time` every 1000 ms; cleared on stop | same file, `start_recording` |
 | "Playback controls — button exists, handler is empty" | ✅ `toggle_playback` toggles `<audio id="voice-recorder-preview">` `play()` / `pause()` | same file, `toggle_playback` |
 | "Record again — resets state, but no actual recording" | ✅ `reset_recording` clears state + `recorded` + `recorder_store`; subsequent record cycle works | same file, `reset_recording` |
-| "Start/end handle dragging — handlers are empty stubs" | ✅ Wired — `handle_start_drag` / `handle_end_drag` flip `DragMode`; `handle_timeline_mousemove` updates the active handle with `MIN_DURATION` clamp; `seek_to` updates the `<video>` playhead | [src/components/new_post/media/video_trimmer.rs](../../..//src/components/new_post/media/video_trimmer.rs) |
-| "Responsive layout — desktop layout done, no mobile breakpoints" | ✅ Two breakpoints exist (`@media (max-width: 1024px)` and `@media (max-width: 768px)` in [style/new-post.scss](../../..//style/new-post.scss) lines 1338, 1357). Quality of those breakpoints still wants a manual review, but they are not absent. | grep over `style/new-post.scss` |
+| "Start/end handle dragging — handlers are empty stubs" | ✅ Wired — `handle_start_drag` / `handle_end_drag` flip `DragMode`; `handle_timeline_mousemove` updates the active handle with `MIN_DURATION` clamp; `seek_to` updates the `<video>` playhead | [src/components/new_post/media/video_trimmer.rs](../../../src/components/new_post/media/video_trimmer.rs) |
+| "Responsive layout — desktop layout done, no mobile breakpoints" | ✅ Two breakpoints exist (`@media (max-width: 1024px)` and `@media (max-width: 768px)` in [style/new-post.scss](../../../style/new-post.scss) lines 1338, 1357). Quality of those breakpoints still wants a manual review, but they are not absent. | grep over `style/new-post.scss` |
 
 **Remaining genuine gaps** (tracked as Tasks 2–8 below):
 
@@ -55,30 +55,30 @@ Items the parent plan and convergence tracker claim are stubbed but are in fact 
 
 | Layer | File | Lines | Status |
 |-------|------|-------|--------|
-| **Page** | [src/pages/new_post.rs](../../..//src/pages/new_post.rs) | ~250 | ✅ Auth guard, `NewPostContext`, validation, `build_input` |
-| **Route** | [src/app.rs](../../..//src/app.rs) | — | ✅ `/new` registered |
-| **Models** | [src/models/post.rs](../../..//src/models/post.rs) | — | ✅ `CreateContentType`, `CreatePostInput`, `MediaFile`, `is_valid_tag` |
-| **API — eligibility** | [src/api/posts.rs](../../..//src/api/posts.rs) | — | ✅ `check_post_eligibility` server fn |
-| **API — upload** | [src/api/posts.rs](../../..//src/api/posts.rs) | — | ✅ `upload_post_files` (multipart) |
-| **API — create** | [src/api/posts.rs](../../..//src/api/posts.rs) | — | ✅ `create_post` mutation |
-| **API — search tags** | [src/api/posts.rs](../../..//src/api/posts.rs) | — | ✅ `search_tags` |
-| **Component — header** | [src/components/new_post/header.rs](../../..//src/components/new_post/header.rs) | — | ✅ |
-| **Component — content type tabs** | [src/components/new_post/content_type_tabs.rs](../../..//src/components/new_post/content_type_tabs.rs) | — | ✅ |
-| **Component — form** | [src/components/new_post/form.rs](../../..//src/components/new_post/form.rs) | — | ✅ Title / description / type-specific media area / tags |
-| **Component — image upload** | [src/components/new_post/media/image_upload.rs](../../..//src/components/new_post/media/image_upload.rs) | — | ✅ Drop zone, multi-file (≤5), slider, per-image remove |
-| **Component — image slider** | [src/components/new_post/media/image_slider.rs](../../..//src/components/new_post/media/image_slider.rs) | — | ✅ |
-| **Component — image cropper** | [src/components/new_post/media/image_cropper.rs](../../..//src/components/new_post/media/image_cropper.rs) | ~300 | ✅ Canvas draw, drag, scroll-zoom (0.3–8×), 1:1 / 4:5 toggle, PNG data-URL output |
-| **Component — audio upload** | [src/components/new_post/media/audio_upload.rs](../../..//src/components/new_post/media/audio_upload.rs) | — | ✅ File picker (mp3/wav/flac/aac/m4a) + cover slot |
-| **Component — voice recorder** | [src/components/new_post/media/voice_recorder.rs](../../..//src/components/new_post/media/voice_recorder.rs) | ~350 | ✅ MediaRecorder, chunked capture, MIME forwarding, preview `<audio>`, timer, play/pause, "record again", "use recording" — **waveform still static** |
-| **Component — video upload** | [src/components/new_post/media/video_upload.rs](../../..//src/components/new_post/media/video_upload.rs) | — | ✅ Multi-video (≤2), preview, remove — **`duration` hardcoded to 30.0** |
-| **Component — video trimmer** | [src/components/new_post/media/video_trimmer.rs](../../..//src/components/new_post/media/video_trimmer.rs) | ~270 | ✅ Timeline + draggable handles, `MIN_DURATION` clamp, playhead, format labels — **no frame thumbnails, emits times only** |
-| **Component — video cover** | [src/components/new_post/media/video_cover.rs](../../..//src/components/new_post/media/video_cover.rs) | — | ✅ Cover slot |
-| **Component — drop zone** | [src/components/new_post/media/drop_zone.rs](../../..//src/components/new_post/media/drop_zone.rs) | — | ✅ Generic drag/drop + `read_file_as_bytes` helper |
-| **Component — tag input** | [src/components/new_post/tags/tag_input.rs](../../..//src/components/new_post/tags/tag_input.rs) | ~150 | ✅ Autocomplete, `searchTags`, validation, ≤10 cap — **no localStorage history** |
-| **Component — tag list** | [src/components/new_post/tags/tag_list.rs](../../..//src/components/new_post/tags/tag_list.rs) | — | ✅ |
-| **Component — preview** | [src/components/new_post/preview.rs](../../..//src/components/new_post/preview.rs) | — | ✅ Full + collapsed card preview, "back to edit" |
-| **Component — submit** | [src/components/new_post/submit.rs](../../..//src/components/new_post/submit.rs) | ~220 | ✅ Validate → eligibility → multipart upload → `createPost` → toast → navigate. **No `trim_window` plumbed into `CreatePostInput`** |
-| **Component — right sidebar** | [src/components/new_post/right_sidebar.rs](../../..//src/components/new_post/right_sidebar.rs) | — | ✅ |
+| **Page** | [src/pages/new_post.rs](../../../src/pages/new_post.rs) | ~250 | ✅ Auth guard, `NewPostContext`, validation, `build_input` |
+| **Route** | [src/app.rs](../../../src/app.rs) | — | ✅ `/new` registered |
+| **Models** | [src/models/post.rs](../../../src/models/post.rs) | — | ✅ `CreateContentType`, `CreatePostInput`, `MediaFile`, `is_valid_tag` |
+| **API — eligibility** | [src/api/posts.rs](../../../src/api/posts.rs) | — | ✅ `check_post_eligibility` server fn |
+| **API — upload** | [src/api/posts.rs](../../../src/api/posts.rs) | — | ✅ `upload_post_files` (multipart) |
+| **API — create** | [src/api/posts.rs](../../../src/api/posts.rs) | — | ✅ `create_post` mutation |
+| **API — search tags** | [src/api/posts.rs](../../../src/api/posts.rs) | — | ✅ `search_tags` |
+| **Component — header** | [src/components/new_post/header.rs](../../../src/components/new_post/header.rs) | — | ✅ |
+| **Component — content type tabs** | [src/components/new_post/content_type_tabs.rs](../../../src/components/new_post/content_type_tabs.rs) | — | ✅ |
+| **Component — form** | [src/components/new_post/form.rs](../../../src/components/new_post/form.rs) | — | ✅ Title / description / type-specific media area / tags |
+| **Component — image upload** | [src/components/new_post/media/image_upload.rs](../../../src/components/new_post/media/image_upload.rs) | — | ✅ Drop zone, multi-file (≤5), slider, per-image remove |
+| **Component — image slider** | [src/components/new_post/media/image_slider.rs](../../../src/components/new_post/media/image_slider.rs) | — | ✅ |
+| **Component — image cropper** | [src/components/new_post/media/image_cropper.rs](../../../src/components/new_post/media/image_cropper.rs) | ~300 | ✅ Canvas draw, drag, scroll-zoom (0.3–8×), 1:1 / 4:5 toggle, PNG data-URL output |
+| **Component — audio upload** | [src/components/new_post/media/audio_upload.rs](../../../src/components/new_post/media/audio_upload.rs) | — | ✅ File picker (mp3/wav/flac/aac/m4a) + cover slot |
+| **Component — voice recorder** | [src/components/new_post/media/voice_recorder.rs](../../../src/components/new_post/media/voice_recorder.rs) | ~350 | ✅ MediaRecorder, chunked capture, MIME forwarding, preview `<audio>`, timer, play/pause, "record again", "use recording" — **waveform still static** |
+| **Component — video upload** | [src/components/new_post/media/video_upload.rs](../../../src/components/new_post/media/video_upload.rs) | — | ✅ Multi-video (≤2), preview, remove — **`duration` hardcoded to 30.0** |
+| **Component — video trimmer** | [src/components/new_post/media/video_trimmer.rs](../../../src/components/new_post/media/video_trimmer.rs) | ~270 | ✅ Timeline + draggable handles, `MIN_DURATION` clamp, playhead, format labels — **no frame thumbnails, emits times only** |
+| **Component — video cover** | [src/components/new_post/media/video_cover.rs](../../../src/components/new_post/media/video_cover.rs) | — | ✅ Cover slot |
+| **Component — drop zone** | [src/components/new_post/media/drop_zone.rs](../../../src/components/new_post/media/drop_zone.rs) | — | ✅ Generic drag/drop + `read_file_as_bytes` helper |
+| **Component — tag input** | [src/components/new_post/tags/tag_input.rs](../../../src/components/new_post/tags/tag_input.rs) | ~150 | ✅ Autocomplete, `searchTags`, validation, ≤10 cap — **no localStorage history** |
+| **Component — tag list** | [src/components/new_post/tags/tag_list.rs](../../../src/components/new_post/tags/tag_list.rs) | — | ✅ |
+| **Component — preview** | [src/components/new_post/preview.rs](../../../src/components/new_post/preview.rs) | — | ✅ Full + collapsed card preview, "back to edit" |
+| **Component — submit** | [src/components/new_post/submit.rs](../../../src/components/new_post/submit.rs) | ~220 | ✅ Validate → eligibility → multipart upload → `createPost` → toast → navigate. **No `trim_window` plumbed into `CreatePostInput`** |
+| **Component — right sidebar** | [src/components/new_post/right_sidebar.rs](../../../src/components/new_post/right_sidebar.rs) | — | ✅ |
 | **Mock Backend** | [packages/mock_backend](../../../packages/mock_backend) | — | ✅ Phase 3 done — `postEligibility`, `/upload-post`, `createPost`, `searchTags` |
 
 ### What Remains 🔲
@@ -120,8 +120,8 @@ Items the parent plan and convergence tracker claim are stubbed but are in fact 
 2. Leave **unchecked**: real-time waveform, timeline thumbnail frames, FFmpeg WASM encoding, tag history.
 3. In [feature-convergence.md](../../feature-convergence.md) "Components" table, update:
    - `Image Cropper` 🚧 In Progress → ✅ Implemented (note: "canvas draw + drag + zoom + 1:1/4:5 toggle, PNG data-URL output")
-   - `Audio Player` 🚧 In Progress → 🟡 Mostly Implemented (note: "MediaRecorder + preview + timer wired; real-time waveform pending — see [sprint](plans/new-post/new-post-completion-sprint.md) Task 2")
-   - `Video Encoder` 🚧 In Progress → 🟡 Mostly Implemented (note: "trimmer timeline + handle drag + cover wired; frame thumbnails + server-side trim plumbing pending — see [sprint](plans/new-post/new-post-completion-sprint.md) Tasks 4–5")
+   - `Audio Player` 🚧 In Progress → 🟡 Mostly Implemented (note text to insert verbatim, with the link path resolved from `docs/feature-convergence.md`): `"MediaRecorder + preview + timer wired; real-time waveform pending — see [sprint](plans/new-post/new-post-completion-sprint.md) Task 2"`
+   - `Video Encoder` 🚧 In Progress → 🟡 Mostly Implemented (note text to insert verbatim, with the link path resolved from `docs/feature-convergence.md`): `"trimmer timeline + handle drag + cover wired; frame thumbnails + server-side trim plumbing pending — see [sprint](plans/new-post/new-post-completion-sprint.md) Tasks 4–5"`
 4. Bump **Last Updated** to today.
 
 **Acceptance:** A reviewer reading the parent plan and tracker sees the same scope state the code shows.
@@ -245,7 +245,7 @@ Items the parent plan and convergence tracker claim are stubbed but are in fact 
 
 - iPhone 12 (390×844): content-type tabs collapse / move to top, form fills width, crop modal fits viewport, trimmer timeline scrolls or compresses cleanly, preview modal does not overflow.
 - iPad (768×1024): two-column variant remains usable; sidebar tabs reachable.
-- Compare against the legacy `newpost.php` rendering on the same viewports (the legacy CSS lives at [css/add-post.css](../../../css/add-post.css)).
+- Compare against the legacy `newpost.php` rendering on the same viewports (the legacy CSS lives at [css/add-post.css](../../../legacy/assets/css/add-post.css)).
 - Fix only what is broken — do not refactor working CSS.
 
 **Acceptance:** A short note appended to this sprint's "Implementation Notes" section listing what was changed and what needed no change.
@@ -256,7 +256,7 @@ Items the parent plan and convergence tracker claim are stubbed but are in fact 
 
 **Goal:** Lock in the happy paths and the most common failure modes.
 
-**File:** `end2end/tests/new_post.spec.ts` — follow the structure of [chat.spec.ts](../../..//end2end/tests/chat.spec.ts) and [wallet.spec.ts](../../..//end2end/tests/wallet.spec.ts).
+**File:** `end2end/tests/new_post.spec.ts` — follow the structure of [chat.spec.ts](../../../end2end/tests/chat.spec.ts) and [wallet.spec.ts](../../../end2end/tests/wallet.spec.ts).
 
 **Cases:**
 
@@ -304,4 +304,4 @@ Items the parent plan and convergence tracker claim are stubbed but are in fact 
 - Convergence tracker: [feature-convergence.md](../../feature-convergence.md)
 - Sister sprint patterns: [chat-completion-sprint.md](../chat/chat-completion-sprint.md), [forgot-password-completion-sprint.md](../forgot-password/forgot-password-completion-sprint.md), [view-post-completion-sprint.md](../view-post/view-post-completion-sprint.md)
 - Mock backend Phase 3 (posts/content): [phase-3-posts-content.md](../mock-backend/phase-3-posts-content.md)
-- Legacy implementations: [newpost.php](../../../newpost.php), [js/add_post.js](../../../js/add_post.js), [js/crop.js](../../../js/crop.js), [js/voiceRecorderApi.js](../../../js/voiceRecorderApi.js), [js/ffmpeg/](../../../js/ffmpeg/)
+- Legacy implementations: [newpost.php](../../../legacy/php/newpost.php), [js/add_post.js](../../../legacy/assets/js/add_post.js), [js/crop.js](../../../legacy/assets/js/crop.js), [js/voiceRecorderApi.js](../../../legacy/assets/js/voiceRecorderApi.js), [js/ffmpeg/](../../../legacy/assets/js/ffmpeg/)

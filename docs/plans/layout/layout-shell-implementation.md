@@ -34,7 +34,7 @@ This plan promotes the layout chrome into a single, well-typed shell so:
 - Extracting page-specific sidebar widgets (filter checkboxes, sort radios, profile widget chrome). Those are already separate components or stay page-local.
 - A header/footer on the unauthenticated pages (`login`, `register`, `forgot_password`, `invite`). Those use the `LeftPanel` shared layout already and are out of scope.
 - A new design / restyle. This is a pure refactor — pixel parity is the bar.
-- Touching the SCSS files in [style/](../../..//style/). The shell emits the existing class names verbatim.
+- Touching the SCSS files in [style/](../../../style/). The shell emits the existing class names verbatim.
 - Server-side route extraction (the SSR/CSR boundary is unchanged).
 
 ---
@@ -66,9 +66,9 @@ This plan promotes the layout chrome into a single, well-typed shell so:
 
 | File | Purpose |
 |------|---------|
-| [`template-parts/footer.php`](../../../template-parts/footer.php) | Feedback popup + onboarding include + empty `<footer>` tag (legacy mobile nav lives in `phpheader.php`-rendered chrome, not in `footer.php`) |
-| [`template-parts/sidebars/widget-*.php`](../../../template-parts/sidebars/) | 13 sidebar widgets (`widget-profile.php`, `widget-main-menu.php`, `widget-add-new-post.php`, `widget-web-version.php`, `widget-filter.php`, `widget-sort-filter.php`, `widget-create-post-filter.php`, `widget-back-button.php`, …) — already mostly ported as Leptos `widgets` components |
-| [`css/style.css`](../../../css/style.css) | Owns `.site_layout`, `.left-sidebar`, `.right-sidebar`, `.mobile-footer` selectors |
+| [`template-parts/footer.php`](../../../legacy/php/template-parts/footer.php) | Feedback popup + onboarding include + empty `<footer>` tag (legacy mobile nav lives in `phpheader.php`-rendered chrome, not in `footer.php`) |
+| [`template-parts/sidebars/widget-*.php`](../../../legacy/php/template-parts/sidebars/) | 13 sidebar widgets (`widget-profile.php`, `widget-main-menu.php`, `widget-add-new-post.php`, `widget-web-version.php`, `widget-filter.php`, `widget-sort-filter.php`, `widget-create-post-filter.php`, `widget-back-button.php`, …) — already mostly ported as Leptos `widgets` components |
+| [`css/style.css`](../../../legacy/assets/css/style.css) | Owns `.site_layout`, `.left-sidebar`, `.right-sidebar`, `.mobile-footer` selectors |
 
 ### What Already Exists in `peer-web`
 
@@ -89,7 +89,7 @@ This plan promotes the layout chrome into a single, well-typed shell so:
 ### Behavioural Contract (Preserved)
 
 - `MobileFooter` renders the same five nav items in the same order; the `active` class is computed from `use_location().pathname` matching the link's `href` (or its prefix for `/profile/*`, `/chat/*`). Active computation is reactive on `pathname` so SSR (request URI) and post-hydration (`window.location`) agree without warning.
-- `SiteHeader` emits `<header class="site-header header-{modifier}">` by default (the spelling used by Wallet / My Ads / Referral Board / Settings / Version History — verified in [style/](../../..//style/), where `.site-header.header-{slug}` selectors live in [dashboard.scss](../../..//style/dashboard.scss)). A `spelling: HeaderSpelling::Underscore` prop opts in to `<header class="site_header">` for callers that match Chat's shape ([chat.scss](../../..//style/chat.scss) scopes `.site_header` inside `.chat`).
+- `SiteHeader` emits `<header class="site-header header-{modifier}">` by default (the spelling used by Wallet / My Ads / Referral Board / Settings / Version History — verified in [style/](../../../style/), where `.site-header.header-{slug}` selectors live in [dashboard.scss](../../../style/dashboard.scss)). A `spelling: HeaderSpelling::Underscore` prop opts in to `<header class="site_header">` for callers that match Chat's shape ([chat.scss](../../../style/chat.scss) scopes `.site_header` inside `.chat`).
 - `LeftRail` / `RightRail` accept a `slug: &'static str` and emit `class="left-sidebar left-sidebar-{slug}"` / `class="right-sidebar right-sidebar-{slug}"` respectively. The `inner-scroll` wrapper is always present.
 - `SiteShell`'s root element is `<div id="{id}" class="site_layout {modifier}">` so existing per-page CSS (`.wallet-layout`, `.profile-layout`, …) keeps working.
 
@@ -152,7 +152,7 @@ pub fn SiteShell(
 ) -> impl IntoView
 ```
 
-> Existing precedent in the workspace uses single-`Children` props ([toast.rs's `ToastProvider`](../../..//src/components/toast.rs), [auth_guard.rs's `AuthGuard`](../../..//src/components/auth_guard.rs)). The `#[slot]` macro from `leptos` is the supported way to expose more than one named region; verify against the `leptos` version pinned in [Cargo.toml](../../..//Cargo.toml) before Phase 1 lands and fall back to `ViewFn` props if the macro shape has shifted.
+> Existing precedent in the workspace uses single-`Children` props ([toast.rs's `ToastProvider`](../../../src/components/toast.rs), [auth_guard.rs's `AuthGuard`](../../../src/components/auth_guard.rs)). The `#[slot]` macro from `leptos` is the supported way to expose more than one named region; verify against the `leptos` version pinned in [Cargo.toml](../../../Cargo.toml) before Phase 1 lands and fall back to `ViewFn` props if the macro shape has shifted.
 
 ```rust
 // site_header.rs
@@ -234,7 +234,7 @@ let is_active = move |prefix: &'static str| {
 };
 ```
 
-The class attribute must be reactive (e.g. `class:active=move || is_active("/dashboard")`), **not** computed once into a `String`, so SSR (request URI) and post-hydration (`window.location`) produce identical markup without a hydration warning. [components/widgets/main_menu.rs](../../..//src/components/widgets/main_menu.rs) is the precedent.
+The class attribute must be reactive (e.g. `class:active=move || is_active("/dashboard")`), **not** computed once into a `String`, so SSR (request URI) and post-hydration (`window.location`) produce identical markup without a hydration warning. [components/widgets/main_menu.rs](../../../src/components/widgets/main_menu.rs) is the precedent.
 
 Active rules (one per nav item):
 
@@ -279,8 +279,8 @@ Two-pass refactor:
 **Tasks:**
 
 1. Implement the five components per the surface above.
-2. `MobileFooter` uses a reactive class binding on `location.pathname`; on SSR the signal returns the request path and on hydration it returns `window.location.pathname`, so a reactive binding produces identical markup on both sides (precedent: [main_menu.rs](../../..//src/components/widgets/main_menu.rs)). A non-reactive `String` would risk a hydration warning.
-3. `SiteHeader`'s default spelling is `HeaderSpelling::Hyphen` (used by Wallet / My Ads / Referral Board / Settings / Version History) and emits `class="site-header header-{modifier}"`. The `Underscore` spelling emits `class="site_header"` for Chat / Profile / View Profile / Peer Shop. Both spellings reuse the same inner markup (`.site_header_inner` → `.logo_box` → `.page-title h1` → `.header-actions`); verify against [chat.scss](../../..//style/chat.scss) and [dashboard.scss](../../..//style/dashboard.scss) before deleting any per-page header.
+2. `MobileFooter` uses a reactive class binding on `location.pathname`; on SSR the signal returns the request path and on hydration it returns `window.location.pathname`, so a reactive binding produces identical markup on both sides (precedent: [main_menu.rs](../../../src/components/widgets/main_menu.rs)). A non-reactive `String` would risk a hydration warning.
+3. `SiteHeader`'s default spelling is `HeaderSpelling::Hyphen` (used by Wallet / My Ads / Referral Board / Settings / Version History) and emits `class="site-header header-{modifier}"`. The `Underscore` spelling emits `class="site_header"` for Chat / Profile / View Profile / Peer Shop. Both spellings reuse the same inner markup (`.site_header_inner` → `.logo_box` → `.page-title h1` → `.header-actions`); verify against [chat.scss](../../../style/chat.scss) and [dashboard.scss](../../../style/dashboard.scss) before deleting any per-page header.
 4. `SiteShell` accepts an optional `modifier` and emits `class="site_layout {modifier}"` (no trailing space when modifier is `None`).
 5. `StandardRightRail` composes `RightRail` + the four widgets; the widget stack imports are local to `right_rail.rs`.
 
@@ -360,8 +360,8 @@ Cases:
    - **Settings preset** (Home / Chat / New Post / Wallet / Profile) — unlabelled, `mobile-nav-item` class.
 
    Default in this plan: ship the Dashboard preset as the canonical shared nav. **This is a UX regression for Settings**, which loses Wallet and Chat shortcuts. Resolution before Phase 2: either (a) accept the regression and document it, (b) extend the canonical nav to 6 items (add Wallet), or (c) make the nav list a prop until design ships a final answer. Owner: design.
-2. **Settings drift — known behaviour change, not an open question.** Grep of [style/](../../..//style/) shows only `.nav-item` styled (in [dashboard.scss](../../..//style/dashboard.scss#L946)); `mobile-nav-item` is unstyled. Settings's mobile footer is therefore **silently unstyled today** and Phase 2 will fix it as a side effect. Call out as a behaviour change in the Phase 4 changelog entry.
-3. **`SiteHeader` class spelling — resolved by audit.** Grep of [style/](../../..//style/) shows the hyphenated `.site-header.header-{slug}` pattern is the broadly-styled form ([dashboard.scss](../../..//style/dashboard.scss#L48), and the `header-{slug}` modifier is the load-bearing selector for Wallet / My Ads / Referral Board / Settings / Version History). The underscore `.site_header` is scoped under `.chat` ([chat.scss](../../..//style/chat.scss#L20)) and used by Chat / Profile / View Profile / Peer Shop. `SiteHeader` therefore exposes a `HeaderSpelling` enum (default `Hyphen`) and a required-when-`Hyphen` `modifier` prop.
+2. **Settings drift — known behaviour change, not an open question.** Grep of [style/](../../../style/) shows only `.nav-item` styled (in [dashboard.scss](../../../style/dashboard.scss#L946)); `mobile-nav-item` is unstyled. Settings's mobile footer is therefore **silently unstyled today** and Phase 2 will fix it as a side effect. Call out as a behaviour change in the Phase 4 changelog entry.
+3. **`SiteHeader` class spelling — resolved by audit.** Grep of [style/](../../../style/) shows the hyphenated `.site-header.header-{slug}` pattern is the broadly-styled form ([dashboard.scss](../../../style/dashboard.scss#L48), and the `header-{slug}` modifier is the load-bearing selector for Wallet / My Ads / Referral Board / Settings / Version History). The underscore `.site_header` is scoped under `.chat` ([chat.scss](../../../style/chat.scss#L20)) and used by Chat / Profile / View Profile / Peer Shop. `SiteHeader` therefore exposes a `HeaderSpelling` enum (default `Hyphen`) and a required-when-`Hyphen` `modifier` prop.
 4. **`peer_shop.rs` and `admin.rs`.** Both have bespoke layouts that may not fit `SiteShell`'s `header / left / main / right / footer` rectangle. Audit during Phase 1; if either resists adoption, defer it to Pass 2 / a follow-up plan and note the exception in the convergence tracker.
 
 ---
@@ -372,8 +372,8 @@ Cases:
 |------|------------|
 | Visual regression on a page with bespoke chrome (Admin, Peer Shop) | Phase 2 audits each page individually; pages that resist adoption stay on their bespoke implementation and are noted in the changelog. |
 | `MobileFooter` route-active class breaks a CSS selector that depends on `data-active` or similar | Grep `style/` for `.active`, `[data-active]`, and `aria-current` before merging Phase 1. The contract is "match what one of the existing copies does" — pick the most-correct one. |
-| Hydration warning on `MobileFooter` when SSR'd `pathname` differs from hydrate-time `window.location` | Use a reactive class binding (`class:active=move || is_active("/dashboard")`) so Leptos re-renders the attribute after hydration instead of comparing baked strings. Precedent: [main_menu.rs](../../..//src/components/widgets/main_menu.rs). |
-| `#[slot]` macro shape differs from the version pinned in [Cargo.toml](../../..//Cargo.toml) | Verify in Phase 1; fall back to `ViewFn`-typed props (`header: Option<ViewFn>`, …) if needed. |
+| Hydration warning on `MobileFooter` when SSR'd `pathname` differs from hydrate-time `window.location` | Use a reactive class binding (`class:active=move || is_active("/dashboard")`) so Leptos re-renders the attribute after hydration instead of comparing baked strings. Precedent: [main_menu.rs](../../../src/components/widgets/main_menu.rs). |
+| `#[slot]` macro shape differs from the version pinned in [Cargo.toml](../../../Cargo.toml) | Verify in Phase 1; fall back to `ViewFn`-typed props (`header: Option<ViewFn>`, …) if needed. |
 | Pass 2 widens the diff and slows review | Pass 2 is explicitly out-of-scope for this sprint; only Pass 1 + the new components are required to flip the ❌ rows. |
 
 ---

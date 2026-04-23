@@ -305,7 +305,7 @@ The mock backend (`packages/mock_backend/`) is unaffected — service worker exp
 - Document the strategy table inline at the top of `sw.js`
 
 ### Phase 4 — Install Prompt UI
-- New single-file module: `src/components/pwa.rs` (matches the existing convention used by [`auth_guard.rs`](../../..//src/components/auth_guard.rs), [`referral.rs`](../../..//src/components/referral.rs), [`toast.rs`](../../..//src/components/toast.rs)). If multiple PWA components emerge later, promote to a `pwa/` directory; for v1, a single file is sufficient.
+- New single-file module: `src/components/pwa.rs` (matches the existing convention used by [`auth_guard.rs`](../../../src/components/auth_guard.rs), [`referral.rs`](../../../src/components/referral.rs), [`toast.rs`](../../../src/components/toast.rs)). If multiple PWA components emerge later, promote to a `pwa/` directory; for v1, a single file is sufficient.
 - Captures `beforeinstallprompt` via a `wasm_bindgen` event listener in `pwa.rs`. `web-sys` does **not** expose `BeforeInstallPromptEvent`, so capture as `web_sys::Event` and call into it via `js-sys`:
   ```rust
   // Stash the raw event so we can call .prompt() later.

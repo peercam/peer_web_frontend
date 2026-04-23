@@ -5,7 +5,7 @@ A lightweight mock GraphQL server that simulates registration, authentication, s
 ## Quick Start
 
 ```bash
-cd tests/mock_backend
+cd packages/mock_backend
 cargo run
 ```
 

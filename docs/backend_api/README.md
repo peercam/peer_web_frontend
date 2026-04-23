@@ -2,7 +2,7 @@
 
 This directory contains the full specification of the Peer Backend GraphQL API, split by domain.
 
-For a high-level overview, see [../api.md](../api.md).
+For a high-level overview, see [api.md](api.md).
 
 ---
 

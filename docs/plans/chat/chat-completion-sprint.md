@@ -65,22 +65,22 @@ The original kickoff blocker asked whether the production backend mirrors `sendC
 
 | Layer | File | Lines | Status |
 |-------|------|-------|--------|
-| **Page** | [src/pages/chat.rs](../../..//src/pages/chat.rs) | 141 | ✅ Auth guard, layout, contacts overlay orchestration |
-| **Route** | [src/app.rs](../../..//src/app.rs) | — | ✅ `/chat` registered |
-| **State** | [src/state/chat.rs](../../..//src/state/chat.rs) | — | ✅ `ChatContext` — chat list, active chat, messages, current user signals |
-| **API — list_chats** | [src/api/chat.rs](../../..//src/api/chat.rs) | — | ✅ Server fn → `LIST_CHATS_QUERY` |
-| **API — send_message** | [src/api/chat.rs](../../..//src/api/chat.rs) | — | ✅ Server fn → `SEND_MESSAGE_MUTATION` |
-| **API — create_chat** | [src/api/chat.rs](../../..//src/api/chat.rs) | — | ✅ Server fn → `CREATE_CHAT_MUTATION` |
-| **Models** | [src/models/chat.rs](../../..//src/models/chat.rs) | — | ✅ `Chat`, `ChatMessage`, `ChatParticipant`, `ChatType`, `format_message_time` |
-| **Component — chat_list** | [src/components/chat/chat_list.rs](../../..//src/components/chat/chat_list.rs) | ~220 | ✅ Private/Group tabs, [+] button, skeleton states — **search input rendered but not filtering** |
-| **Component — chat_item** | [src/components/chat/chat_item.rs](../../..//src/components/chat/chat_item.rs) | — | ✅ Avatar, display name, last message preview, relative time — **no unread badge** |
-| **Component — chat_container** | [src/components/chat/chat_container.rs](../../..//src/components/chat/chat_container.rs) | ~85 | ✅ Header + messages + input composition |
-| **Component — chat_messages** | [src/components/chat/chat_messages.rs](../../..//src/components/chat/chat_messages.rs) | ~80 | ✅ Bubble rendering, auto-scroll anchor |
-| **Component — chat_input** | [src/components/chat/chat_input.rs](../../..//src/components/chat/chat_input.rs) | ~124 | ✅ 500-char limit, Enter-to-send, optimistic append |
-| **Component — contacts_overlay** | [src/components/chat/contacts_overlay.rs](../../..//src/components/chat/contacts_overlay.rs) | — | ✅ Friend list, single/multi select |
-| **Component — group_review** | [src/components/chat/group_review.rs](../../..//src/components/chat/group_review.rs) | — | ✅ Name + image step |
-| **GraphQL** | [src/api/graphql.rs](../../..//src/api/graphql.rs) | — | ✅ `LIST_CHATS_QUERY`, `SEND_MESSAGE_MUTATION`, `CREATE_CHAT_MUTATION` |
-| **SCSS** | [style/chat.scss](../../..//style/chat.scss) | 851 | ✅ Desktop + mobile layout |
+| **Page** | [src/pages/chat.rs](../../../src/pages/chat.rs) | 141 | ✅ Auth guard, layout, contacts overlay orchestration |
+| **Route** | [src/app.rs](../../../src/app.rs) | — | ✅ `/chat` registered |
+| **State** | [src/state/chat.rs](../../../src/state/chat.rs) | — | ✅ `ChatContext` — chat list, active chat, messages, current user signals |
+| **API — list_chats** | [src/api/chat.rs](../../../src/api/chat.rs) | — | ✅ Server fn → `LIST_CHATS_QUERY` |
+| **API — send_message** | [src/api/chat.rs](../../../src/api/chat.rs) | — | ✅ Server fn → `SEND_MESSAGE_MUTATION` |
+| **API — create_chat** | [src/api/chat.rs](../../../src/api/chat.rs) | — | ✅ Server fn → `CREATE_CHAT_MUTATION` |
+| **Models** | [src/models/chat.rs](../../../src/models/chat.rs) | — | ✅ `Chat`, `ChatMessage`, `ChatParticipant`, `ChatType`, `format_message_time` |
+| **Component — chat_list** | [src/components/chat/chat_list.rs](../../../src/components/chat/chat_list.rs) | ~220 | ✅ Private/Group tabs, [+] button, skeleton states — **search input rendered but not filtering** |
+| **Component — chat_item** | [src/components/chat/chat_item.rs](../../../src/components/chat/chat_item.rs) | — | ✅ Avatar, display name, last message preview, relative time — **no unread badge** |
+| **Component — chat_container** | [src/components/chat/chat_container.rs](../../../src/components/chat/chat_container.rs) | ~85 | ✅ Header + messages + input composition |
+| **Component — chat_messages** | [src/components/chat/chat_messages.rs](../../../src/components/chat/chat_messages.rs) | ~80 | ✅ Bubble rendering, auto-scroll anchor |
+| **Component — chat_input** | [src/components/chat/chat_input.rs](../../../src/components/chat/chat_input.rs) | ~124 | ✅ 500-char limit, Enter-to-send, optimistic append |
+| **Component — contacts_overlay** | [src/components/chat/contacts_overlay.rs](../../../src/components/chat/contacts_overlay.rs) | — | ✅ Friend list, single/multi select |
+| **Component — group_review** | [src/components/chat/group_review.rs](../../../src/components/chat/group_review.rs) | — | ✅ Name + image step |
+| **GraphQL** | [src/api/graphql.rs](../../../src/api/graphql.rs) | — | ✅ `LIST_CHATS_QUERY`, `SEND_MESSAGE_MUTATION`, `CREATE_CHAT_MUTATION` |
+| **SCSS** | [style/chat.scss](../../../style/chat.scss) | 851 | ✅ Desktop + mobile layout |
 | **Mock Backend** | [packages/mock_backend](../../../packages/mock_backend) | — | ✅ Phase 4 done — `listChats`, `createChat`, `sendChatMessage` + 49 tests |
 
 ### What Remains 🔲
@@ -159,13 +159,13 @@ If any of this is ever needed, promote it into a fresh plan rather than resurrec
 
 **Goal:** Show per-chat unread counts in the sidebar and a single aggregate badge in the global nav.
 
-**Target files for the global badge:** the primary nav lives in [src/components/widgets/main_menu.rs](../../..//src/components/widgets/main_menu.rs) (mounted into every page's right sidebar, including `/chat`). The badge renders next to the Chat menu item there.
+**Target files for the global badge:** the primary nav lives in [src/components/widgets/main_menu.rs](../../../src/components/widgets/main_menu.rs) (mounted into every page's right sidebar, including `/chat`). The badge renders next to the Chat menu item there.
 
 
 
 **Goal:** Show per-chat unread counts in the sidebar and a single aggregate badge in the global nav.
 
-**Target files for the global badge:** the primary nav lives in [src/components/widgets/main_menu.rs](../../..//src/components/widgets/main_menu.rs) (mounted into every page's right sidebar, including `/chat`). The badge renders next to the Chat menu item there.
+**Target files for the global badge:** the primary nav lives in [src/components/widgets/main_menu.rs](../../../src/components/widgets/main_menu.rs) (mounted into every page's right sidebar, including `/chat`). The badge renders next to the Chat menu item there.
 
 **Design:**
 

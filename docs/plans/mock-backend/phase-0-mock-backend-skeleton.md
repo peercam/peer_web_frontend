@@ -727,8 +727,8 @@ async fn graphql_stateful(state: &Arc<RwLock<MockState>>, query: &str) -> Value 
 
 ### 5.3 Full Test Implementation
 
-See [`tests/integration.rs`](../../../packages/mock_backend/tests/integration.rs) for the
-complete implementation. Key patterns:
+See [`packages/mock_backend/tests/`](../../../packages/mock_backend/tests/) for the
+complete implementation (the original `integration.rs` was split into per-domain files in the integration test refactor — see `auth_registration.rs`, `chat.rs`, `wallet.rs`, etc.). Key patterns:
 
 - **Stateless tests** (`test_valid_referral`, `test_register_success`, etc.) use the `graphql()` helper which creates a fresh `app()` per call.
 - **Stateful tests** (`test_register_duplicate_email`, `test_verify_account_success`, `test_already_verified`, `test_reset_endpoint`) create a shared `Arc<RwLock<MockState>>` and use `graphql_stateful()` to share state across multiple requests.

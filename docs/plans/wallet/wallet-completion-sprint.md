@@ -30,17 +30,17 @@ Finishing this sprint promotes Wallet from 🟡 → ✅ in [feature-convergence.
 
 | Layer | File | Lines | Status |
 |-------|------|-------|--------|
-| **Page** | [src/pages/wallet.rs](../../..//src/pages/wallet.rs) | 146 | ✅ Auth guard, layout, balance + history composition |
-| **Route** | [src/app.rs](../../..//src/app.rs) | — | ✅ `/wallet` registered |
-| **Component — balance_header** | [src/components/wallet/balance_header.rs](../../..//src/components/wallet/balance_header.rs) | — | ✅ Animated logo, balance display, reload button — **uses `format_balance()` (currently no separators)** |
-| **Component — transaction_history** | [src/components/wallet/transaction_history.rs](../../..//src/components/wallet/transaction_history.rs) | — | ✅ Infinite scroll via `use_infinite_scroll`, skeletons, empty state |
-| **Component — transaction_item** | [src/components/wallet/transaction_item.rs](../../..//src/components/wallet/transaction_item.rs) | ~280 | ✅ Bubble + expanded `TransactionDetail` — **no `delivery_info_container`** |
-| **Component — transfer_modal** | [src/components/wallet/transfer_modal.rs](../../..//src/components/wallet/transfer_modal.rs) | 760 | ✅ Friend list, search, amount + fees, message, summary, success/error |
-| **API — wallet** | [src/api/wallet.rs](../../..//src/api/wallet.rs) | 246 | ✅ `get_balance`, `transaction_history`, `transfer_tokens` |
-| **API — shop (read path)** | [src/api/shop.rs](../../..//src/api/shop.rs) | — | ✅ `get_shop_order_details(transaction_id)` server fn — **never called from any component** |
-| **GraphQL** | [src/api/graphql.rs](../../..//src/api/graphql.rs) | — | ✅ `SHOP_ORDER_DETAILS_QUERY`, `ShopOrderDetailsData` wrapper |
-| **Models** | [src/models/transaction.rs](../../..//src/models/transaction.rs) | — | ✅ `ShopOrderDetails`, `ShopItemSpecs`, `DeliveryDetails`, `ShopOrderDetailsResponse` — **`format_balance()` body is wrong** |
-| **SCSS** | [style/wallet.scss](../../..//style/wallet.scss) | 1,092 | ✅ Desktop + mobile, transaction rows, transfer modal, fee breakdown |
+| **Page** | [src/pages/wallet.rs](../../../src/pages/wallet.rs) | 146 | ✅ Auth guard, layout, balance + history composition |
+| **Route** | [src/app.rs](../../../src/app.rs) | — | ✅ `/wallet` registered |
+| **Component — balance_header** | [src/components/wallet/balance_header.rs](../../../src/components/wallet/balance_header.rs) | — | ✅ Animated logo, balance display, reload button — **uses `format_balance()` (currently no separators)** |
+| **Component — transaction_history** | [src/components/wallet/transaction_history.rs](../../../src/components/wallet/transaction_history.rs) | — | ✅ Infinite scroll via `use_infinite_scroll`, skeletons, empty state |
+| **Component — transaction_item** | [src/components/wallet/transaction_item.rs](../../../src/components/wallet/transaction_item.rs) | ~280 | ✅ Bubble + expanded `TransactionDetail` — **no `delivery_info_container`** |
+| **Component — transfer_modal** | [src/components/wallet/transfer_modal.rs](../../../src/components/wallet/transfer_modal.rs) | 760 | ✅ Friend list, search, amount + fees, message, summary, success/error |
+| **API — wallet** | [src/api/wallet.rs](../../../src/api/wallet.rs) | 246 | ✅ `get_balance`, `transaction_history`, `transfer_tokens` |
+| **API — shop (read path)** | [src/api/shop.rs](../../../src/api/shop.rs) | — | ✅ `get_shop_order_details(transaction_id)` server fn — **never called from any component** |
+| **GraphQL** | [src/api/graphql.rs](../../../src/api/graphql.rs) | — | ✅ `SHOP_ORDER_DETAILS_QUERY`, `ShopOrderDetailsData` wrapper |
+| **Models** | [src/models/transaction.rs](../../../src/models/transaction.rs) | — | ✅ `ShopOrderDetails`, `ShopItemSpecs`, `DeliveryDetails`, `ShopOrderDetailsResponse` — **`format_balance()` body is wrong** |
+| **SCSS** | [style/wallet.scss](../../../style/wallet.scss) | 1,092 | ✅ Desktop + mobile, transaction rows, transfer modal, fee breakdown |
 | **Mock Backend — wallet** | [packages/mock_backend/src/schema/{query,mutation}/wallet.rs](../../../packages/mock_backend/src/schema/query/wallet.rs) | — | ✅ Phase 5 done — `getBalance`, `transactionHistory`, `transferTokens` |
 | **Mock Backend — shop_order_details** | [packages/mock_backend/src/schema/query/shop.rs](../../../packages/mock_backend/src/schema/query/shop.rs) | 71 | ✅ Phase 5 done — returns delivery panel for the **buyer** of the order |
 
@@ -69,7 +69,7 @@ Finishing this sprint promotes Wallet from 🟡 → ✅ in [feature-convergence.
 
 ### Task 1 — Fix `format_balance()` to group thousands
 
-**Current behaviour** ([models/transaction.rs#L325-L329](../../..//src/models/transaction.rs)):
+**Current behaviour** ([models/transaction.rs#L325-L329](../../../src/models/transaction.rs)):
 
 ```rust
 /// Format a balance with thousand separators.
@@ -151,7 +151,7 @@ Also update the import line in each file (`use crate::models::transaction::{…,
 
 ### Task 3 — `PEER_SHOP_ID` constant + viewer check
 
-The shop-account UI gate is the legacy hard-coded UUID `292bebb1-0951-47e8-ac8a-759138a2e4a9` ([js/global.js#L6](../../../js/global.js)).
+The shop-account UI gate is the legacy hard-coded UUID `292bebb1-0951-47e8-ac8a-759138a2e4a9` ([js/global.js#L6](../../../legacy/assets/js/global.js)).
 
 **Implementation:**
 
