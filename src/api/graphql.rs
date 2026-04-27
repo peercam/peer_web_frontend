@@ -384,7 +384,7 @@ pub const LIST_POSTS_QUERY: &str = r#"
 query ListPosts(
     $filterBy: [PostFilterType!],
     $contentFilterBy: ContentFilterType,
-    $sortBy: PostSortBy,
+    $sortBy: PostSortType,
     $title: String,
     $tag: String,
     $offset: Int,
@@ -1008,7 +1008,7 @@ query ListUserPosts(
     $userid: ID!
     $filterBy: [PostFilterType!]
     $contentFilterBy: ContentFilterType
-    $sortBy: PostSortBy
+    $sortBy: PostSortType
     $offset: Int
     $limit: Int
 ) {
