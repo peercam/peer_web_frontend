@@ -30,11 +30,12 @@ pub enum PostFilterType {
     Friends,
 }
 
-/// GraphQL exposes this as `PostSortBy` to match the production peergamma SDL
-/// (`src/services/post_service.rs:35`). The Rust ident stays `PostSortType`
-/// to keep the frontend models, fixtures, and mock state references stable.
+/// GraphQL exposes this as `PostSortType` to match the PHP production SDL
+/// (`enums.graphql:100-113`) and peergamma post-rename (peergamma commit
+/// `82620d7` flipped `PostSortBy` → `PostSortType` via
+/// `#[graphql(name="PostSortType")]`). The Rust ident stays `PostSortType`.
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
-#[graphql(name = "PostSortBy", rename_items = "SCREAMING_SNAKE_CASE")]
+#[graphql(name = "PostSortType", rename_items = "SCREAMING_SNAKE_CASE")]
 pub enum PostSortType {
     Newest,
     Trending,
